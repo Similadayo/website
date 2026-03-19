@@ -1,0 +1,105 @@
+/* Offer page CSS */
+.heroWrap { position: relative; overflow: hidden; padding: 7rem 0 5rem; }
+.heroCentred { text-align: center; position: relative; z-index: 1; }
+.heroCentred .label-tag { margin-bottom: 1.5rem; }
+.h1 {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  letter-spacing: -0.03em;
+  margin: 1.25rem auto 1.5rem;
+  max-width: 800px;
+}
+.sub {
+  font-size: 1.05rem;
+  color: var(--fg-muted);
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* Section header */
+.sectionHdr { margin-bottom: 3rem; }
+.h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  letter-spacing: -0.025em;
+  margin-bottom: 0.75rem;
+}
+
+/* Deliverables grid */
+.delivGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+@media (min-width: 640px)  { .delivGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .delivGrid { grid-template-columns: repeat(3, 1fr); } }
+
+.delivCard { padding: 2rem 1.75rem; }
+.delivIcon {
+  width: 40px; height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent-light);
+  margin-bottom: 1rem;
+}
+.delivLabel {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.975rem;
+  letter-spacing: -0.015em;
+  margin-bottom: 0.4rem;
+}
+.delivDesc { font-size: 0.875rem; color: var(--fg-muted); line-height: 1.55; }
+
+/* Fit vs not fit */
+.fitRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+}
+@media (min-width: 768px) { .fitRow { grid-template-columns: repeat(2, 1fr); } }
+
+.fitList { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.fitItem {
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-left: 3px solid #22c55e;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.notFitItem {
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-left: 3px solid #ef4444;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Path cards */
+.pathCard { padding: 2.25rem 2rem; }
+.pathTitle {
+  font-size: 1.3rem;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.75rem;
+}
+
+/* CTA banner */
+.ctaBanner {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 5rem 2rem;
+  text-align: center;
+}
+.ctaH {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}

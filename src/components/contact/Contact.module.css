@@ -1,0 +1,53 @@
+.heroWrap { position: relative; overflow: hidden; padding: 7rem 0 4rem; }
+.heroCentred { text-align: center; position: relative; z-index: 1; }
+.heroCentred > * { margin-bottom: 1.25rem; }
+.h1 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 750px; margin-inline: auto; letter-spacing: -0.03em; }
+.sub { font-size: 1.1rem; color: var(--fg-muted); max-width: 560px; margin-inline: auto; line-height: 1.7; }
+
+.twoCol { display: grid; grid-template-columns: 1fr; gap: 3rem; }
+@media (min-width: 900px) { .twoCol { grid-template-columns: 1fr 1fr; } }
+
+
+
+.colH { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.75rem; }
+
+.form { display: flex; flex-direction: column; gap: 1.25rem; }
+.row { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+@media (min-width: 480px) { .row { grid-template-columns: 1fr 1fr; } }
+.field { display: flex; flex-direction: column; gap: 0.4rem; }
+.label { font-size: 0.85rem; font-weight: 500; color: var(--fg); }
+.optional { color: var(--fg-subtle); font-weight: 400; }
+.input, .textarea {
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+.input:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-muted); }
+.textarea { resize: vertical; min-height: 130px; }
+
+.successCard { padding: 3rem 2rem; text-align: center; }
+.successIcon { font-size: 2.5rem; margin-bottom: 1rem; display: block; color: #22c55e; }
+
+.calPlaceholder {
+  padding: 3rem 2rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+  min-height: 280px;
+}
+
+.note {
+  margin-top: 1.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  line-height: 1.6;
+}

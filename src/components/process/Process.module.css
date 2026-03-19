@@ -1,0 +1,110 @@
+/* Process page CSS */
+.heroWrap { position: relative; overflow: hidden; padding: 7rem 0 5rem; }
+.heroCentred { text-align: center; position: relative; z-index: 1; }
+.heroCentred > * { margin-bottom: 1.25rem; }
+.h1 {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  letter-spacing: -0.03em;
+  max-width: 700px;
+  margin-inline: auto;
+}
+.sub {
+  font-size: 1.05rem;
+  color: var(--fg-muted);
+  max-width: 540px;
+  margin-inline: auto;
+  line-height: 1.7;
+}
+
+/* Steps list — single column vertical track */
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+/* Left track line */
+.stepsList::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 39px;
+  width: 1px;
+  background: var(--border);
+}
+@media (max-width: 480px) {
+  .stepsList::before { left: 30px; }
+}
+
+.step {
+  display: flex;
+  gap: 0;
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 1.5rem;
+}
+.stepNum {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 1.75rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+  min-width: 80px;
+  flex-shrink: 0;
+  position: relative;
+}
+/* Circle on track */
+.stepNum::after {
+  content: '';
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin-top: 1px;
+}
+@media (max-width: 480px) {
+  .stepNum { min-width: 62px; }
+}
+.stepBody {
+  flex: 1;
+  padding: 1.75rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition);
+}
+.stepBody:hover { border-color: var(--border-hover); }
+
+.stepTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+}
+.stepDesc { font-size: 0.9rem; color: var(--fg-muted); line-height: 1.65; }
+
+/* CTA banner */
+.ctaBanner {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 5rem 2rem;
+  text-align: center;
+}
+.ctaH {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}

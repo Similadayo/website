@@ -1,0 +1,2 @@
+:HL["/demos/ika/_next/static/chunks/a957266e6b21f995.css","style"]
+0:{"buildId":"pHEHIDlmjOrgRWcoBkA4J","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
