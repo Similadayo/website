@@ -5,9 +5,39 @@ import { useState } from "react";
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(false);
+
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const response = await fetch("https://formspree.io/f/mpqybpyl", {
+        method: "POST",
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
+    <>{" "}
       {/* ── HERO ── */}
       <section className={styles.heroWrap}>
         <div className="container">
@@ -29,12 +59,10 @@ export default function Contact() {
               <h2 className={styles.colH}>Send a message</h2>
               {!submitted ? (
                 <form
-                  action="https://formspree.io/f/mzzblpkq"
-                  method="POST"
-                  onSubmit={() => setSubmitted(true)}
+                  onSubmit={handleSubmit}
                   className={styles.form}
                 >
-                  {/* Formspree destination */}
+                  {/* Formspree destination note: the ID is in the fetch call above */}
                   <input type="hidden" name="_replyto" value="contact@brancr.com" />
                   <input type="hidden" name="_subject" value="New inquiry — Brancr Labs" />
 
@@ -73,8 +101,20 @@ export default function Contact() {
                     <label htmlFor="website" className={styles.label}>Website <span className={styles.optional}>(optional)</span></label>
                     <input type="url" id="website" name="website" className={styles.input} placeholder="https://..." />
                   </div>
-                  <button type="submit" className="btn-primary" style={{ width: "100%", justifyContent: "center" }}>
-                    Submit <ArrowRight size={16} />
+
+                  {error && (
+                    <p style={{ color: "#ef4444", fontSize: "0.85rem", marginBottom: "1rem" }}>
+                      Something went wrong. Please try again or email us directly at contact@brancr.com.
+                    </p>
+                  )}
+
+                  <button 
+                    type="submit" 
+                    className="btn-primary" 
+                    disabled={loading}
+                    style={{ width: "100%", justifyContent: "center", opacity: loading ? 0.7 : 1 }}
+                  >
+                    {loading ? "Sending..." : "Submit"} <ArrowRight size={16} />
                   </button>
                 </form>
               ) : (
