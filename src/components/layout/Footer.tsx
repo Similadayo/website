@@ -27,14 +27,14 @@ export default function Footer() {
           <div>
             <div className={styles.colHeading}>Connect</div>
             <div className={styles.links}>
-              <a href="https://brancr.dev" target="_blank" rel="noreferrer" className={styles.link}>Brancr (parent)</a>
+              <a href="https://brancr.com" target="_blank" rel="noreferrer" className={styles.link}>Brancr (parent)</a>
               <a href="https://linkedin.com" target="_blank" rel="noreferrer" className={styles.link}>LinkedIn</a>
               <Link href="/contact" className={styles.link}>Book a Call</Link>
             </div>
           </div>
         </div>
         <div className={styles.bottom}>
-          <span className={styles.copy}>© {new Date().getFullYear()} Brancr Labs. AI workflow prototypes.</span>
+          <span className={styles.copy}>© {new Date().getFullYear()} Brancr Labs.</span>
           <div className={styles.legal}>
             <Link href="/privacy" className={styles.link}>Privacy</Link>
             <Link href="/terms"   className={styles.link}>Terms</Link>
