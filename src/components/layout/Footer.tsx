@@ -28,7 +28,8 @@ export default function Footer() {
             <div className={styles.colHeading}>Connect</div>
             <div className={styles.links}>
               <a href="https://brancr.com" target="_blank" rel="noreferrer" className={styles.link}>Brancr (parent)</a>
-              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className={styles.link}>LinkedIn</a>
+              <a href="https://linkedin.com/company/brancr-ai-technologies" target="_blank" rel="noreferrer" className={styles.link}>LinkedIn</a>
+              <a href="mailto:contact@brancr.com" className={styles.link}>contact@brancr.com</a>
               <Link href="/contact" className={styles.link}>Book a Call</Link>
             </div>
           </div>

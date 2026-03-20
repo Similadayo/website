@@ -83,3 +83,113 @@
   color: var(--fg-muted);
   line-height: 1.6;
 }
+
+/* ─── Email card ─── */
+.emailCard {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.emailRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.emailIconWrap {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent-light);
+}
+.emailLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--fg-subtle);
+  margin-bottom: 0.2rem;
+}
+.emailAddr {
+  font-size: 0.975rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: color var(--transition);
+}
+.emailAddr:hover { color: var(--fg); }
+.emailMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ─── Next steps ─── */
+.nextSteps {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.nextStepsLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-subtle);
+  margin-bottom: 1rem;
+}
+.nextStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  line-height: 1.45;
+}
+.nextStep:last-child { margin-bottom: 0; }
+.nextStepIcon {
+  flex-shrink: 0;
+  color: var(--accent-light);
+  margin-top: 0.1rem;
+}
+
+
+/* ─── Qualifier ─── */
+.qualifier {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.qualRow { margin-bottom: 0.5rem; }
+.qualTitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-subtle);
+  margin-bottom: 0.6rem;
+}
+.qualItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+  line-height: 1.45;
+  margin-bottom: 0.4rem;
+}
+.qualGreen { color: #22c55e; flex-shrink: 0; margin-top: 0.1rem; }
+.qualRed   { color: #ef4444; flex-shrink: 0; margin-top: 0.1rem; }
+.qualDivider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.75rem 0;
+}

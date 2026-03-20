@@ -1,6 +1,6 @@
 "use client";
 import styles from "@/components/contact/Contact.module.css";
-import { ArrowRight, Calendar, Mail, Clock } from "lucide-react";
+import { ArrowRight, Calendar, Mail, Clock, CheckCircle, User, Zap, XCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function Contact() {
@@ -130,8 +130,25 @@ export default function Contact() {
             <div className={styles.calSide}>
               <h2 className={styles.colH}>Book a time directly</h2>
               <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
-                Skip the form. Email us to set up a short call.
+                Skip the form and reach out directly.
               </p>
+
+              {/* Email + response time */}
+              <div className={`card ${styles.emailCard}`}>
+                <div className={styles.emailRow}>
+                  <div className={styles.emailIconWrap}><Mail size={18} /></div>
+                  <div>
+                    <div className={styles.emailLabel}>Business email</div>
+                    <a href="mailto:contact@brancr.com" className={styles.emailAddr}>contact@brancr.com</a>
+                  </div>
+                </div>
+                <div className={styles.emailMeta}>
+                  <span className={styles.bookChip}><Clock size={12} /> Usually within 1 business day</span>
+                  <span className={styles.bookChip}><User size={12} /> You'll talk to Similoluwa</span>
+                </div>
+              </div>
+
+              {/* Discovery call block */}
               <div className={`card ${styles.bookCard}`}>
                 <div className={styles.bookIcon}><Calendar size={28} /></div>
                 <h3 className={styles.bookTitle}>Discovery call</h3>
@@ -150,10 +167,46 @@ export default function Contact() {
                   Email to book <ArrowRight size={16} />
                 </a>
               </div>
-              <div className={styles.note}>
-                <strong>Note:</strong> Initial calls focus on understanding one workflow problem
-                and whether a prototype-first approach fits. Expect 20–30 minutes.
+
+              {/* What happens next */}
+              <div className={styles.nextSteps}>
+                <div className={styles.nextStepsLabel}>What happens after you submit</div>
+                {[
+                  { icon: <CheckCircle size={13} />, text: "We review your workflow problem (within 1 business day)" },
+                  { icon: <Mail size={13} />, text: "You get a short reply with questions or a proposed call time" },
+                  { icon: <Zap size={13} />, text: "If there's a fit, we outline a lightweight prototype scope" },
+                ].map((step, i) => (
+                  <div key={i} className={styles.nextStep}>
+                    <span className={styles.nextStepIcon}>{step.icon}</span>
+                    <span className={styles.nextStepText}>{step.text}</span>
+                  </div>
+                ))}
               </div>
+
+              {/* Best for / Not for */}
+              <div className={styles.qualifier}>
+                <div className={styles.qualRow}>
+                  <div className={styles.qualTitle}>Best for</div>
+                  {[
+                    "Teams with 2–30 people doing repetitive ops work",
+                    "Agencies, recruiting firms, small SaaS, consulting",
+                    "Leaders open to testing before committing",
+                  ].map((t) => (
+                    <div key={t} className={styles.qualItem}><CheckCircle size={12} className={styles.qualGreen} />{t}</div>
+                  ))}
+                </div>
+                <div className={styles.qualDivider} />
+                <div className={styles.qualRow}>
+                  <div className={styles.qualTitle}>Not for</div>
+                  {[
+                    "Enterprise procurement with long vendor cycles",
+                    "Teams wanting a fully-built, deployed SaaS product",
+                  ].map((t) => (
+                    <div key={t} className={styles.qualItem}><XCircle size={12} className={styles.qualRed} />{t}</div>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
           </div>

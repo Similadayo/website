@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, MessageSquare, Users, FileText, ArrowRight, FlaskConical, ShieldCheck, Layers, Zap, Search, Route } from "lucide-react";
+import { Database, MessageSquare, Users, FileText, ArrowRight, FlaskConical, ShieldCheck, Layers, Zap, Search, Route, Mail, MapPin, AlertTriangle, Eye, CheckSquare } from "lucide-react";
 import styles from "@/components/home/Home.module.css";
 
 export default function Home() {
@@ -11,7 +11,7 @@ export default function Home() {
         <div className={`container ${styles.heroInner}`}>
           <div className={styles.heroLabel}>
             <span className="label-tag">
-              <span className="dot-active" /> Brancr Studio · AI Workflow Prototypes
+              <span className="dot-active" /> Brancr Labs · AI Workflow Prototypes
             </span>
           </div>
           <h1 className={styles.heroH1}>
@@ -176,6 +176,97 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI Risk & Review ── */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className={styles.sectionHeader}>
+            <span className="label-tag">How we think about AI risk</span>
+            <h2 className={styles.sectionH}>Responsible by design, not just by claim.</h2>
+            <p className={styles.sectionSub}>AI that runs without checks is a liability. Every prototype we build follows three non-negotiable principles.</p>
+          </div>
+          <div className={styles.riskGrid}>
+            {[
+              {
+                icon: <CheckSquare size={16} />,
+                title: "Human sign-off on every output",
+                desc: "No AI output goes to a client, candidate, or customer without a human reviewing it first. We design workflows so your team stays the final decision-maker.",
+              },
+              {
+                icon: <Eye size={16} />,
+                title: "Everything is labelled openly",
+                desc: "Prototypes are labelled as prototypes. Demos are labelled as demos. We never present a demo as a live case study. You always know what you're looking at.",
+              },
+              {
+                icon: <AlertTriangle size={16} />,
+                title: "Limitations first, not last",
+                desc: "We document what the prototype can't do before you commit. If a workflow isn't a good fit for AI, we'll say so — even if that means we don't get a project.",
+              },
+            ].map((r) => (
+              <div key={r.title} className={`card ${styles.riskCard}`}>
+                <div className={styles.riskIcon}>{r.icon}</div>
+                <div>
+                  <div className={styles.riskTitle}>{r.title}</div>
+                  <div className={styles.riskDesc}>{r.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Founder / About ── */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className={styles.founderWrap}>
+            <div className={styles.founderText}>
+              <span className="label-tag">About the founder</span>
+              <h2 className={styles.founderH}>Built by someone who understands both sides.</h2>
+              <p className={styles.founderBio}>
+                I&apos;m <strong>Similoluwa</strong>, a software engineer and CEO of Brancr AI Technologies.
+                I built Brancr Labs after seeing small operational teams repeatedly blocked by the same
+                repetitive tasks — not because they lacked tools, but because the AI tools available were
+                too generic, too complex, or too overpromised to actually fit their workflows.
+                My approach is deliberate: one workflow at a time, one team at a time, always with a human in the loop.
+              </p>
+              <div className={styles.founderMeta}>
+                <span className={styles.founderChip}>
+                  <MapPin size={12} /> Remote · EU / Global
+                </span>
+                <a
+                  href="mailto:contact@brancr.com"
+                  className={styles.founderChip}
+                >
+                  <Mail size={12} /> contact@brancr.com
+                </a>
+                <a
+                  href="https://linkedin.com/company/brancr-ai-technologies"
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.founderChip}
+                >
+                  LinkedIn ↗
+                </a>
+              </div>
+            </div>
+            <div className={styles.founderCard}>
+              <div className={styles.founderInitials}>SB</div>
+              <div className={styles.founderName}>Similoluwa</div>
+              <div className={styles.founderRole}>Software Engineer · CEO</div>
+              <div className={styles.founderCompany}>Brancr AI Technologies</div>
+              <div className={styles.founderDivider} />
+              <div className={styles.founderStat}>
+                <span className={styles.founderStatNum}>4</span>
+                <span className={styles.founderStatLabel}>Workflow categories built</span>
+              </div>
+              <div className={styles.founderStat}>
+                <span className={styles.founderStatNum}>1</span>
+                <span className={styles.founderStatLabel}>Focused offer. No bloat.</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
