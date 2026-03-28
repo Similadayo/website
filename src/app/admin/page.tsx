@@ -43,7 +43,7 @@ export default async function AdminDashboardPage() {
     <div className="space-y-10 animate-fadein pb-12">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             Command Center
           </h1>
           <p className="text-gray-500 mt-1 font-medium italic">
@@ -52,7 +52,7 @@ export default async function AdminDashboardPage() {
         </div>
         <Link 
           href="/admin/research"
-          className="bg-black text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-gray-200 hover:bg-gray-800 transition-all active:scale-95 flex items-center gap-2"
+          className="bg-black dark:bg-white text-white dark:text-black px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-gray-200 dark:shadow-none hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-95 flex items-center gap-2"
         >
           <Target className="w-4 h-4" />
           Start New Search
@@ -64,26 +64,26 @@ export default async function AdminDashboardPage() {
         <MetricCard 
           title="Total Accounts" 
           value={totalCompanies} 
-          icon={<Building2 className="w-6 h-6 text-black" />} 
+          icon={<Building2 className="w-6 h-6 text-black dark:text-white" />} 
           description="Target companies discovered"
         />
         <MetricCard 
           title="Lead Pipeline" 
           value={totalLeads} 
-          icon={<Users className="w-6 h-6 text-black" />} 
+          icon={<Users className="w-6 h-6 text-black dark:text-white" />} 
           description="Qualified leads ready for outreach"
         />
         <MetricCard 
           title="Outreach Volume" 
           value={sentEmails} 
-          icon={<Mail className="w-6 h-6 text-black" />} 
+          icon={<Mail className="w-6 h-6 text-black dark:text-white" />} 
           description="Total emails sent this sprint"
           trend={`${sentEmails > 0 ? "+12%" : "0%"}`}
         />
         <MetricCard 
           title="High Fit Leads" 
           value={highlyQualified} 
-          icon={<BrainCircuit className="w-6 h-6 text-black" />} 
+          icon={<BrainCircuit className="w-6 h-6 text-black dark:text-white" />} 
           description="Score > 80% AI confidence"
           highlight
         />
@@ -93,37 +93,37 @@ export default async function AdminDashboardPage() {
         
         {/* Recent Activity Feed */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h2 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
-                 <TrendingUp className="w-5 h-5 text-black" />
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 overflow-hidden">
+            <div className="p-8 border-b border-gray-100 dark:border-white/10 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
+              <h2 className="text-xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                 <TrendingUp className="w-5 h-5 text-black dark:text-white" />
                  Global Activity Feed
               </h2>
-              <Link href="/admin/leads" className="text-xs font-bold text-gray-400 hover:text-black transition-colors uppercase tracking-widest">
+              <Link href="/admin/leads" className="text-xs font-bold text-gray-400 hover:text-black dark:hover:text-white transition-colors uppercase tracking-widest">
                 Browse All Activity
               </Link>
             </div>
             
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-white/5">
               {recentActivity.length === 0 ? (
                 <div className="p-12 text-center text-gray-400 font-medium">No activity logged yet. Start researching!</div>
               ) : (
                 recentActivity.map((log: any) => (
-                  <div key={log.id} className="p-6 flex items-start gap-4 hover:bg-gray-50/50 transition-colors group">
+                  <div key={log.id} className="p-6 flex items-start gap-4 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors group">
                     <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
                       log.actionType === "STAGE_CHANGE" && log.newValue === "contacted" ? "bg-green-500" :
                       log.actionType === "STAGE_CHANGE" && log.newValue === "approved" ? "bg-blue-500" :
-                      "bg-gray-300"
+                      "bg-gray-300 dark:bg-gray-700"
                     }`} />
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
-                        <p className="text-sm font-bold text-gray-900 leading-tight">
+                        <div className="text-sm font-bold text-gray-900 dark:text-white leading-tight">
                           {log.actor?.name || "AI Assistant"}{" "}
-                          <span className="font-medium text-gray-500">
+                          <span className="font-medium text-gray-500 dark:text-gray-400">
                             {formatAction(log.actionType, log.newValue)}
                           </span>{" "}
-                          <span className="text-black">{log.lead.company.name}</span>
-                        </p>
+                          <span className="text-black dark:text-gray-300">{log.lead.company.name}</span>
+                        </div>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter ml-4">
                           {formatTime(log.createdAt)}
                         </span>
@@ -138,21 +138,21 @@ export default async function AdminDashboardPage() {
 
         {/* Action Sidebar */}
         <div className="space-y-6">
-          <div className="bg-black rounded-3xl p-8 text-white shadow-2xl shadow-gray-300 relative overflow-hidden group">
+          <div className="bg-black dark:bg-white rounded-3xl p-8 text-white dark:text-black shadow-2xl shadow-gray-300 dark:shadow-none relative overflow-hidden group">
             <div className="absolute -top-4 -right-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <BrainCircuit className="w-32 h-32" />
             </div>
             <div className="relative z-10">
-              <span className="bg-white/10 text-white/80 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg border border-white/10">
+              <span className="bg-white/10 dark:bg-black/5 text-white/80 dark:text-black/80 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg border border-white/10 dark:border-black/10">
                 Action Required
               </span>
               <h3 className="font-extrabold text-2xl mt-4 leading-tight">Human Approval Needed</h3>
-              <p className="text-gray-400 text-sm mt-3 font-medium">
+              <p className="text-gray-400 dark:text-gray-600 text-sm mt-3 font-medium">
                 AI has found {highlyQualified} high-potential leads that match your ICP. Review them to unlock outreach.
               </p>
               <Link 
                 href="/admin/leads"
-                className="mt-8 bg-white text-black px-6 py-3 rounded-2xl text-sm font-extrabold hover:bg-gray-100 transition-all flex items-center justify-center gap-2"
+                className="mt-8 bg-white dark:bg-black text-black dark:text-white px-6 py-3 rounded-2xl text-sm font-extrabold hover:bg-gray-100 dark:hover:bg-gray-900 transition-all flex items-center justify-center gap-2"
               >
                 Go to Inbox
                 <ChevronRight className="w-4 h-4" />
@@ -160,18 +160,18 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-            <h4 className="font-bold text-gray-900 flex items-center gap-2 mb-6">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 border border-gray-100 dark:border-white/5 shadow-sm">
+            <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
               <Clock className="w-4 h-4 text-gray-400" />
               Upcoming Tasks
             </h4>
             <div className="space-y-5">
                <div className="flex items-center gap-3">
                  <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
-                 <p className="text-xs font-bold text-gray-700">Follow up with Propeller Digital</p>
+                 <p className="text-xs font-bold text-gray-700 dark:text-gray-300">Follow up with Propeller Digital</p>
                </div>
                <div className="flex items-center gap-3">
-                 <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
+                 <div className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-800" />
                  <p className="text-xs font-medium text-gray-400">Expand research in UK region</p>
                </div>
             </div>
@@ -192,13 +192,13 @@ function MetricCard({ title, value, icon, description, trend, highlight }: {
   highlight?: boolean
 }) {
   return (
-    <div className={`bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between group hover:shadow-xl hover:shadow-gray-100 transition-all duration-300 ${highlight ? "ring-2 ring-black ring-offset-2" : ""}`}>
+    <div className={`bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-3xl shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 flex flex-col justify-between group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300 ${highlight ? "ring-2 ring-black dark:ring-white ring-offset-2 dark:ring-offset-black" : ""}`}>
       <div className="flex justify-between items-start mb-6">
-        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+        <div className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
           {icon}
         </div>
         {trend && (
-          <div className="flex items-center gap-1 text-[10px] font-extrabold text-green-600 bg-green-50 px-2 py-1 rounded-full uppercase tracking-tight">
+          <div className="flex items-center gap-1 text-[10px] font-extrabold text-green-600 bg-green-50 dark:bg-green-950/30 px-2 py-1 rounded-full uppercase tracking-tight">
             <TrendingUp className="w-3 h-3" />
             {trend}
           </div>
@@ -206,7 +206,7 @@ function MetricCard({ title, value, icon, description, trend, highlight }: {
       </div>
       <div>
         <p className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-widest">{title}</p>
-        <h3 className="text-4xl font-black text-gray-900 tracking-tight">{value}</h3>
+        <h3 className="text-4xl font-black text-gray-900 dark:text-white tracking-tight">{value}</h3>
         {description && <p className="text-gray-400 text-xs mt-2 font-medium leading-relaxed">{description}</p>}
       </div>
     </div>
