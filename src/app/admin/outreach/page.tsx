@@ -19,9 +19,9 @@ export default async function OutreachPage() {
     },
   })
 
-  const noDraftLeads   = outreachLeads.filter(l => l.threads.length === 0 && l.stage === "approved")
-  const draftReady     = outreachLeads.filter(l => l.threads.length > 0 && l.stage !== "contacted")
-  const contacted      = outreachLeads.filter(l => l.stage === "contacted")
+  const noDraftLeads   = outreachLeads.filter((l: any) => l.threads.length === 0 && l.stage === "approved")
+  const draftReady     = outreachLeads.filter((l: any) => l.threads.length > 0 && l.stage !== "contacted")
+  const contacted      = outreachLeads.filter((l: any) => l.stage === "contacted")
 
   return (
     <div className="space-y-12 animate-fadein pb-12">
@@ -41,7 +41,7 @@ export default async function OutreachPage() {
              Awaiting AI Drafting ({noDraftLeads.length})
           </h2>
           <div className="grid grid-cols-1 gap-4">
-            {noDraftLeads.map(lead => (
+            {noDraftLeads.map((lead: any) => (
               <div key={lead.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 group hover:shadow-xl hover:shadow-gray-100 transition-all duration-300">
                 <div className="flex-1">
                   <h3 className="font-extrabold text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
@@ -70,7 +70,7 @@ export default async function OutreachPage() {
              Pending Human Approval ({draftReady.length})
           </h2>
           <div className="space-y-8">
-            {draftReady.map(lead => (
+            {draftReady.map((lead: any) => (
               <OutreachDraftCard 
                 key={lead.id} 
                 lead={lead} 
@@ -89,7 +89,7 @@ export default async function OutreachPage() {
              Mission Completed ({contacted.length})
           </h2>
           <div className="grid grid-cols-1 gap-4 opacity-70 hover:opacity-100 transition-opacity">
-            {contacted.map(lead => (
+            {contacted.map((lead: any) => (
               <div key={lead.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 transition-all hover:bg-gray-50/30">
                 <div className="flex-1">
                   <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">{lead.company.name}</h3>

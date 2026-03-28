@@ -38,7 +38,7 @@ export default async function UsersPage() {
                   <p>No team members yet. Invite someone using the form.</p>
                 </div>
               ) : (
-                users.map(user => (
+                users.map((user: any) => (
                   <div key={user.id} className={`px-6 py-4 flex items-center justify-between gap-4 ${!user.active ? "opacity-50" : ""}`}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export default async function UsersPage() {
                         <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium capitalize">
                           {user.role.replace("_", " ")}
                         </span>
-                        {user.assignments.map(a => (
+                        {user.assignments.map((a: any) => (
                           <span key={a.id} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <MapPin className="w-3 h-3" />{[a.region, a.niche].filter(Boolean).join(" · ")}
                           </span>
@@ -132,7 +132,7 @@ export default async function UsersPage() {
                 <label htmlFor="role" className="block text-xs font-semibold text-gray-600 mb-1.5">Role</label>
                 <select id="role" name="role"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
-                  {ROLES.map(r => (
+                  {ROLES.map((r: string) => (
                     <option key={r} value={r}>{r.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
                   ))}
                 </select>

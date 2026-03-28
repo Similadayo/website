@@ -34,7 +34,7 @@ export default async function LeadsPage({
 
   // Manual sort for Fit Score
   if (sort === "fit") {
-    allLeads.sort((a, b) => {
+    allLeads.sort((a: any, b: any) => {
       const scoreA = a.analyses[0]?.fitScore ?? 0
       const scoreB = b.analyses[0]?.fitScore ?? 0
       return order === "asc" ? scoreA - scoreB : scoreB - scoreA

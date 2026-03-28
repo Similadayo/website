@@ -115,7 +115,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
                 { label: "Found",    value: session.totalFound,    color: "text-gray-900" },
                 { label: "Analyzed", value: session.totalAnalyzed, color: "text-indigo-600" },
                 { label: "Skipped",  value: session.totalSkipped,  color: "text-amber-600" },
-              ].map(m => (
+              ].map((m: any) => (
                 <div key={m.label} className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
                   <div className={`text-2xl font-bold ${m.color}`}>{m.value}</div>
                   <div className="text-xs text-gray-400 mt-0.5">{m.label}</div>

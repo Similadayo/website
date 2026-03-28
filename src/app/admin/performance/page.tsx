@@ -43,19 +43,19 @@ export default async function PerformancePage() {
   const now = new Date()
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-  const leaderboard = users.map(user => {
+  const leaderboard = users.map((user: any) => {
     const totalLeads      = user.ownedLeads.length
-    const analyzedLeads   = user.ownedLeads.filter(l => !["new", "researching"].includes(l.stage)).length
-    const approvedLeads   = user.ownedLeads.filter(l => ["approved", "outreach_ready", "contacted", "replied", "booked_call", "closed_won"].includes(l.stage)).length
-    const contactedLeads  = user.ownedLeads.filter(l => ["contacted", "replied", "booked_call", "closed_won"].includes(l.stage)).length
-    const repliedLeads    = user.ownedLeads.filter(l => ["replied", "booked_call", "closed_won"].includes(l.stage)).length
-    const bookedCalls     = user.ownedLeads.filter(l => ["booked_call", "closed_won"].includes(l.stage)).length
-    const closedWon       = user.ownedLeads.filter(l => l.stage === "closed_won").length
+    const analyzedLeads   = user.ownedLeads.filter((l: any) => !["new", "researching"].includes(l.stage)).length
+    const approvedLeads   = user.ownedLeads.filter((l: any) => ["approved", "outreach_ready", "contacted", "replied", "booked_call", "closed_won"].includes(l.stage)).length
+    const contactedLeads  = user.ownedLeads.filter((l: any) => ["contacted", "replied", "booked_call", "closed_won"].includes(l.stage)).length
+    const repliedLeads    = user.ownedLeads.filter((l: any) => ["replied", "booked_call", "closed_won"].includes(l.stage)).length
+    const bookedCalls     = user.ownedLeads.filter((l: any) => ["booked_call", "closed_won"].includes(l.stage)).length
+    const closedWon       = user.ownedLeads.filter((l: any) => l.stage === "closed_won").length
 
-    const emailsSent = user.ownedLeads.reduce((sum, l) =>
-      sum + l.threads.reduce((ts, t) => ts + t.messages.length, 0), 0)
+    const emailsSent = user.ownedLeads.reduce((sum: number, l: any) =>
+      sum + l.threads.reduce((ts: number, t: any) => ts + t.messages.length, 0), 0)
 
-    const recentLeads = user.ownedLeads.filter(l => new Date(l.createdAt) > sevenDaysAgo).length
+    const recentLeads = user.ownedLeads.filter((l: any) => new Date(l.createdAt) > sevenDaysAgo).length
     const totalSessions = user.researchSessions.length
 
     const assignment = user.assignments[0]
@@ -103,7 +103,7 @@ export default async function PerformancePage() {
           { label: "Contacted",     value: totalContacted, icon: Send,         color: "text-indigo-600 bg-indigo-50 border-indigo-100" },
           { label: "Replies",       value: totalReplies,   icon: CheckCircle2, color: "text-green-600 bg-green-50 border-green-100" },
           { label: "Booked Calls",  value: totalBooked,    icon: Star,         color: "text-amber-600 bg-amber-50 border-amber-100" },
-        ].map(s => (
+        ].map((s: any) => (
           <div key={s.label} className={`p-4 rounded-xl border ${s.color} shadow-sm`}>
             <div className="flex items-center gap-2 mb-2">
               <s.icon className="w-4 h-4" />
@@ -139,7 +139,7 @@ export default async function PerformancePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {leaderboard.map((user, idx) => (
+              {leaderboard.map((user: any, idx: number) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-bold text-gray-400">{idx + 1}</td>
                   <td className="px-4 py-4">

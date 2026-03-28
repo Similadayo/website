@@ -108,7 +108,7 @@ export default async function AdminDashboardPage() {
               {recentActivity.length === 0 ? (
                 <div className="p-12 text-center text-gray-400 font-medium">No activity logged yet. Start researching!</div>
               ) : (
-                recentActivity.map(log => (
+                recentActivity.map((log: any) => (
                   <div key={log.id} className="p-6 flex items-start gap-4 hover:bg-gray-50/50 transition-colors group">
                     <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
                       log.actionType === "STAGE_CHANGE" && log.newValue === "contacted" ? "bg-green-500" :
