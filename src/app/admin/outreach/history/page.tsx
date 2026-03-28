@@ -70,7 +70,7 @@ export default async function OutreachHistoryPage({
                     </td>
                   </tr>
                 ) : (
-                  messages.map((msg) => {
+                  messages.map((msg: any) => {
                     const lead = msg.thread.lead
                     const contact = msg.thread.contact
                     return (

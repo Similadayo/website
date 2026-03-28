@@ -1,0 +1,52 @@
+
+> website@0.1.0 build
+> next build
+
+▲ Next.js 16.2.0 (Turbopack)
+- Environments: .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.4s
+  Running TypeScript ...
+  Finished TypeScript in 9.2s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/21) ...
+  Generating static pages using 7 workers (5/21) 
+  Generating static pages using 7 workers (10/21) 
+  Generating static pages using 7 workers (15/21) 
+✓ Generating static pages using 7 workers (21/21) in 881ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/companies
+├ ƒ /admin/companies/new
+├ ƒ /admin/leads
+├ ƒ /admin/leads/[id]
+├ ƒ /admin/outreach
+├ ƒ /admin/outreach/history
+├ ƒ /admin/performance
+├ ƒ /admin/reports
+├ ƒ /admin/research
+├ ƒ /admin/research/[id]
+├ ƒ /admin/settings
+├ ƒ /admin/users
+├ ƒ /api/admin/ai/analyze
+├ ƒ /api/auth/[...nextauth]
+├ ○ /contact
+├ ○ /demos
+├ ƒ /demos/[slug]
+├ ○ /icon.svg
+├ ○ /login
+├ ○ /offer
+└ ○ /process
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -236,7 +236,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               body: message.body,
               sentAt: message.sentAt
             } : undefined as any}
-            contactEmail={contact?.email}
+            contactEmail={contact?.email ?? undefined}
             canDraft={canDraft}
             canSend={canSend as boolean}
             onSend={sendLeadEmail}

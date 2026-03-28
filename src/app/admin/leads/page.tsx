@@ -117,7 +117,7 @@ export default async function LeadsPage({
                     </td>
                   </tr>
                 ) : (
-                  paginatedLeads.map((lead) => {
+                  paginatedLeads.map((lead: any) => {
                     const analysis = lead.analyses[0]
                     return (
                       <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">

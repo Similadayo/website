@@ -128,7 +128,7 @@ export default async function CompaniesPage({
                     </td>
                   </tr>
                 ) : (
-                  companies.map((company) => (
+                  companies.map((company: any) => (
                     <tr key={company.id} className="hover:bg-gray-50/50 transition-colors group">
                       <td className="px-8 py-6">
                         <div className="font-black text-gray-900 group-hover:text-black transition-colors text-base">{company.name}</div>

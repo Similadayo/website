@@ -5,7 +5,7 @@ import { Mail, SendHorizontal, BrainCircuit, CheckCircle2, AlertCircle, Loader2 
 
 interface OutreachSectionProps {
   leadId: string
-  message: {
+  message?: {
     id: string
     subject: string | null
     body: string
@@ -32,11 +32,11 @@ export function OutreachSection({
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
 
   const handleSend = async () => {
-    if (!contactEmail || !message.subject) return
+    if (!message || !contactEmail || !message.subject) return
     setIsSending(true)
     setResult(null)
     try {
-      const res = await onSend(leadId, contactEmail, message.subject, message.body, message.id)
+      const res = await onSend(leadId, contactEmail, message.subject!, message.body, message.id)
       if (res.success) {
         setResult({ success: true, message: "Email sent successfully!" })
       } else {
