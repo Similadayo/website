@@ -21,6 +21,31 @@ export async function startResearchSession(
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
+  const role = (session.user as any).role
+  const userId = session.user.id
+
+  // 0. Territory Validation for Researchers
+  if (role !== "super_admin") {
+    const assignment = await db.assignment.findFirst({
+      where: { userId, status: "active" }
+    })
+    
+    if (!assignment) {
+      redirect("/admin/research?error=no_assignment")
+    }
+
+    const assignedRegion = assignment.region?.toLowerCase()
+    const assignedNiche  = assignment.niche?.toLowerCase()
+
+    // Strict overlap check: Ensure the requested search matches their assigned territory
+    if (
+      (assignedRegion && !region.toLowerCase().includes(assignedRegion)) || 
+      (assignedNiche && !niche.toLowerCase().includes(assignedNiche))
+    ) {
+      redirect("/admin/research?error=outside_territory")
+    }
+  }
+
   if (!process.env.SERPER_API_KEY && !process.env.OPENAI_API_KEY) {
     redirect("/admin/research?error=no_search_key")
   }
@@ -57,7 +82,27 @@ export async function startResearchSession(
     for (const company of discovered) {
       const domain = company.domain || normalizeDomain(company.url)
       
-      // 3. Create company record
+      // 3. Global Deduplication Check
+      const existing = await db.company.findFirst({
+        where: { domain }
+      })
+
+      if (existing) {
+        await db.researchResult.create({
+          data: {
+            sessionId: researchSession.id,
+            companyId: existing.id,
+            name:      company.name,
+            domain:    domain ?? null,
+            status:    "duplicate",
+            note:      `Owned by ${existing.createdById === userId ? 'you' : 'another operative'}`,
+          },
+        })
+        skipped++
+        continue
+      }
+
+      // 4. Create company record
       let newCompany: Awaited<ReturnType<typeof db.company.create>>
       try {
         newCompany = await db.company.create({
@@ -68,7 +113,7 @@ export async function startResearchSession(
             niche:       company.category || niche,
             location:    company.address || region,
             summary:     company.description || null,
-            createdById: session.user.id,
+            createdById: userId,
           },
         })
       } catch {

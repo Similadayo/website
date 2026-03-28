@@ -3,6 +3,7 @@ import { Users, Clock, CheckCircle2, XCircle, ArrowUpDown, ArrowUp, ArrowDown } 
 import Link from "next/link"
 import { STAGE_LABELS, LeadStage } from "@/lib/stages"
 import { Pagination } from "@/components/admin/Pagination"
+import { getAccessScope } from "@/lib/auth/scope"
 
 export default async function LeadsPage({
   searchParams,
@@ -13,6 +14,8 @@ export default async function LeadsPage({
   const currentPage = Number(page) || 1
   const pageSize = 10
   
+  const scope = await getAccessScope()
+
   // Sorting logic mapping for standard fields
   const sortMap: Record<string, any> = {
     name: { company: { name: order } },
@@ -25,6 +28,7 @@ export default async function LeadsPage({
   const isSpecialSort = sort === "fit"
   
   let allLeads = await db.lead.findMany({
+    where: scope.leadsFilter,
     orderBy: isSpecialSort ? undefined : (sortMap[sort] || { createdAt: "desc" }),
     include: {
       company: true,

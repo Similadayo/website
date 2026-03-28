@@ -1,7 +1,5 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Building2,
@@ -13,9 +11,13 @@ import {
   Shield,
   Search,
   Trophy,
-  Clock
+  Clock,
+  MapPin,
+  Target
 } from "lucide-react"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 
 const navigation = [
   { name: "Dashboard",   href: "/admin",             icon: LayoutDashboard },
@@ -32,6 +34,11 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const user = session?.user as any
+
+  const isResearcher = user?.role === "researcher"
+  const assignment = user?.assignment
 
   return (
     <div className="flex flex-col w-72 h-full bg-white border-r border-gray-100 relative z-40">
@@ -46,6 +53,9 @@ export function Sidebar() {
 
       <nav className="flex-1 px-4 space-y-1 py-1">
         {navigation.map((item) => {
+          // Hide "Users" for researchers
+          if (item.href === "/admin/users" && isResearcher) return null
+
           // Handle specific overlap between /admin/outreach and /admin/outreach/history
           let isActive = false
           if (item.href === "/admin" || item.href === "/admin/outreach") {
@@ -70,6 +80,31 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Territory Indicator for Researchers */}
+      {isResearcher && assignment && (
+        <div className="px-5 py-4 mx-4 mb-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 animate-fadein">
+           <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-2 flex items-center gap-1.5 leading-none">
+             <MapPin className="w-3 h-3" /> Active Territory
+           </p>
+           <div className="space-y-1">
+             <p className="text-sm font-black text-emerald-900 truncate">{assignment.region || "Global"}</p>
+             <p className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-tight truncate italic">
+               {assignment.niche || "General"} Niche
+             </p>
+           </div>
+        </div>
+      )}
+
+      {/* Admin Indicator for Super Admins */}
+      {!isResearcher && user?.role === "super_admin" && (
+        <div className="px-5 py-4 mx-4 mb-4 bg-gray-50 rounded-2xl border border-gray-100 italic transition-all hover:bg-gray-100/50">
+           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+             <Shield className="w-3 h-3 text-indigo-500" /> Command Mode
+           </p>
+           <p className="text-xs font-bold text-gray-600">Global Oversight</p>
+        </div>
+      )}
 
       <div className="p-4 border-t border-gray-100 mt-auto">
         <button 

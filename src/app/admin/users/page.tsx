@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
-import { Shield, UserCheck, UserX, Plus, MapPin } from "lucide-react"
+import { Shield, UserCheck, UserX, Plus, MapPin, Target, Mail } from "lucide-react"
 import { createUser, toggleUserActive, upsertAssignment } from "./actions"
 
 const ROLES = ["super_admin", "researcher", "reviewer", "outreach"] as const
@@ -16,53 +16,63 @@ export default async function UsersPage() {
   })
 
   return (
-    <div className="space-y-8 animate-fadein">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-          <Shield className="w-6 h-6 text-indigo-600" /> Team Management
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Manage user accounts, roles, and assignments.</p>
+    <div className="space-y-12 animate-fadein pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
+            <Shield className="w-8 h-8 text-black" /> 
+            Command Center
+          </h1>
+          <p className="text-gray-500 text-sm mt-1 font-medium italic">Manage administrative clearance and territory assignments for the operations team.</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
 
         {/* User list */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Team Members ({users.length})</h2>
+        <div className="xl:col-span-2 space-y-6">
+          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-gray-100 transition-all duration-300">
+            <div className="px-10 py-8 border-b border-gray-50 flex items-center justify-between">
+              <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest">Active Operatives ({users.length})</h2>
             </div>
             <div className="divide-y divide-gray-50">
               {users.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 text-sm">
-                  <p>No team members yet. Invite someone using the form.</p>
+                <div className="text-center py-20 text-gray-400">
+                  <p className="font-bold uppercase tracking-widest text-xs">No personnel detected</p>
                 </div>
               ) : (
                 users.map((user: any) => (
-                  <div key={user.id} className={`px-6 py-4 flex items-center justify-between gap-4 ${!user.active ? "opacity-50" : ""}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900 truncate">{user.name ?? "—"}</span>
-                        {user.id === session?.user?.id && (
-                          <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">You</span>
-                        )}
-                        {!user.active && (
-                          <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">Inactive</span>
-                        )}
+                  <div key={user.id} className={`px-10 py-8 flex items-start justify-between gap-8 transition-colors ${!user.active ? "opacity-40 grayscale" : "hover:bg-gray-50/30"}`}>
+                    <div className="flex-1 space-y-4">
+                      <div className="flex items-center gap-4">
+                         <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center border border-gray-200 overflow-hidden font-black text-gray-400 text-lg">
+                           {user.image ? <img src={user.image} className="w-full h-full object-cover" /> : user.name?.[0] || 'U'}
+                         </div>
+                         <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-black text-gray-900 tracking-tight">{user.name ?? "—"}</span>
+                              {user.id === session?.user?.id && (
+                                <span className="text-[10px] font-black uppercase tracking-widest bg-black text-white px-2.5 py-1 rounded-lg">Master</span>
+                              )}
+                            </div>
+                            <p className="text-xs font-bold text-gray-400 flex items-center gap-1.5 mt-0.5">
+                              <Mail className="w-3.5 h-3.5 opacity-40" /> {user.email}
+                            </p>
+                         </div>
                       </div>
-                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
-                      <div className="flex gap-2 mt-1 flex-wrap items-center">
-                        <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium capitalize">
+
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <span className="text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-600 px-3 py-1.5 rounded-xl border border-gray-200">
                           {user.role.replace("_", " ")}
                         </span>
                         {user.assignments.map((a: any) => (
-                          <span key={a.id} className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />{[a.region, a.niche].filter(Boolean).join(" · ")}
+                          <span key={a.id} className="text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5" /> {a.region || "Global"} · {a.niche || "General"}
                           </span>
                         ))}
                       </div>
 
-                      {/* Inline assignment form */}
+                      {/* Professional assignment form */}
                       <form action={async (fd: FormData) => {
                         "use server"
                         await upsertAssignment(
@@ -70,36 +80,50 @@ export default async function UsersPage() {
                           fd.get("region") as string ?? "",
                           fd.get("niche")  as string ?? ""
                         )
-                      }} className="flex gap-2 mt-2 flex-wrap">
-                        <input
-                          name="region"
-                          defaultValue={user.assignments[0]?.region ?? ""}
-                          placeholder="Region (e.g. London)"
-                          className="text-xs border border-gray-200 rounded px-2 py-1.5 w-36 focus:ring-1 focus:ring-indigo-400 outline-none"
-                        />
-                        <input
-                          name="niche"
-                          defaultValue={user.assignments[0]?.niche ?? ""}
-                          placeholder="Niche (e.g. Recruitment)"
-                          className="text-xs border border-gray-200 rounded px-2 py-1.5 w-40 focus:ring-1 focus:ring-indigo-400 outline-none"
-                        />
+                      }} className="flex items-center gap-3 pt-2">
+                        <div className="relative group/input">
+                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within/input:text-black transition-colors" />
+                           <input
+                            name="region"
+                            defaultValue={user.assignments[0]?.region ?? ""}
+                            placeholder="Set Region..."
+                            className="pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl text-[11px] font-bold focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all w-40 placeholder:text-gray-300"
+                          />
+                        </div>
+                        <div className="relative group/input">
+                           <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within/input:text-black transition-colors" />
+                           <input
+                            name="niche"
+                            defaultValue={user.assignments[0]?.niche ?? ""}
+                            placeholder="Set Niche..."
+                            className="pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl text-[11px] font-bold focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all w-44 placeholder:text-gray-300"
+                          />
+                        </div>
                         <button type="submit"
-                          className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded hover:bg-emerald-700 transition-colors font-medium">
-                          Save
+                          className="bg-black text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all active:scale-95 shadow-lg shadow-gray-100">
+                          Assign
                         </button>
                       </form>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 text-sm text-gray-500">
-                      <span className="tabular-nums">{user._count.ownedLeads} leads</span>
+
+                    <div className="flex flex-col items-end gap-4 flex-shrink-0">
+                      <div className="text-right">
+                        <p className="text-xl font-black text-gray-900 tracking-tighter tabular-nums leading-none">{user._count.ownedLeads}</p>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">{user._count.ownedLeads === 1 ? 'Mission' : 'Missions'}</p>
+                      </div>
+                      
                       {user.id !== session?.user?.id && (
                         <form action={async () => {
                           "use server"
                           await toggleUserActive(user.id, !user.active)
                         }}>
                           <button type="submit"
-                            className={`p-1.5 rounded-lg transition-colors ${user.active ? "hover:bg-red-50 text-gray-400 hover:text-red-500" : "hover:bg-green-50 text-gray-400 hover:text-green-500"}`}
-                            title={user.active ? "Deactivate" : "Activate"}>
-                            {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                            className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95 ${
+                              user.active 
+                                ? "bg-white text-gray-400 border-gray-100 hover:text-red-500 hover:bg-red-50 hover:border-red-100" 
+                                : "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100"
+                            }`}>
+                            {user.active ? "Suspend" : "Restore"}
                           </button>
                         </form>
                       )}
@@ -112,39 +136,46 @@ export default async function UsersPage() {
         </div>
 
         {/* Add user form */}
-        <div>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <h2 className="font-semibold text-gray-900 mb-5 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-indigo-500" /> Add Team Member
+        <div className="space-y-8">
+          <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 group hover:shadow-xl hover:shadow-gray-100 transition-all duration-300">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
+              <Plus className="w-5 h-5 text-black" /> Onboard Operative
             </h2>
-            <form action={createUser} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-xs font-semibold text-gray-600 mb-1.5">Full Name</label>
+            <form action={createUser} className="space-y-6">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Personnel Name</label>
                 <input id="name" name="name" type="text" required placeholder="Jane Smith"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                  className="w-full px-6 py-4 border border-gray-100 bg-gray-50/50 rounded-2xl text-sm font-bold focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all placeholder:text-gray-300" />
               </div>
-              <div>
-                <label htmlFor="email" className="block text-xs font-semibold text-gray-600 mb-1.5">Email</label>
-                <input id="email" name="email" type="email" required placeholder="jane@brancr.co"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+              <div className="space-y-2">
+                <label htmlFor="email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Clearance Email</label>
+                <input id="email" name="email" type="email" required placeholder="jane@brancr.com"
+                  className="w-full px-6 py-4 border border-gray-100 bg-gray-50/50 rounded-2xl text-sm font-bold focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all placeholder:text-gray-300" />
               </div>
-              <div>
-                <label htmlFor="role" className="block text-xs font-semibold text-gray-600 mb-1.5">Role</label>
+              <div className="space-y-2">
+                <label htmlFor="role" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Operational Role</label>
                 <select id="role" name="role"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-white">
+                  className="w-full px-6 py-4 border border-gray-100 bg-gray-50/50 rounded-2xl text-sm font-bold focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all appearance-none cursor-pointer">
                   {ROLES.map((r: string) => (
-                    <option key={r} value={r}>{r.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</option>
+                    <option key={r} value={r}>{r.replace("_", " ").toUpperCase()}</option>
                   ))}
                 </select>
               </div>
               <button type="submit"
-                className="w-full bg-indigo-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-indigo-700 transition-colors">
-                Add Member
+                className="w-full bg-black text-white text-[10px] font-black uppercase tracking-[0.3em] py-5 rounded-2xl hover:bg-gray-800 transition-all active:scale-95 shadow-2xl shadow-gray-200 flex items-center justify-center gap-3">
+                Initialize Operative
               </button>
-              <p className="text-xs text-gray-400 text-center">
-                User will sign in via Google or set a password on first login.
-              </p>
             </form>
+          </div>
+
+          <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-gray-200">
+             <div className="flex items-center gap-3 mb-4">
+                <Target className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-xs font-black uppercase tracking-widest">Protocol Reminder</h3>
+             </div>
+             <p className="text-[11px] text-gray-400 font-medium leading-relaxed italic">
+               Assignments define the operational footprint. Researchers will only see intel and outreach targets from their assigned sectors.
+             </p>
           </div>
         </div>
 

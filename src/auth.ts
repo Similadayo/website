@@ -58,18 +58,37 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
         // We cast because auth.ts types for User might need module augmentation
         token.role = (user as any).role
+        token.name = user.name
       }
+      
+      // Handle session updates from the client (e.g. name change in settings)
+      if (trigger === "update" && session?.name) {
+        token.name = session.name
+      }
+      
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
         ;(session.user as any).role = token.role as string
+        
+        // Fetch fresh assignments for the session
+        const assignment = await db.assignment.findFirst({
+          where: { userId: token.id as string, status: "active" }
+        })
+        
+        if (assignment) {
+          ;(session.user as any).assignment = {
+            region: assignment.region,
+            niche: assignment.niche
+          }
+        }
       }
       return session
     }

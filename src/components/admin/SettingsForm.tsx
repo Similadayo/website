@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { User, Mail, Shield, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { useSession } from "next-auth/react"
 import { updateUserSettings } from "@/app/admin/settings/actions"
 
 interface SettingsFormProps {
@@ -14,6 +15,7 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ user }: SettingsFormProps) {
+  const { data: session, update } = useSession()
   const [name, setName] = useState(user.name || "")
   const [senderEmail, setSenderEmail] = useState(user.senderEmail || "")
   const [isSaving, setIsSaving] = useState(false)
@@ -27,6 +29,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
     try {
       const res = await updateUserSettings({ name, senderEmail })
       if (res.success) {
+        // Trigger session update to refresh the name globally in the UI
+        await update({ name })
         setStatus({ success: true, message: "Settings updated successfully!" })
       } else {
         setStatus({ success: false, message: res.error || "Failed to update settings" })

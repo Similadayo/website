@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { Building2, Plus, ExternalLink, Search, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 import { Pagination } from "@/components/admin/Pagination"
+import { getAccessScope } from "@/lib/auth/scope"
 
 export default async function CompaniesPage({
   searchParams,
@@ -12,13 +13,18 @@ export default async function CompaniesPage({
   const currentPage = Number(page) || 1
   const pageSize = 10
 
-  const where = q ? {
-    OR: [
-      { name: { contains: q } },
-      { domain: { contains: q } },
-      { niche: { contains: q } }
-    ]
-  } : {}
+  const scope = await getAccessScope()
+
+  const where = {
+    ...scope.companiesFilter,
+    ...(q ? {
+      OR: [
+        { name: { contains: q } },
+        { domain: { contains: q } },
+        { niche: { contains: q } }
+      ]
+    } : {})
+  }
 
   const sortMap: Record<string, any> = {
     name: { name: order },
