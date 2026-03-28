@@ -108,7 +108,7 @@ export default async function ReportsPage() {
             <Users className="w-4 h-4 text-blue-500" /> Leads by Stage
           </h2>
           <div className="space-y-2">
-            {(Object.entries(stageMap) as [string, number][]).sort((a, b) => b[1] - a[1]).map(([stage, count]) => (
+            {(Object.entries(stageMap) as [string, number][]).sort((a: any, b: any) => b[1] - a[1]).map(([stage, count]) => (
               <div key={stage} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
                 <span className="text-gray-600">{STAGE_LABELS[stage as LeadStage] ?? stage}</span>
                 <span className="font-bold text-gray-900 tabular-nums">{count}</span>
@@ -128,7 +128,7 @@ export default async function ReportsPage() {
               <p className="text-gray-400 text-sm italic">No assignments yet.</p>
             ) : (
               researcherStats
-                .sort((a, b) => b._count._all - a._count._all)
+                .sort((a: any, b: any) => b._count._all - a._count._all)
                 .map((r: any) => (
                   <div key={r.ownerId} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
                     <span className="text-gray-700">{researcherMap[r.ownerId!] ?? "Unknown"}</span>
