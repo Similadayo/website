@@ -31,7 +31,7 @@ export function extractContacts(html: string, baseUrl: string): ExtractedContact
 
   for (const email of rawEmails) {
     const lower = email.toLowerCase()
-    if (SKIP_EMAILS.some(skip => lower.startsWith(skip))) continue
+    if (SKIP_EMAILS.some((skip: string) => lower.startsWith(skip))) continue
     // Skip image/asset extensions
     if (/\.(png|jpg|jpeg|gif|svg|webp|css|js)$/i.test(lower)) continue
     if (!seen.has(lower)) {

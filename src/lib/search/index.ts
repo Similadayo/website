@@ -63,7 +63,7 @@ export async function discoverCompanies(
 
   // No Serper key — fallback to GPT discovery
   const gptResults = await discoverViaGPT(niche, region, count)
-  return gptResults.map(r => ({
+  return gptResults.map((r: any) => ({
     ...r,
     phone:       null,
     address:     null,

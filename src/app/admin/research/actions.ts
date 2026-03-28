@@ -40,11 +40,11 @@ export async function startResearchSession(
     
     // 1b. Filter out existing domains to "search for only new data"
     const existingDomains = await db.company.findMany({
-      where: { domain: { in: discoveredRaw.map(d => d.domain).filter(Boolean) as string[] } },
+      where: { domain: { in: discoveredRaw.map((d: any) => d.domain).filter(Boolean) as string[] } },
       select: { domain: true }
     })
-    const existingSet = new Set(existingDomains.map(e => e.domain))
-    const discovered = discoveredRaw.filter(d => !existingSet.has(d.domain)).slice(0, 40)
+    const existingSet = new Set(existingDomains.map((e: any) => e.domain))
+    const discovered = discoveredRaw.filter((d: any) => !existingSet.has(d.domain)).slice(0, 40)
 
     await db.researchSession.update({
       where: { id: researchSession.id },
