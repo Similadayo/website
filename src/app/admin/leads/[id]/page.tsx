@@ -312,7 +312,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               {lead.activityLogs.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">No activity recorded.</p>
               ) : (
-                lead.activityLogs.map(log => (
+                lead.activityLogs.map((log: any) => (
                   <div key={log.id} className="text-sm flex gap-3">
                     <div className="w-2 relative mt-1.5 flex-shrink-0 flex justify-center">
                       <div className="w-2 h-2 rounded-full bg-blue-400 z-10" />
