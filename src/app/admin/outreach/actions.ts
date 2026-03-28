@@ -11,105 +11,113 @@ import { logStageChange } from "@/lib/activity-log"
 
 // ── Generate outreach sequence (3 steps) ──────────────────────────────────────────
 
-export async function generateOutreachSequence(leadId: string): Promise<void> {
-  const session = await auth()
-  if (!session?.user?.id) redirect("/login")
+export async function generateOutreachSequence(leadId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) redirect("/login")
 
-  const lead = await db.lead.findUnique({
-    where: { id: leadId },
-    include: {
-      company: { include: { contacts: { take: 5 } } },
-      analyses: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
-  })
-
-  if (!lead) throw new Error("Lead not found")
-  if (!["analyzed", "approved", "outreach_ready"].includes(lead.stage)) {
-    throw new Error("Lead must be analyzed or approved before generating outreach")
-  }
-
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set")
-  }
-
-  const analysis = lead.analyses[0]
-  const contact  = lead.company.contacts.find(c => c.email) || lead.company.contacts[0]
-  const company  = lead.company
-
-  const prompt = [
-    `Write a 3-step strategic cold outreach sequence for this company.`,
-    `Company: ${company.name}`,
-    company.niche    ? `Industry: ${company.niche}` : "",
-    analysis?.companySummary ? `What they do: ${analysis.companySummary}` : "",
-    analysis?.outreachAngle  ? `Initial outreach angle: ${analysis.outreachAngle}` : "",
-    analysis?.painPoints ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}` : "",
-    contact?.roleTitle ? `Contact role: ${contact.roleTitle}` : "",
-    ``,
-    `Sequence Structure:`,
-    `Step 1: Mission Launch - Intro + specific pain point + value prop. (0 delay)`,
-    `Step 2: Escalation - Deeper value or small case-study/social proof. (3 day delay)`,
-    `Step 3: Signal Intercept - Quick low-friction check-in/breakup. (7 day delay)`,
-    ``,
-    `Rules:`,
-    `- Keep emails short (3-4 sentences)`,
-    `- Direct, professional, no fluff`,
-    `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
-    `- Return a JSON object with a "sequence" key holding an array of 3 objects: { subject, body, delayDays, stepNumber }`,
-  ].join("\n")
-
-  const { default: OpenAI } = await import("openai")
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-    temperature: 0.7,
-  })
-
-  const raw = res.choices[0]?.message?.content ?? "{}"
-  const parsed = JSON.parse(raw)
-  const steps = parsed.sequence || []
-
-  let thread = await db.outreachThread.findFirst({
-    where: { leadId, status: { in: ["drafted", "ready"] } },
-  })
-
-  if (!thread) {
-    thread = await db.outreachThread.create({
-      data: {
-        leadId,
-        contactId: contact?.id ?? null,
-        channel:   "email",
-        status:    "drafted",
+    const lead = await db.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        company: { include: { contacts: { take: 5 } } },
+        analyses: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     })
-  }
 
-  // Clear existing drafted/unreviewed messages to start fresh
-  await db.outreachMessage.deleteMany({
-    where: { threadId: thread.id, sentAt: null }
-  })
+    if (!lead) return { success: false, error: "Lead not found" }
+    
+    if (!["analyzed", "approved", "outreach_ready"].includes(lead.stage)) {
+      return { success: false, error: "Lead must be analyzed or approved before generating outreach" }
+    }
 
-  for (const step of steps) {
-    await db.outreachMessage.create({
-      data: {
-        threadId:       thread.id,
-        subject:        step.subject,
-        body:           step.body,
-        stepNumber:     step.stepNumber || 1,
-        delayDays:      step.delayDays || 0,
-        generatedByAi:  true,
-      },
+    if (!process.env.OPENAI_API_KEY) {
+      return { success: false, error: "OPENAI_API_KEY is not set" }
+    }
+
+    const analysis = lead.analyses[0]
+    const contact  = lead.company.contacts.find(c => c.email) || lead.company.contacts[0]
+    const company  = lead.company
+
+    const prompt = [
+      `Write a 3-step strategic cold outreach sequence for this company.`,
+      `Company: ${company.name}`,
+      company.niche    ? `Industry: ${company.niche}` : "",
+      analysis?.companySummary ? `What they do: ${analysis.companySummary}` : "",
+      analysis?.outreachAngle  ? `Initial outreach angle: ${analysis.outreachAngle}` : "",
+      analysis?.painPoints ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}` : "",
+      contact?.roleTitle ? `Contact role: ${contact.roleTitle}` : "",
+      ``,
+      `Sequence Structure:`,
+      `Step 1: Mission Launch - Intro + specific pain point + value prop. (0 delay)`,
+      `Step 2: Escalation - Deeper value or small case-study/social proof. (3 day delay)`,
+      `Step 3: Signal Intercept - Quick low-friction check-in/breakup. (7 day delay)`,
+      ``,
+      `Rules:`,
+      `- Keep emails short (3-4 sentences)`,
+      `- Direct, professional, no fluff`,
+      `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
+      `- Return a JSON object with a "sequence" key holding an array of 3 objects: { subject, body, delayDays, stepNumber }`,
+    ].join("\n")
+
+    const { default: OpenAI } = await import("openai")
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+    const res = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
     })
-  }
 
-  if (lead.stage === "approved" && isValidTransition("approved", "outreach_ready")) {
-    await db.lead.update({ where: { id: leadId }, data: { stage: "outreach_ready" } })
-  }
+    const raw = res.choices[0]?.message?.content ?? "{}"
+    const parsed = JSON.parse(raw)
+    const steps = parsed.sequence || []
 
-  revalidatePath("/admin/outreach")
-  revalidatePath(`/admin/leads/${leadId}`)
+    let thread = await db.outreachThread.findFirst({
+      where: { leadId, status: { in: ["drafted", "ready"] } },
+    })
+
+    if (!thread) {
+      thread = await db.outreachThread.create({
+        data: {
+          leadId,
+          contactId: contact?.id ?? null,
+          channel:   "email",
+          status:    "drafted",
+        },
+      })
+    }
+
+    // Clear existing drafted/unreviewed messages to start fresh
+    await db.outreachMessage.deleteMany({
+      where: { threadId: thread.id, sentAt: null }
+    })
+
+    for (const step of steps) {
+      await db.outreachMessage.create({
+        data: {
+          threadId:       thread.id,
+          subject:        step.subject,
+          body:           step.body,
+          stepNumber:     step.stepNumber || 1,
+          delayDays:      step.delayDays || 0,
+          generatedByAi:  true,
+        },
+      })
+    }
+
+    if (lead.stage === "approved" && isValidTransition("approved", "outreach_ready")) {
+      await db.lead.update({ where: { id: leadId }, data: { stage: "outreach_ready" } })
+    }
+
+    revalidatePath("/admin/outreach")
+    revalidatePath(`/admin/leads/${leadId}`)
+    
+    return { success: true }
+  } catch (err: any) {
+    console.error("Sequence generation error:", err)
+    return { success: false, error: err.message }
+  }
 }
 
 export async function updateOutreachMessage(

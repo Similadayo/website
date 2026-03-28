@@ -16,7 +16,7 @@ interface OutreachSectionProps {
   contactEmail?: string
   canDraft: boolean
   canSend: boolean
-  onSend: (leadId: string, to: string, subject: string, body: string, messageId: string) => Promise<{ success: boolean; error?: string }>
+  onSend: (leadId: string, to: string, subject: string, body: string, messageId?: string) => Promise<{ success: boolean; error?: string }>
   onGenerateSequence: (leadId: string) => Promise<{ success: boolean; error?: string }>
 }
 
