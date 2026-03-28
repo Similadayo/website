@@ -18,16 +18,21 @@ export const metadata: Metadata = {
 };
 
 
+import { SiteWrapper } from "@/components/layout/SiteWrapper";
+import { AuthProvider } from "@/components/layout/AuthProvider";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
       <head />
-      <body className={`${inter.variable} ${outfit.variable}`} style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <ThemeProvider>
-          <Navbar />
-          <main style={{ flex: 1, paddingTop: "68px" }}>{children}</main>
-          <Footer />
-        </ThemeProvider>
+      <body className={`${inter.variable} ${outfit.variable}`} style={{ minHeight: "100vh" }}>
+        <AuthProvider>
+          <ThemeProvider>
+            <SiteWrapper>
+              {children}
+            </SiteWrapper>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );
