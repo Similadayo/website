@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import Link from "next/link"
-import { Search, Clock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Search, Clock, CheckCircle2, AlertCircle, Loader2, Target } from "lucide-react"
 import { startResearchSession } from "./actions"
 import { ResearchStartButton } from "@/components/admin/ResearchStartButton"
 import { Pagination } from "@/components/admin/Pagination"

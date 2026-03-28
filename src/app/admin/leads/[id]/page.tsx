@@ -6,7 +6,7 @@ import {
   ExternalLink, Activity, AlertCircle, Loader2, Mail, Phone, Linkedin,
   SendHorizontal
 } from "lucide-react"
-import { updateLeadStage, runLeadAIAnalysis, generateNewOutreachDraft, sendLeadEmail, startDeepRecon, pushToCRM } from "./actions"
+import { updateLeadStage, runLeadAIAnalysis, generateOutreachSequence, sendLeadEmail, startDeepRecon, pushToCRM } from "./actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 
@@ -19,7 +19,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       analyses:    { orderBy: { createdAt: "desc" }, take: 1 },
       threads: {
         include: {
-          messages: { orderBy: { createdAt: "desc" }, take: 1 }
+          messages: { orderBy: { createdAt: "asc" } }
         }
       },
       activityLogs: {
@@ -34,7 +34,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   const analysis   = lead.analyses[0]
   const thread     = lead.threads[0]
-  const message    = thread?.messages[0]
+  const messages   = thread?.messages || []
   const contact    = lead.company.contacts.find((c: any) => c.email) || lead.company.contacts[0]
 
   const stageLabel = STAGE_LABELS[lead.stage as keyof typeof STAGE_LABELS] ?? lead.stage
@@ -42,7 +42,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const canReject  = !["rejected", "closed_won", "closed_lost"].includes(lead.stage)
   const canAnalyze = ["new", "researching", "analyzed"].includes(lead.stage)
   const canDraft   = ["analyzed", "approved", "outreach_ready"].includes(lead.stage)
-  const canSend    = message && !message.sentAt && contact?.email && ["outreach_ready", "approved", "analyzed"].includes(lead.stage)
+  const canSend    = messages.some((m: any) => !m.sentAt) && contact?.email && ["outreach_ready", "approved", "analyzed"].includes(lead.stage)
 
   return (
     <div className="space-y-6 animate-fadein pb-12">

@@ -184,6 +184,8 @@ model OutreachMessage {
   reviewedByUser     Boolean  @default(false)
   sentAt             DateTime?
   providerMessageId  String?
+  stepNumber         Int      @default(1)
+  delayDays          Int      @default(0)
   createdAt          DateTime @default(now())
 
   thread OutreachThread @relation(fields: [threadId], references: [id], onDelete: Cascade)

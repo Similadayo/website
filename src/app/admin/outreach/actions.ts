@@ -9,14 +9,16 @@ import { logStageChange } from "@/lib/activity-log"
 
 // ── Generate outreach draft ──────────────────────────────────────────────────
 
-export async function generateOutreachDraft(leadId: string): Promise<void> {
+// ── Generate outreach sequence (3 steps) ──────────────────────────────────────────
+
+export async function generateOutreachSequence(leadId: string): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
   const lead = await db.lead.findUnique({
     where: { id: leadId },
     include: {
-      company: { include: { contacts: { take: 1 } } },
+      company: { include: { contacts: { take: 5 } } },
       analyses: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   })
@@ -31,33 +33,29 @@ export async function generateOutreachDraft(leadId: string): Promise<void> {
   }
 
   const analysis = lead.analyses[0]
-  const contact  = lead.company.contacts[0]
+  const contact  = lead.company.contacts.find(c => c.email) || lead.company.contacts[0]
   const company  = lead.company
 
   const prompt = [
-    `Write a short, personalised cold outreach email for this company.`,
+    `Write a 3-step strategic cold outreach sequence for this company.`,
     `Company: ${company.name}`,
     company.niche    ? `Industry: ${company.niche}` : "",
-    company.location ? `Location: ${company.location}` : "",
     analysis?.companySummary ? `What they do: ${analysis.companySummary}` : "",
-    analysis?.outreachAngle  ? `Recommended angle: ${analysis.outreachAngle}` : "",
-    analysis?.painPoints
-      ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}`
-      : "",
+    analysis?.outreachAngle  ? `Initial outreach angle: ${analysis.outreachAngle}` : "",
+    analysis?.painPoints ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}` : "",
     contact?.roleTitle ? `Contact role: ${contact.roleTitle}` : "",
     ``,
-    `Rules:`,
-    `- 3-4 sentences max`,
-    `- Direct, professional, no fluff`,
-    `- Focus on one specific pain point`,
-    `- End with a clear low-friction CTA`,
-    `- Do NOT use generic phrases like "I hope this finds you well"`,
-    `- The sign-off MUST be exactly: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
-    `- Ensure there are exactly two newlines before the sign-off`,
-    `- Do NOT use the placeholder [Your Name] under any circumstances`,
+    `Sequence Structure:`,
+    `Step 1: Mission Launch - Intro + specific pain point + value prop. (0 delay)`,
+    `Step 2: Escalation - Deeper value or small case-study/social proof. (3 day delay)`,
+    `Step 3: Signal Intercept - Quick low-friction check-in/breakup. (7 day delay)`,
     ``,
-    `Return JSON: { "subject": "...", "body": "..." }`,
-  ].filter(Boolean).join("\n")
+    `Rules:`,
+    `- Keep emails short (3-4 sentences)`,
+    `- Direct, professional, no fluff`,
+    `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
+    `- Return a JSON object with a "sequence" key holding an array of 3 objects: { subject, body, delayDays, stepNumber }`,
+  ].join("\n")
 
   const { default: OpenAI } = await import("openai")
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -67,14 +65,11 @@ export async function generateOutreachDraft(leadId: string): Promise<void> {
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
     temperature: 0.7,
-    max_tokens: 400,
   })
 
   const raw = res.choices[0]?.message?.content ?? "{}"
-  const { subject, body } = JSON.parse(raw) as { subject?: string; body?: string }
-
-  // Clean up any [Your Name] the AI might have still included (redundancy)
-  const cleanBody = body?.replace(/\[Your Name\]/gi, session.user.name || "Brancr Team")
+  const parsed = JSON.parse(raw)
+  const steps = parsed.sequence || []
 
   let thread = await db.outreachThread.findFirst({
     where: { leadId, status: { in: ["drafted", "ready"] } },
@@ -91,22 +86,26 @@ export async function generateOutreachDraft(leadId: string): Promise<void> {
     })
   }
 
-  await db.outreachMessage.create({
-    data: {
-      threadId:       thread.id,
-      subject:        subject ?? `Reaching out — ${company.name}`,
-      body:           cleanBody ?? "",
-      generatedByAi:  true,
-      reviewedByUser: false,
-    },
+  // Clear existing drafted/unreviewed messages to start fresh
+  await db.outreachMessage.deleteMany({
+    where: { threadId: thread.id, sentAt: null }
   })
+
+  for (const step of steps) {
+    await db.outreachMessage.create({
+      data: {
+        threadId:       thread.id,
+        subject:        step.subject,
+        body:           step.body,
+        stepNumber:     step.stepNumber || 1,
+        delayDays:      step.delayDays || 0,
+        generatedByAi:  true,
+      },
+    })
+  }
 
   if (lead.stage === "approved" && isValidTransition("approved", "outreach_ready")) {
     await db.lead.update({ where: { id: leadId }, data: { stage: "outreach_ready" } })
-    await logStageChange({
-      leadId, actorId: session.user.id,
-      from: "approved", to: "outreach_ready", reason: "Outreach draft generated",
-    })
   }
 
   revalidatePath("/admin/outreach")
