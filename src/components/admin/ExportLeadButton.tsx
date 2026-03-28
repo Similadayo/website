@@ -38,7 +38,7 @@ export function ExportLeadButton({ leads }: ExportLeadButtonProps) {
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Export failure:", err)
     } finally {
       setIsExporting(false)

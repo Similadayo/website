@@ -29,7 +29,7 @@ export default function Contact() {
       } else {
         setError(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(true);
     } finally {
       setLoading(false);

@@ -29,7 +29,7 @@ async function runTacticalVerification() {
     const contacts = await runDeepRecon(topLead.id)
     console.log(`✅ Intelligence Gathered: ${contacts.length} high-value agents discovered.`)
     contacts.forEach(c => console.log(`   👤 ${c.name} | ${c.roleTitle} | ${c.linkedinUrl}`))
-  } catch (err) {
+  } catch (err: any) {
     console.log(`⚠️ Recon Warning: ${err.message}`)
   }
 

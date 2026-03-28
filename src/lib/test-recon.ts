@@ -27,7 +27,7 @@ async function runLiveReconTest() {
       console.log(`👤 ${c.name} | ${c.roleTitle} | ${c.linkedinUrl}`)
     })
     console.log("--- END REPORT ---")
-  } catch (err) {
+  } catch (err: any) {
     console.log(`❌ Mission Failure: ${err.message}`)
   }
 }
