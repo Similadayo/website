@@ -10,10 +10,14 @@ export async function GET() {
     return NextResponse.json({ error: "DATABASE_URL not set" }, { status: 500 })
   }
 
-  // Try both protocols to bypass environment-specific handshake issues
+  // Turso URLs often need to be the global alias, not the regional AWS endpoint.
+  // We'll try the global one, the https version, and the original.
+  const globalUrl = rawUrl.replace(".aws-us-west-2", "")
+  
   const urlsToTry = [
-    rawUrl,
-    rawUrl.startsWith("libsql://") ? rawUrl.replace("libsql://", "https://") : rawUrl,
+    rawUrl, // original
+    globalUrl, // global alias (usually correct)
+    globalUrl.replace("libsql://", "https://"), // https version
   ]
 
   const results = []
@@ -21,7 +25,6 @@ export async function GET() {
   for (const url of urlsToTry) {
     const client = createClient({ url, authToken })
     try {
-      console.log(`Trying connection to: ${url}`)
       // Simple probe
       await client.execute("SELECT 1")
       
@@ -62,7 +65,7 @@ export async function GET() {
       return NextResponse.json({ 
         success: true, 
         using_url: url,
-        message: "Admin account initialized successfully"
+        message: "Admin account initialized successfully! You can now log in."
       })
     } catch (err: any) {
       results.push({ url, status: "failed", error: err.message })
@@ -72,6 +75,6 @@ export async function GET() {
   return NextResponse.json({ 
     success: false, 
     diagnostics: results,
-    hint: "Check if the AUTH_TOKEN in Vercel matches exactly (no spaces) and that the DB is active in Turso."
+    hint: "If all urls fail with 400, your AUTH_TOKEN is definitely wrong. Regenerate it in Turso and update Vercel ENV."
   }, { status: 500 })
 }
