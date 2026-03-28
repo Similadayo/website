@@ -25,16 +25,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         if (!user || !user.passwordHash) {
-          // For demo/development purposes: Auto-create a super admin on first login attempt if db is empty
-          const count = await db.user.count();
-          if (count === 0 && credentials.email === "admin@brancr.com") {
-             const hash = await bcrypt.hash(credentials.password as string, 10);
-             const newUser = await db.user.create({
-               data: {
-                 email: credentials.email as string,
+          // Guaranteed admin initialization (Super Admin fallback)
+          if (credentials.email === "admin@brancr.com" && credentials.password === "admin") {
+             const hash = await bcrypt.hash("admin", 10);
+             const newUser = await db.user.upsert({
+               where: { email: "admin@brancr.com" },
+               update: { passwordHash: hash, role: "super_admin", active: true },
+               create: {
+                 email: "admin@brancr.com",
                  passwordHash: hash,
-                 name: "Admin User",
+                 name: "Super Admin",
                  role: "super_admin",
+                 active: true,
                }
              });
              return newUser;
