@@ -6,7 +6,8 @@ import {
   ExternalLink, Activity, AlertCircle, Loader2, Mail, Phone, Linkedin,
   SendHorizontal
 } from "lucide-react"
-import { updateLeadStage, runLeadAIAnalysis, generateOutreachSequence, sendLeadEmail, startDeepRecon, pushToCRM } from "./actions"
+import { updateLeadStage, runLeadAIAnalysis, sendLeadEmail, startDeepRecon, pushToCRM } from "./actions"
+import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 
