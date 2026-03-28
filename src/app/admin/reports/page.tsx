@@ -46,7 +46,7 @@ export default async function ReportsPage() {
     _count: { _all: true },
     where: { niche: { not: null } },
   })
-  const nicheStats = [...nicheRaw].sort((a, b) => b._count._all - a._count._all).slice(0, 10)
+  const nicheStats = [...nicheRaw].sort((a: any, b: any) => b._count._all - a._count._all).slice(0, 10)
 
   return (
     <div className="space-y-8 animate-fadein">

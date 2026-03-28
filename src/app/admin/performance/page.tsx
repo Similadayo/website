@@ -78,12 +78,12 @@ export default async function PerformancePage() {
       totalSessions,
       isActive: recentLeads > 0 || totalSessions > 0,
     }
-  }).sort((a, b) => b.contactedLeads - a.contactedLeads)
+  }).sort((a: any, b: any) => b.contactedLeads - a.contactedLeads)
 
-  const totalEmails = leaderboard.reduce((s, u) => s + u.emailsSent, 0)
-  const totalContacted = leaderboard.reduce((s, u) => s + u.contactedLeads, 0)
-  const totalReplies = leaderboard.reduce((s, u) => s + u.repliedLeads, 0)
-  const totalBooked = leaderboard.reduce((s, u) => s + u.bookedCalls, 0)
+  const totalEmails = leaderboard.reduce((s: number, u: any) => s + u.emailsSent, 0)
+  const totalContacted = leaderboard.reduce((s: number, u: any) => s + u.contactedLeads, 0)
+  const totalReplies = leaderboard.reduce((s: number, u: any) => s + u.repliedLeads, 0)
+  const totalBooked = leaderboard.reduce((s: number, u: any) => s + u.bookedCalls, 0)
 
   return (
     <div className="space-y-8 animate-fadein">
