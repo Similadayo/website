@@ -231,17 +231,12 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           {/* Email Outreach */}
           <OutreachSection
             leadId={lead.id}
-            message={message ? {
-              id: message.id,
-              subject: message.subject,
-              body: message.body,
-              sentAt: message.sentAt
-            } : undefined as any}
+            messages={messages as any}
             contactEmail={contact?.email ?? undefined}
             canDraft={canDraft}
             canSend={canSend as boolean}
             onSend={sendLeadEmail}
-            onDraft={generateNewOutreachDraft}
+            onGenerateSequence={generateOutreachSequence}
           />
         </div>
 
