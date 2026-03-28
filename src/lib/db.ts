@@ -6,8 +6,9 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL ?? "file:dev.db"
-  const adapter = new PrismaLibSql({ url })
+  const url = process.env.DATABASE_URL
+  const authToken = process.env.AUTH_TOKEN
+  const adapter = new PrismaLibSql({ url: url!, authToken })
   return new PrismaClient({ adapter })
 }
 

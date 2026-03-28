@@ -35,7 +35,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const analysis   = lead.analyses[0]
   const thread     = lead.threads[0]
   const message    = thread?.messages[0]
-  const contact    = lead.company.contacts.find(c => c.email) || lead.company.contacts[0]
+  const contact    = lead.company.contacts.find((c: any) => c.email) || lead.company.contacts[0]
 
   const stageLabel = STAGE_LABELS[lead.stage as keyof typeof STAGE_LABELS] ?? lead.stage
   const canApprove = lead.stage === "pending_review"
