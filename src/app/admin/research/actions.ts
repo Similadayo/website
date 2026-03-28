@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"
 import { discoverCompanies } from "@/lib/search"
 import { isValidTransition } from "@/lib/stages"
 import { extractContacts } from "@/lib/contacts/extractor"
-import { generateOutreachDraft } from "@/app/admin/outreach/actions"
+import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { normalizeDomain } from "@/lib/validators"
 import { runAIFitAnalysis } from "@/lib/ai/analyzer"
 import { logActivity, logStageChange } from "@/lib/activity-log"
@@ -246,7 +246,7 @@ export async function startResearchSession(
 
             // 8. Auto-draft email if analyzed
             try {
-              await generateOutreachDraft(lead.id)
+              await generateOutreachSequence(lead.id)
             } catch { /* ignore draft failures */ }
           }
         }

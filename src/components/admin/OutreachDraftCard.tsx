@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { CheckCircle2, Edit3, Save, X, RefreshCw } from "lucide-react"
-import { updateOutreachMessage, markOutreachSent, generateOutreachDraft } from "@/app/admin/outreach/actions"
+import { updateOutreachMessage, markOutreachSent, generateOutreachSequence as generateDraftFn } from "@/app/admin/outreach/actions"
 import Link from "next/link"
 
 interface OutreachDraftCardProps {
@@ -40,7 +40,7 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
   async function handleRegenerate() {
     setIsRegenerating(true)
     try {
-      await generateOutreachDraft(lead.id)
+      await generateDraftFn(lead.id)
     } finally {
       setIsRegenerating(false)
     }

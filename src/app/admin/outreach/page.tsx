@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { SendHorizontal, CheckCircle2, BrainCircuit } from "lucide-react"
 import Link from "next/link"
-import { generateOutreachDraft, markOutreachSent } from "./actions"
+import { generateOutreachSequence, markOutreachSent } from "./actions"
 import { OutreachDraftCard } from "@/components/admin/OutreachDraftCard"
 
 export default async function OutreachPage() {
@@ -49,7 +49,7 @@ export default async function OutreachPage() {
                 </div>
                 <form action={async () => {
                   "use server"
-                  await generateOutreachDraft(lead.id)
+                  await generateOutreachSequence(lead.id)
                 }} className="w-full sm:w-auto">
                   <button type="submit"
                     className="w-full sm:w-auto bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-4 rounded-2xl hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-gray-200">

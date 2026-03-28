@@ -7,7 +7,7 @@ import { isValidTransition } from "@/lib/stages"
 import { logStageChange, logActivity } from "@/lib/activity-log"
 import { runAIFitAnalysis } from "@/lib/ai/analyzer"
 import { sendEmail } from "@/lib/email/resend"
-import { generateOutreachDraft as generateDraftFn } from "@/app/admin/outreach/actions"
+import { generateOutreachSequence as generateDraftFn } from "@/app/admin/outreach/actions"
 
 // ─── Stage Update ───────────────────────────────────────────────────────────
 
