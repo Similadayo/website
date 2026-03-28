@@ -54,31 +54,33 @@ export default async function ResearchPage({
       )}
 
       {/* Assignment + Start */}
-      <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm p-8 group">
-        <h2 className="text-lg font-black text-gray-900 dark:text-white mb-6 uppercase tracking-widest">Global Assignment</h2>
+      <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] border border-gray-100 dark:border-white/5 shadow-sm p-10 group">
+        <h2 className="text-lg font-black text-gray-900 dark:text-white mb-8 uppercase tracking-widest">Mission Briefing</h2>
 
-        {!assignment ? (
-          <div className="text-sm font-medium text-gray-500 bg-orange-50/50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-4">
-            <AlertCircle className="w-6 h-6 text-orange-400 flex-shrink-0" />
+        {!assignment || (!assignment.niche && !assignment.region) ? (
+          <div className="text-sm font-medium text-gray-500 bg-orange-50/50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50 rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-6">
+            <AlertCircle className="w-8 h-8 text-orange-400 flex-shrink-0" />
             <div className="text-center sm:text-left">
-              No region or niche assigned yet. 
-              <Link href="/admin/users" className="text-black dark:text-white underline font-black ml-1 uppercase text-[10px] tracking-widest">Go to Assignments →</Link>
+              <p className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">No Operational Territory Assigned</p>
+              <p className="mt-1 text-xs">Awaiting mission deployment from Command. Please contact an Administrator.</p>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 border-t border-gray-50 dark:border-white/5 pt-8">
-            <div className="flex gap-12">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Target Region</p>
-                <p className="text-xl font-black text-gray-900 dark:text-white">{assignment.region || "—"}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Industry Niche</p>
-                <p className="text-xl font-black text-gray-900 dark:text-white">{assignment.niche || "—"}</p>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10 border-t border-gray-50 dark:border-white/5 pt-10">
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-2 px-1">Current Assignment</p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-black dark:bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                  <Target className="w-6 h-6 text-white dark:text-black" />
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{assignment.niche || assignment.region}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Primary Operational Theater</p>
+                </div>
               </div>
             </div>
 
-            <form action={startResearchSession.bind(null, assignment.region ?? "", assignment.niche ?? "")}>
+            <form action={startResearchSession.bind(null, "", assignment.niche ?? assignment.region ?? "")}>
               <ResearchStartButton disabled={!hasKey} />
             </form>
           </div>

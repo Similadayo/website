@@ -6,7 +6,7 @@ import {
   ExternalLink, Activity, AlertCircle, Loader2, Mail, Phone, Linkedin,
   SendHorizontal
 } from "lucide-react"
-import { updateLeadStage, runLeadAIAnalysis, generateNewOutreachDraft, sendLeadEmail } from "./actions"
+import { updateLeadStage, runLeadAIAnalysis, generateNewOutreachDraft, sendLeadEmail, startDeepRecon, pushToCRM } from "./actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 
@@ -48,18 +48,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     <div className="space-y-6 animate-fadein pb-12">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5">
         <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">{lead.company.name}</h1>
-            <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full text-xs font-semibold uppercase border border-blue-200">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h1 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">{lead.company.name}</h1>
+            <span className="bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-black dark:border-white">
               {stageLabel}
             </span>
           </div>
           {lead.company.websiteUrl && (
             <a href={lead.company.websiteUrl} target="_blank" rel="noopener noreferrer"
-               className="text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1 mt-2">
-              {lead.company.websiteUrl} <ExternalLink className="w-3.5 h-3.5" />
+               className="text-xs text-gray-400 hover:text-black dark:hover:text-white flex items-center gap-2 mt-4 font-bold transition-all group">
+              {lead.company.websiteUrl} <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </a>
           )}
         </div>
@@ -71,30 +71,30 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               await updateLeadStage(lead.id, "rejected", "Manual review rejection")
             }}>
               <button type="submit"
-                className="bg-white border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all">
-                <XCircle className="w-4 h-4" /> Reject
+                className="bg-white dark:bg-white/5 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm">
+                <XCircle className="w-4 h-4 inline mr-1.5" /> Reject Lead
               </button>
             </form>
           )}
+          
+          <form action={async () => {
+            "use server"
+            await pushToCRM(lead.id)
+          }}>
+            <button type="submit"
+              className="bg-white dark:bg-white/5 border border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm">
+              <ExternalLink className="w-4 h-4 inline mr-1.5" /> Push to CRM
+            </button>
+          </form>
+
           {canApprove && (
             <form action={async () => {
               "use server"
               await updateLeadStage(lead.id, "approved")
             }}>
               <button type="submit"
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-all">
-                <CheckCircle2 className="w-4 h-4" /> Approve Lead
-              </button>
-            </form>
-          )}
-          {lead.stage === "analyzed" && (
-            <form action={async () => {
-              "use server"
-              await updateLeadStage(lead.id, "pending_review")
-            }}>
-              <button type="submit"
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 shadow-sm transition-all">
-                Submit for Review
+                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-gray-200 dark:shadow-none transition-all active:scale-95">
+                <CheckCircle2 className="w-4 h-4 inline mr-1.5" /> Approve Intel
               </button>
             </form>
           )}
@@ -273,35 +273,59 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             )}
           </div>
 
-          {/* Contacts */}
-          {lead.company.contacts.length > 0 && (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Mail className="w-4 h-4 text-green-500" /> Contacts ({lead.company.contacts.length})
+          {/* Contacts & Decision Makers */}
+          <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                <Linkedin className="w-4 h-4 text-blue-500" /> Decision Makers
               </h3>
-              <div className="space-y-3">
-                {lead.company.contacts.map((c: any) => (
-                  <div key={c.id} className="text-sm space-y-1 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
-                    {c.email && (
-                      <a href={`mailto:${c.email}`}
-                         className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium">
-                        <Mail className="w-3.5 h-3.5" /> {c.email}
-                      </a>
-                    )}
-                    {c.name?.startsWith("Phone:") && (
-                      <a href={`tel:${c.name.replace("Phone: ", "")}`}
-                         className="flex items-center gap-2 text-gray-700 hover:text-gray-900">
-                        <Phone className="w-3.5 h-3.5 text-gray-400" /> {c.name.replace("Phone: ", "")}
-                      </a>
-                    )}
-                    {c.roleTitle && (
-                      <p className="text-xs text-gray-500">{c.roleTitle}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <form action={async () => {
+                "use server"
+                await startDeepRecon(lead.id)
+              }}>
+                <button type="submit"
+                  className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline flex items-center gap-1.5 transition-all">
+                  <Activity className="w-3.5 h-3.5" /> Start Deep Recon
+                </button>
+              </form>
             </div>
-          )}
+            
+            <div className="space-y-4">
+              {lead.company.contacts.length === 0 ? (
+                <div className="py-12 text-center border-2 border-dashed border-gray-50 dark:border-white/5 rounded-3xl">
+                  <Linkedin className="w-10 h-10 text-gray-100 dark:text-white/5 mx-auto mb-3" />
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Awaiting Intelligence</p>
+                </div>
+              ) : (
+                lead.company.contacts.map((c: any) => (
+                  <div key={c.id} className="p-5 rounded-3xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 group/item hover:bg-black dark:hover:bg-white transition-all cursor-default">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-black text-gray-900 dark:text-white group-hover/item:text-white dark:group-hover/item:text-black transition-colors">{c.name}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 transition-colors">
+                          {c.roleTitle || "Executive"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {c.linkedinUrl && (
+                          <a href={c.linkedinUrl} target="_blank" rel="noopener noreferrer"
+                             className="w-8 h-8 rounded-lg bg-white dark:bg-black/20 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-110 transition-transform shadow-sm">
+                            <Linkedin className="w-4 h-4" />
+                          </a>
+                        )}
+                        {c.email && (
+                          <a href={`mailto:${c.email}`}
+                             className="w-8 h-8 rounded-lg bg-white dark:bg-black/20 flex items-center justify-center text-gray-400 group-hover/item:text-white dark:group-hover/item:text-black hover:scale-110 transition-all shadow-sm">
+                            <Mail className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
           {/* Activity Log */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

@@ -174,10 +174,16 @@ export async function sendLeadEmail(
 
   const currentUser = await (db.user as any).findUnique({
     where: { id: session.user.id },
-    select: { senderEmail: true }
+    select: { senderEmail: true, resendApiKey: true }
   })
 
-  const res = await sendEmail(to, subject, body, currentUser?.senderEmail || undefined)
+  const res = await sendEmail(
+    to, 
+    subject, 
+    body, 
+    currentUser?.senderEmail || undefined, 
+    currentUser?.resendApiKey || undefined
+  )
   if (!res.success) {
     return { success: false, error: res.error || "Failed to send email" }
   }
@@ -242,4 +248,96 @@ export async function sendLeadEmail(
 
   revalidatePath(`/admin/leads/${leadId}`)
   return { success: true }
+}
+import { runDeepRecon } from "@/lib/ai/recon"
+
+// ─── Deep Reconnaissance ───────────────────────────────────────────────────
+
+export async function startDeepRecon(leadId: string): Promise<{ success: boolean; count?: number; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  try {
+    const contacts = await runDeepRecon(leadId)
+    await logActivity({
+      entity: "lead",
+      entityId: leadId,
+      actorId: session.user.id,
+      action: "DEEP_RECON_COMPLETED",
+      metadata: { count: contacts.length }
+    })
+    revalidatePath(`/admin/leads/${leadId}`)
+    return { success: true, count: contacts.length }
+  } catch (err: any) {
+    return { success: false, error: err.message }
+  }
+}
+
+// ─── CRM Synchronization ───────────────────────────────────────────────────
+
+export async function pushToCRM(leadId: string): Promise<{ success: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const user = await (db.user as any).findUnique({
+    where: { id: session.user.id },
+    select: { webhookUrl: true }
+  })
+
+  if (!user?.webhookUrl) {
+    return { success: false, error: "Mission Intel Missing: Configure Webhook URL in Settings first." }
+  }
+
+  const lead = await db.lead.findUnique({
+    where: { id: leadId },
+    include: {
+      company: { include: { contacts: { take: 10 } } },
+      analyses: { take: 1, orderBy: { createdAt: "desc" } }
+    }
+  })
+
+  if (!lead) return { success: false, error: "Lead search failed." }
+
+  try {
+    const res = await fetch(user.webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "Brancr Labs Command Center",
+        missionTerritory: lead.company.niche,
+        company: {
+          name: lead.company.name,
+          website: lead.company.websiteUrl,
+          domain: lead.company.domain,
+          location: lead.company.location,
+        },
+        lead: {
+          id: lead.id,
+          stage: lead.stage,
+          fitScore: lead.analyses[0]?.fitScore || 0,
+          summary: lead.analyses[0]?.companySummary || "",
+        },
+        contacts: lead.company.contacts.map(c => ({
+          name: c.name,
+          role: c.roleTitle,
+          email: c.email,
+          linkedin: c.linkedinUrl
+        }))
+      })
+    })
+
+    if (!res.ok) throw new Error(`External bridge failure: ${res.status} ${res.statusText}`)
+
+    await logActivity({
+      entity: "lead",
+      entityId: leadId,
+      actorId: session.user.id,
+      action: "CRM_SYNC_COMPLETED",
+      metadata: { endpoint: user.webhookUrl }
+    })
+
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: `Sync failed: ${err.message}` }
+  }
 }

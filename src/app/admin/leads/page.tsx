@@ -4,6 +4,7 @@ import Link from "next/link"
 import { STAGE_LABELS, LeadStage } from "@/lib/stages"
 import { Pagination } from "@/components/admin/Pagination"
 import { getAccessScope } from "@/lib/auth/scope"
+import { ExportLeadButton } from "@/components/admin/ExportLeadButton"
 
 export default async function LeadsPage({
   searchParams,
@@ -51,15 +52,18 @@ export default async function LeadsPage({
   const toggleOrder = order === "asc" ? "desc" : "asc"
 
   return (
-    <div className="space-y-6 animate-fadein pb-12">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-8 animate-fadein pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
-            <Users className="w-8 h-8 text-black" />
+          <h1 className="text-4xl font-black tracking-tighter text-gray-900 dark:text-white flex items-center gap-4">
+            <Users className="w-10 h-10 text-black dark:text-white" />
             Lead Pipeline
           </h1>
-          <p className="text-gray-500 text-sm mt-1 font-medium italic">Review AI analysis and approve accounts for high-impact outreach.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 font-medium italic">
+            Analyze intelligence and approve accounts for prioritized outreach missions.
+          </p>
         </div>
+        <ExportLeadButton leads={allLeads} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">

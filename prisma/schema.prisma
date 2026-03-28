@@ -53,6 +53,8 @@ model User {
   image         String?
   passwordHash  String?
   senderEmail   String?   // Personalized @brancr.com email for outreach
+  webhookUrl    String?   // CRM Integration Endpoint
+  resendApiKey  String?   // Dispatch protocol key
   role          String    @default("researcher") // super_admin, researcher, outreach_operator, team_lead
   active        Boolean   @default(true)
   createdAt     DateTime  @default(now())

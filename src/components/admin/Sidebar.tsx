@@ -41,13 +41,13 @@ export function Sidebar() {
   const assignment = user?.assignment
 
   return (
-    <div className="flex flex-col w-72 h-full bg-white border-r border-gray-100 relative z-40">
+    <div className="flex flex-col w-72 h-full bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-white/5 relative z-40 transition-colors">
       <div className="p-8 pb-6 flex items-center gap-3">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-black rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 shadow-lg shadow-gray-200">
-            <span className="text-white font-black text-xl italic tracking-tighter">B</span>
+          <div className="w-10 h-10 bg-black dark:bg-white rounded-2xl flex items-center justify-center transition-transform group-hover:scale-105 shadow-lg shadow-gray-200 dark:shadow-none">
+            <span className="text-white dark:text-black font-black text-xl italic tracking-tighter">B</span>
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-gray-900 group-hover:text-black transition-colors">Brancr</span>
+          <span className="font-extrabold text-2xl tracking-tight text-gray-900 dark:text-white group-hover:text-black dark:group-hover:text-gray-300 transition-colors">Brancr</span>
         </Link>
       </div>
 
@@ -70,11 +70,11 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 isActive 
-                  ? "bg-gray-900 text-white shadow-md shadow-gray-200" 
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                  ? "bg-gray-900 dark:bg-white text-white dark:text-black shadow-md shadow-gray-200 dark:shadow-none" 
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? "text-white" : "text-gray-400"}`} />
+              <item.icon className={`w-5 h-5 ${isActive ? "text-white dark:text-black" : "text-gray-400"}`} />
               <span>{item.name}</span>
             </Link>
           )
@@ -83,14 +83,16 @@ export function Sidebar() {
 
       {/* Territory Indicator for Researchers */}
       {isResearcher && assignment && (
-        <div className="px-5 py-4 mx-4 mb-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 animate-fadein">
-           <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-2 flex items-center gap-1.5 leading-none">
-             <MapPin className="w-3 h-3" /> Active Territory
+        <div className="px-5 py-4 mx-4 mb-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 animate-fadein">
+           <p className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-2 flex items-center gap-1.5 leading-none">
+             <Target className="w-3 h-3" /> Mission Assignment
            </p>
            <div className="space-y-1">
-             <p className="text-sm font-black text-emerald-900 truncate">{assignment.region || "Global"}</p>
-             <p className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-tight truncate italic">
-               {assignment.niche || "General"} Niche
+             <p className="text-sm font-black text-emerald-900 dark:text-emerald-100 truncate">
+               {assignment.niche || assignment.region || "Global Ops"}
+             </p>
+             <p className="text-[10px] font-bold text-emerald-600/80 dark:text-emerald-500/60 uppercase tracking-tight truncate italic">
+               Operational Territory
              </p>
            </div>
         </div>
@@ -98,11 +100,11 @@ export function Sidebar() {
 
       {/* Admin Indicator for Super Admins */}
       {!isResearcher && user?.role === "super_admin" && (
-        <div className="px-5 py-4 mx-4 mb-4 bg-gray-50 rounded-2xl border border-gray-100 italic transition-all hover:bg-gray-100/50">
-           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-             <Shield className="w-3 h-3 text-indigo-500" /> Command Mode
+        <div className="px-5 py-4 mx-4 mb-4 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 italic transition-all hover:bg-gray-100/50 dark:hover:bg-white/10 group/admin">
+           <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1 flex items-center gap-1.5 group-hover/admin:text-indigo-500 transition-colors">
+             <Shield className="w-3 h-3" /> Command Mode
            </p>
-           <p className="text-xs font-bold text-gray-600">Global Oversight</p>
+           <p className="text-xs font-bold text-gray-600 dark:text-gray-300">Global Oversight</p>
         </div>
       )}
 

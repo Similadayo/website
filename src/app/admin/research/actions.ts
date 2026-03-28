@@ -30,18 +30,17 @@ export async function startResearchSession(
       where: { userId, status: "active" }
     })
     
-    if (!assignment) {
+    if (!assignment || (!assignment.region && !assignment.niche)) {
       redirect("/admin/research?error=no_assignment")
     }
 
-    const assignedRegion = assignment.region?.toLowerCase()
-    const assignedNiche  = assignment.niche?.toLowerCase()
-
-    // Strict overlap check: Ensure the requested search matches their assigned territory
-    if (
-      (assignedRegion && !region.toLowerCase().includes(assignedRegion)) || 
-      (assignedNiche && !niche.toLowerCase().includes(assignedNiche))
-    ) {
+    // Unified check: assignment.niche is our "Operational Territory"
+    const assignedTarget = (assignment.niche || assignment.region || "").toLowerCase()
+    
+    // Check if the requested niche or region contains the assigned target
+    const searchTarget = (niche + " " + region).toLowerCase()
+    
+    if (!searchTarget.includes(assignedTarget)) {
       redirect("/admin/research?error=outside_territory")
     }
   }

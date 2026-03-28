@@ -14,9 +14,10 @@ export async function sendEmail(
   to:       string,
   subject:  string,
   body:     string,
-  fromOverride?: string
+  fromOverride?: string,
+  apiKey?: string
 ): Promise<{ success: boolean; id?: string; error?: string }> {
-  const key    = process.env.RESEND_API_KEY
+  const key    = apiKey || process.env.RESEND_API_KEY
   const from   = fromOverride || process.env.OUTREACH_FROM_EMAIL || "contact@brancr.com"
 
   if (!key) {

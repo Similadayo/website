@@ -4,20 +4,20 @@ import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import bcrypt from "bcryptjs"
 
 export async function upsertAssignment(
   userId: string,
-  region: string,
-  niche: string
+  territory: string
 ): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
   await db.assignment.deleteMany({ where: { userId } })
 
-  if (region.trim() || niche.trim()) {
+  if (territory.trim()) {
     await db.assignment.create({
-      data: { userId, region: region.trim(), niche: niche.trim(), status: "active" },
+      data: { userId, niche: territory.trim(), status: "active" },
     })
   }
 
@@ -38,9 +38,25 @@ export async function createUser(formData: FormData): Promise<void> {
   const existing = await db.user.findUnique({ where: { email } })
   if (existing) redirect("/admin/users?error=email_taken")
 
-  // Create user — no password set (they log in via OAuth or admin sets one later)
+  // Initialize with secure default password: Brancr2024!
+  const defaultPasswordHash = await bcrypt.hash("Brancr2024!", 10)
+
   await db.user.create({
-    data: { name, email, role, active: true },
+    data: { name, email, role, passwordHash: defaultPasswordHash, active: true },
+  })
+
+  revalidatePath("/admin/users")
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  const session = await auth()
+  if (!session?.user?.id || (session.user as any).role !== "super_admin") redirect("/login")
+
+  // Cleanup assignments first
+  await db.assignment.deleteMany({ where: { userId } })
+  
+  await db.user.delete({
+    where: { id: userId },
   })
 
   revalidatePath("/admin/users")
