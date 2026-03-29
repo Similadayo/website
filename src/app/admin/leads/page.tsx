@@ -32,7 +32,16 @@ export default async function LeadsPage({
     where: scope.leadsFilter,
     orderBy: isSpecialSort ? undefined : (sortMap[sort] || { createdAt: "desc" }),
     include: {
-      company: true,
+      company: {
+        include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      },
+      owner: {
+        select: { id: true, name: true, email: true },
+      },
       analyses: { orderBy: { createdAt: "desc" }, take: 1 }
     }
   })
@@ -127,11 +136,32 @@ export default async function LeadsPage({
                 ) : (
                   paginatedLeads.map((lead: any) => {
                     const analysis = lead.analyses[0]
+                    const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
+                    const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
+                    const isMine = lead.ownerId === scope.userId || lead.company.createdById === scope.userId
                     return (
                       <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-8 py-6">
                           <div className="font-black text-gray-900 group-hover:text-black transition-colors">{lead.company.name}</div>
                           <div className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-tight">{lead.company.niche || lead.company.domain || "Target"}</div>
+                          {scope.isSuperAdmin && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
+                              <span className={`inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border ${
+                                isMine
+                                  ? "border-black bg-black text-white"
+                                  : "border-slate-200 bg-slate-50 text-slate-500"
+                              }`}>
+                                {isMine ? "My Lead" : "Other Member"}
+                              </span>
+                              <span className="text-slate-400 normal-case tracking-normal">
+                                Owner: {ownerName}
+                              </span>
+                              <span className="text-slate-300">•</span>
+                              <span className="text-slate-400 normal-case tracking-normal">
+                                Created by: {creatorName}
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-8 py-6">
                           <StageBadge stage={lead.stage as LeadStage} />

@@ -292,3 +292,19 @@ export async function startResearchSession(
   revalidatePath("/admin/leads")
   redirect(`/admin/research/${researchSession.id}`)
 }
+
+export async function deleteResearchSession(sessionId: string): Promise<void> {
+  const session = await auth()
+  if (!session?.user?.id) redirect("/login")
+
+  const role = (session.user as any).role
+  if (role !== "super_admin") {
+    redirect("/admin/research")
+  }
+
+  await db.researchSession.delete({
+    where: { id: sessionId },
+  })
+
+  revalidatePath("/admin/research")
+}

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { isValidTransition } from "@/lib/stages"
 import { logStageChange } from "@/lib/activity-log"
+import { getScopedLeadWhere } from "@/lib/auth/scope"
 
 // ── Generate outreach draft ──────────────────────────────────────────────────
 
@@ -16,8 +17,8 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
     const session = await auth()
     if (!session?.user?.id) redirect("/login")
 
-    const lead = await db.lead.findUnique({
-      where: { id: leadId },
+    const lead = await db.lead.findFirst({
+      where: await getScopedLeadWhere(leadId),
       include: {
         company: { include: { contacts: { take: 5 } } },
         analyses: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -54,6 +55,7 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       ``,
       `About Brancr Labs:`,
       `- Brancr Labs builds practical, human-in-the-loop AI workflow prototypes for small operational teams.`,
+      `- Brancr Labs audits the current workflow, identifies a narrow high-friction process, and prototypes a practical AI-assisted system the team can test quickly.`,
       `- It is most credible when it shows it understands the prospect's workflow, bottlenecks, and who inside the company owns the process.`,
       `- Do not invent fake case studies, fake client results, or unsupported social proof.`,
       ``,
@@ -63,10 +65,17 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       `Step 3: Signal Intercept - Quick low-friction check-in/breakup. (7 day delay)`,
       ``,
       `Rules:`,
-      `- Keep emails short (3-4 sentences)`,
-      `- Direct, professional, no fluff`,
-      `- Make Brancr Labs sound capable by showing operational understanding, not hype`,
+      `- Keep each email tight: 80-140 words, 2 short paragraphs max`,
+      `- Tone: convincing, professional, sharp, commercially aware`,
+      `- Avoid generic AI buzzwords, hype, and filler phrases like "hope you're well", "just checking in", or "reaching out because"`,
+      `- Make Brancr Labs sound capable by showing operational understanding, a plausible workflow diagnosis, and a clear reason Brancr is qualified to help`,
       `- If the likely owner/team is known, tailor the message to that role's responsibilities`,
+      `- Use concrete language about operational workflows, handoffs, repetitive tasks, response time, quality control, or client delivery where relevant`,
+      `- The CTA should be low-friction and specific: offer a short conversation or a quick workflow review`,
+      `- Do not claim prior client wins unless they are explicitly provided in the prompt`,
+      `- Step 1 should feel like an informed first contact, not a template`,
+      `- Step 2 should deepen credibility with a stronger operational point of view, not weak follow-up language`,
+      `- Step 3 should stay professional and concise, not passive-aggressive or needy`,
       `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
       `- Return a JSON object with a "sequence" key holding an array of 3 objects: { subject, body, delayDays, stepNumber }`,
     ].join("\n")
@@ -167,7 +176,7 @@ export async function markOutreachSent(leadId: string, messageId: string): Promi
     data:  { status: "sent", lastSentAt: new Date() },
   })
 
-  const lead = await db.lead.findUnique({ where: { id: leadId } })
+  const lead = await db.lead.findFirst({ where: await getScopedLeadWhere(leadId) })
   if (lead && isValidTransition(lead.stage, "contacted")) {
     await db.lead.update({ where: { id: leadId }, data: { stage: "contacted" } })
     await logStageChange({

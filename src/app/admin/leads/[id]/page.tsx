@@ -10,13 +10,25 @@ import { updateLeadStage, runLeadAIAnalysis, sendLeadEmail, startDeepRecon, push
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
+import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const lead = await db.lead.findUnique({
-    where: { id },
+  const scope = await getAccessScope()
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(id),
     include: {
-      company: { include: { contacts: true } },
+      company: {
+        include: {
+          contacts: true,
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      },
+      owner: {
+        select: { id: true, name: true, email: true },
+      },
       analyses:    { orderBy: { createdAt: "desc" }, take: 1 },
       threads: {
         include: {
@@ -48,20 +60,37 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const canAnalyze = ["new", "researching", "analyzed"].includes(lead.stage)
   const canDraft   = ["analyzed", "approved", "outreach_ready"].includes(lead.stage)
   const canSend    = messages.some((m: any) => !m.sentAt) && contact?.email && ["outreach_ready", "approved", "analyzed"].includes(lead.stage)
+  const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
+  const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
+  const isMine = lead.ownerId === scope.userId || lead.company.createdById === scope.userId
 
   return (
     <div className="space-y-6 animate-fadein pb-12">
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5">
-        <div>
-          <div className="flex items-center gap-4 flex-wrap">
-            <h1 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">{lead.company.name}</h1>
+          <div>
+            <div className="flex items-center gap-4 flex-wrap">
+              <h1 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">{lead.company.name}</h1>
             <span className="bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-black dark:border-white">
               {stageLabel}
             </span>
-          </div>
-          {lead.company.websiteUrl && (
+            </div>
+            {scope.isSuperAdmin && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-bold">
+                <span className={`inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border ${
+                  isMine
+                    ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
+                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+                }`}>
+                  {isMine ? "My Lead" : "Other Member"}
+                </span>
+                <span className="text-slate-400">Owner: {ownerName}</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-slate-400">Created by: {creatorName}</span>
+              </div>
+            )}
+            {lead.company.websiteUrl && (
             <a href={lead.company.websiteUrl} target="_blank" rel="noopener noreferrer"
                className="text-xs text-gray-400 hover:text-black dark:hover:text-white flex items-center gap-2 mt-4 font-bold transition-all group">
               {lead.company.websiteUrl} <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />

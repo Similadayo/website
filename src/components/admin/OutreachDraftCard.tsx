@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { CheckCircle2, Edit3, Save, X, RefreshCw } from "lucide-react"
-import { updateOutreachMessage, markOutreachSent, generateOutreachSequence as generateDraftFn } from "@/app/admin/outreach/actions"
+import { updateOutreachMessage, markOutreachSent } from "@/app/admin/outreach/actions"
+import { reAnalyzeAndRegenerateOutreach } from "@/app/admin/leads/[id]/actions"
 import Link from "next/link"
 
 interface OutreachDraftCardProps {
@@ -40,7 +41,7 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
   async function handleRegenerate() {
     setIsRegenerating(true)
     try {
-      await generateDraftFn(lead.id)
+      await reAnalyzeAndRegenerateOutreach(lead.id)
     } finally {
       setIsRegenerating(false)
     }
@@ -136,7 +137,7 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
           className="flex-1 sm:flex-none bg-white border border-gray-100 text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] px-10 py-5 rounded-3xl hover:text-black hover:bg-gray-50 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-30"
         >
           {isRegenerating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-          Re-Analyze
+          Re-Analyze + Rewrite
         </button>
         <Link 
           href={`/admin/leads/${lead.id}`}

@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 export type DashboardScope = {
   isSuperAdmin: boolean
   userId: string
+  role: string
   territory: {
     region: string | null
     niche: string | null
@@ -33,6 +34,7 @@ export async function getAccessScope(): Promise<DashboardScope> {
     return {
       isSuperAdmin: true,
       userId,
+      role,
       territory: null,
       leadsFilter: {},
       companiesFilter: {},
@@ -50,20 +52,13 @@ export async function getAccessScope(): Promise<DashboardScope> {
     niche: assignment.niche
   } : null
 
-  // Researchers see only their assigned territory
-  // We check BOTH direct ownership (createdById/ownerId) AND matching location/niche
+  // Non-super-admins only see records they created/own.
+  // Territory assignment governs what they are allowed to search for,
+  // not shared read access into other operators' pipelines.
   const scopedFilter = {
     OR: [
       { ownerId: userId },
       { company: { createdById: userId } },
-      ...(territory?.region || territory?.niche ? [{
-        company: {
-          AND: [
-            territory.region ? { location: { contains: territory.region } } : {},
-            territory.niche ? { niche: { contains: territory.niche } } : {},
-          ]
-        }
-      }] : [])
     ]
   }
 
@@ -71,21 +66,29 @@ export async function getAccessScope(): Promise<DashboardScope> {
   const companiesScopedFilter = {
     OR: [
       { createdById: userId },
-      ...(territory?.region || territory?.niche ? [{
-        AND: [
-          territory.region ? { location: { contains: territory.region } } : {},
-          territory.niche ? { niche: { contains: territory.niche } } : {},
-        ]
-      }] : [])
     ]
   }
 
   return {
     isSuperAdmin: false,
     userId,
+    role,
     territory,
     leadsFilter: scopedFilter,
     companiesFilter: companiesScopedFilter,
     researchFilter: { userId }, // researchers see their own research sessions
   }
+}
+
+export async function getScopedLeadWhere(id: string) {
+  const scope = await getAccessScope()
+
+  return scope.isSuperAdmin
+    ? { id }
+    : {
+        AND: [
+          { id },
+          scope.leadsFilter,
+        ],
+      }
 }

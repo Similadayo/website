@@ -3,13 +3,29 @@ import { SendHorizontal, CheckCircle2, BrainCircuit } from "lucide-react"
 import Link from "next/link"
 import { generateOutreachSequence, markOutreachSent } from "./actions"
 import { OutreachDraftCard } from "@/components/admin/OutreachDraftCard"
+import { getAccessScope } from "@/lib/auth/scope"
 
 export default async function OutreachPage() {
+  const scope = await getAccessScope()
   const outreachLeads = await db.lead.findMany({
-    where: { stage: { in: ["approved", "outreach_ready", "contacted"] } },
+    where: {
+      AND: [
+        scope.leadsFilter,
+        { stage: { in: ["approved", "outreach_ready", "contacted"] } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     include: {
-      company: true,
+      company: {
+        include: {
+          createdBy: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      },
+      owner: {
+        select: { id: true, name: true, email: true },
+      },
       analyses: { orderBy: { createdAt: "desc" }, take: 1 },
       threads: {
         include: { messages: { take: 1 } },
@@ -46,6 +62,9 @@ export default async function OutreachPage() {
                 <div className="flex-1">
                   <h3 className="font-extrabold text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-1.5">{lead.company.niche ?? "Target Account"}</p>
+                  {scope.isSuperAdmin && (
+                    <OwnershipBadge lead={lead} currentUserId={scope.userId} />
+                  )}
                 </div>
                 <form action={async () => {
                   "use server"
@@ -94,6 +113,9 @@ export default async function OutreachPage() {
                 <div className="flex-1">
                   <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">{lead.company.name}</h3>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-1.5">{lead.company.niche ?? "Target Account"}</p>
+                  {scope.isSuperAdmin && (
+                    <OwnershipBadge lead={lead} currentUserId={scope.userId} />
+                  )}
                 </div>
                 <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
                   <span className="text-[10px] bg-green-50 text-green-700 font-black px-4 py-2 rounded-xl border border-green-100 uppercase tracking-widest flex items-center gap-2">
@@ -121,6 +143,31 @@ export default async function OutreachPage() {
           </Link>
         </div>
       )}
+    </div>
+  )
+}
+
+function OwnershipBadge({ lead, currentUserId }: { lead: any; currentUserId: string }) {
+  const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
+  const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
+  const isMine = lead.ownerId === currentUserId || lead.company.createdById === currentUserId
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
+      <span className={`inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border ${
+        isMine
+          ? "border-black bg-black text-white"
+          : "border-slate-200 bg-slate-50 text-slate-500"
+      }`}>
+        {isMine ? "My Lead" : "Other Member"}
+      </span>
+      <span className="text-slate-400 normal-case tracking-normal">
+        Owner: {ownerName}
+      </span>
+      <span className="text-slate-300">•</span>
+      <span className="text-slate-400 normal-case tracking-normal">
+        Created by: {creatorName}
+      </span>
     </div>
   )
 }

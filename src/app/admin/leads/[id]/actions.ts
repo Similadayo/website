@@ -8,6 +8,7 @@ import { logStageChange, logActivity } from "@/lib/activity-log"
 import { runAIFitAnalysis } from "@/lib/ai/analyzer"
 import { sendEmail } from "@/lib/email/resend"
 import { generateOutreachSequence as generateDraftFn } from "@/app/admin/outreach/actions"
+import { getScopedLeadWhere } from "@/lib/auth/scope"
 
 // ─── Stage Update ───────────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ export async function updateLeadStage(
   const session = await auth()
   if (!session?.user?.id) return { success: false, error: "Unauthorized" }
 
-  const lead = await db.lead.findUnique({ where: { id: leadId } })
+  const lead = await db.lead.findFirst({ where: await getScopedLeadWhere(leadId) })
   if (!lead) return { success: false, error: "Lead not found" }
 
   // Enforce allowed transitions
@@ -62,8 +63,8 @@ export async function runLeadAIAnalysis(
   const session = await auth()
   if (!session?.user?.id) return { success: false, error: "Unauthorized" }
 
-  const lead = await db.lead.findUnique({
-    where: { id: leadId },
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
     include: { company: true },
   })
 
@@ -160,6 +161,17 @@ export async function generateNewOutreachDraft(leadId: string) {
   }
 }
 
+export async function reAnalyzeAndRegenerateOutreach(
+  leadId: string
+): Promise<{ success: boolean; error?: string }> {
+  const analysisResult = await runLeadAIAnalysis(leadId)
+  if (!analysisResult.success) {
+    return analysisResult
+  }
+
+  return generateNewOutreachDraft(leadId)
+}
+
 // ─── Email Sending ───────────────────────────────────────────────────────────
 
 export async function sendLeadEmail(
@@ -189,7 +201,7 @@ export async function sendLeadEmail(
   }
 
   // Update lead stage
-  const lead = await db.lead.findUnique({ where: { id: leadId } })
+  const lead = await db.lead.findFirst({ where: await getScopedLeadWhere(leadId) })
   if (lead && isValidTransition(lead.stage, "contacted")) {
     await db.lead.update({
       where: { id: leadId },
@@ -288,8 +300,8 @@ export async function pushToCRM(leadId: string): Promise<{ success: boolean; err
     return { success: false, error: "Mission Intel Missing: Configure Webhook URL in Settings first." }
   }
 
-  const lead = await db.lead.findUnique({
-    where: { id: leadId },
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
     include: {
       company: { include: { contacts: { take: 10 } } },
       analyses: { take: 1, orderBy: { createdAt: "desc" } }
