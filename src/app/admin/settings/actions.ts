@@ -9,7 +9,6 @@ import bcrypt from "bcryptjs"
 export async function updateUserSettings(data: { 
   name?: string; 
   senderEmail?: string;
-  webhookUrl?: string;
   resendApiKey?: string;
 }) {
   const session = await auth()
@@ -26,7 +25,6 @@ export async function updateUserSettings(data: {
       data: {
         name: data.name,
         senderEmail: data.senderEmail || undefined,
-        webhookUrl: data.webhookUrl || undefined,
         resendApiKey: data.resendApiKey || undefined,
       },
     })

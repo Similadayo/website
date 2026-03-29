@@ -10,7 +10,6 @@ interface SettingsFormProps {
     name: string | null
     email: string | null
     senderEmail: string | null
-    webhookUrl: string | null
     resendApiKey: string | null
     role: string
   }
@@ -20,7 +19,6 @@ export function SettingsForm({ user }: SettingsFormProps) {
   const { data: session, update } = useSession()
   const [name, setName] = useState(user.name || "")
   const [senderEmail, setSenderEmail] = useState(user.senderEmail || "")
-  const [webhookUrl, setWebhookUrl] = useState(user.webhookUrl || "")
   const [resendApiKey, setResendApiKey] = useState(user.resendApiKey || "")
   const [isSaving, setIsSaving] = useState(false)
   const [status, setStatus] = useState<{ success: boolean; message: string } | null>(null)
@@ -38,7 +36,7 @@ export function SettingsForm({ user }: SettingsFormProps) {
     setStatus(null)
 
     try {
-      const res = await updateUserSettings({ name, senderEmail, webhookUrl, resendApiKey })
+      const res = await updateUserSettings({ name, senderEmail, resendApiKey })
       if (res.success) {
         // Trigger session update to refresh the name globally in the UI
         await update({ name })
@@ -158,22 +156,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
                   className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
               </div>
-            </div>
-
-            <div className="space-y-8">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">CRM Synchronization Endpoint (Webhook)</label>
-                <input
-                  type="url"
-                  value={webhookUrl}
-                  onChange={(e) => setWebhookUrl(e.target.value)}
-                  placeholder="https://hooks.zapier.com/..."
-                  className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                />
-              </div>
               <div className="bg-black/5 dark:bg-white/5 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 italic">
                 <p className="text-[10px] text-gray-400 leading-relaxed font-black uppercase tracking-widest">
-                  Intelligence Bridge: Configure this node to push qualified lead data directly to HubSpot, Salesforce, or custom mission targets.
+                  Dispatch Node: Configure your sender identity and Resend key to test live outbound email delivery from Brancr Labs.
                 </p>
               </div>
             </div>

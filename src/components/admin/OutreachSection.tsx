@@ -32,13 +32,15 @@ export function OutreachSection({
   const [isSendingId, setIsSendingId] = useState<string | null>(null)
   const [isDrafting, setIsDrafting] = useState(false)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [recipientEmail, setRecipientEmail] = useState(contactEmail || "")
 
   const handleSend = async (msg: any) => {
-    if (!contactEmail || !msg.subject) return
+    const targetEmail = recipientEmail.trim()
+    if (!targetEmail || !msg.subject) return
     setIsSendingId(msg.id)
     setResult(null)
     try {
-      const res = await onSend(leadId, contactEmail, msg.subject!, msg.body, msg.id)
+      const res = await onSend(leadId, targetEmail, msg.subject!, msg.body, msg.id)
       if (res.success) {
         setResult({ success: true, message: "Step transmission successful!" })
       } else {
@@ -105,6 +107,22 @@ export function OutreachSection({
         </div>
       ) : (
         <div className="space-y-8">
+          <div className="rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/5 p-5 space-y-3">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dispatch Target</p>
+            <input
+              type="email"
+              value={recipientEmail}
+              onChange={(event) => setRecipientEmail(event.target.value)}
+              placeholder="Insert email address for testing"
+              className="w-full rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-3 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all focus:border-black dark:focus:border-white placeholder:text-gray-400"
+            />
+            <p className="text-xs text-gray-400">
+              {contactEmail
+                ? `Detected lead email: ${contactEmail}. You can override it here for testing.`
+                : "No contact email was found on this lead. Enter a recipient email to test Resend."}
+            </p>
+          </div>
+
           {result && (
             <div className={`p-5 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest animate-fadein ${
               result.success ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30" : "bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30"
@@ -149,19 +167,13 @@ export function OutreachSection({
 
                   {!msg.sentAt && (
                     <div className="px-6 py-4 bg-gray-50/50 dark:bg-white/5 flex justify-end items-center gap-4">
-                      {contactEmail ? (
-                        <button
-                          onClick={() => handleSend(msg)}
-                          disabled={!!isSendingId || !canSend}
-                          className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95 disabled:opacity-40 flex items-center gap-2">
-                          {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5" />}
-                          Dispach to {contactEmail}
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-black text-amber-600 uppercase flex items-center gap-1.5">
-                          <AlertCircle className="w-3.5 h-3.5" /> No Target Email
-                        </span>
-                      )}
+                      <button
+                        onClick={() => handleSend(msg)}
+                        disabled={!!isSendingId || !canSend || !recipientEmail.trim()}
+                        className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95 disabled:opacity-40 flex items-center gap-2">
+                        {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5" />}
+                        Dispatch to {recipientEmail.trim() || "recipient"}
+                      </button>
                     </div>
                   )}
                 </div>

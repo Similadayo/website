@@ -26,7 +26,6 @@ export default async function SettingsPage() {
           name: user.name,
           email: user.email,
           senderEmail: user.senderEmail,
-          webhookUrl: user.webhookUrl ?? null,
           resendApiKey: user.resendApiKey ?? null,
           role: user.role
         }} />

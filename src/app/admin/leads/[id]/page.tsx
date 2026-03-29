@@ -6,7 +6,7 @@ import {
   ExternalLink, Activity, AlertCircle, Loader2, Mail, Phone, Linkedin,
   SendHorizontal
 } from "lucide-react"
-import { updateLeadStage, runLeadAIAnalysis, sendLeadEmail, startDeepRecon, pushToCRM } from "./actions"
+import { updateLeadStage, runLeadAIAnalysis, sendLeadEmail, startDeepRecon } from "./actions"
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
@@ -59,7 +59,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const canReject  = !["rejected", "closed_won", "closed_lost"].includes(lead.stage)
   const canAnalyze = ["new", "researching", "analyzed"].includes(lead.stage)
   const canDraft   = ["analyzed", "approved", "outreach_ready"].includes(lead.stage)
-  const canSend    = messages.some((m: any) => !m.sentAt) && contact?.email && ["outreach_ready", "approved", "analyzed"].includes(lead.stage)
+  const canSend    = messages.some((m: any) => !m.sentAt) && ["outreach_ready", "approved", "analyzed"].includes(lead.stage)
   const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
   const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
   const isMine = lead.ownerId === scope.userId || lead.company.createdById === scope.userId
@@ -111,16 +111,6 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </form>
           )}
           
-          <form action={async () => {
-            "use server"
-            await pushToCRM(lead.id)
-          }}>
-            <button type="submit"
-              className="bg-white dark:bg-white/5 border border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm">
-              <ExternalLink className="w-4 h-4 inline mr-1.5" /> Push to CRM
-            </button>
-          </form>
-
           {canApprove && (
             <form action={async () => {
               "use server"
