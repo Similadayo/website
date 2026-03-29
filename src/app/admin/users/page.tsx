@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
-import { Shield, UserCheck, UserX, Plus, Target, Mail, Trash2 } from "lucide-react"
+import { Shield, UserCheck, UserX, Plus, Target, Trash2, MapPin } from "lucide-react"
 import { createUser, toggleUserActive, upsertAssignment, deleteUser } from "./actions"
 
 const ROLES = ["researcher", "admin", "super_admin"] as const
@@ -42,96 +42,111 @@ export default async function UsersPage() {
               ) : (
                 users.map((user) => (
                   <div key={user.id} className={`px-10 py-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8 transition-colors ${!user.active ? "opacity-40 grayscale" : "hover:bg-gray-50/20 dark:hover:bg-white/5"}`}>
+                    {(() => {
+                      const activeAssignment = user.assignments[0]
+                      const assignmentAction = upsertAssignment.bind(null, user.id)
+
+                      return (
+                        <>
                     
-                    {/* Personnel Info */}
-                    <div className="flex items-center gap-6 min-w-[300px]">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg ${
-                        user.role === 'super_admin' ? 'bg-black text-white' : 
-                        user.role === 'admin' ? 'bg-blue-600 text-white' : 
-                        'bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-white/10'
-                      }`}>
-                        {user.name?.[0]?.toUpperCase() || "U"}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-wider">{user.name}</h3>
-                          {user.id === session?.user?.id && (
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-black dark:bg-white text-white dark:text-black px-2 py-0.5 rounded-md">Master</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest uppercase bg-gray-100 dark:bg-white/10 text-gray-400">
-                            {user.role}
-                          </span>
-                          <span className="text-[10px] text-gray-400 font-bold">{user.email}</span>
-                        </div>
-                      </div>
-                    </div>
+                          {/* Personnel Info */}
+                          <div className="flex items-center gap-6 min-w-[300px]">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black shadow-lg ${
+                              user.role === 'super_admin' ? 'bg-black text-white' : 
+                              user.role === 'admin' ? 'bg-blue-600 text-white' : 
+                              'bg-white dark:bg-gray-800 text-gray-400 border border-gray-100 dark:border-white/10'
+                            }`}>
+                              {user.name?.[0]?.toUpperCase() || "U"}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-black text-gray-900 dark:text-white uppercase tracking-wider">{user.name}</h3>
+                                {user.id === session?.user?.id && (
+                                  <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-black dark:bg-white text-white dark:text-black px-2 py-0.5 rounded-md">Master</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] font-black px-2 py-0.5 rounded-md tracking-widest uppercase bg-gray-100 dark:bg-white/10 text-gray-400">
+                                  {user.role}
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-bold">{user.email}</span>
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Territory Assignment */}
-                    <div className="flex-1 max-w-xl">
-                      <form action={async (formData: FormData) => {
-                        "use server"
-                        const territory = formData.get("territory") as string
-                        await upsertAssignment(user.id, territory)
-                      }} className="flex items-center gap-3">
-                        <div className="relative group/input flex-1">
-                           <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within/input:text-black dark:group-focus-within/input:text-white transition-colors" />
-                           <input
-                            name="territory"
-                            defaultValue={user.assignments[0]?.niche ?? ""}
-                            placeholder="Operational Territory (e.g. Texas Recruiting)"
-                            className="pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl text-[11px] font-bold text-gray-900 dark:text-white focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all w-full placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                          />
-                        </div>
-                        <button type="submit"
-                          className="bg-black dark:bg-white dark:text-black text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-95 shadow-lg shadow-gray-100 dark:shadow-none">
-                          Deploy
-                        </button>
-                      </form>
-                    </div>
-
-                    {/* Operational Actions */}
-                    <div className="flex items-center justify-end gap-6 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums leading-none">{user._count.ownedLeads}</p>
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">Missions</p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {user.id !== session?.user?.id && (
-                          <>
-                            <form action={async () => {
-                              "use server"
-                              await toggleUserActive(user.id, !user.active)
-                            }}>
-                              <button type="submit"
-                                title={user.active ? "Suspend" : "Restore"}
-                                className={`p-3 rounded-xl border transition-all active:scale-95 ${
-                                  user.active 
-                                    ? "bg-white dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/10 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20" 
-                                    : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100"
-                                }`}>
-                                {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                          {/* Territory Assignment */}
+                          <div className="flex-1 max-w-2xl">
+                            <form action={assignmentAction} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
+                              <div className="relative group/input">
+                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within/input:text-black dark:group-focus-within/input:text-white transition-colors" />
+                                <input
+                                  name="region"
+                                  defaultValue={activeAssignment?.region ?? ""}
+                                  placeholder="Region (e.g. Lagos, Texas, UK)"
+                                  className="pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl text-[11px] font-bold text-gray-900 dark:text-white focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all w-full placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                />
+                              </div>
+                              <div className="relative group/input">
+                                <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 group-focus-within/input:text-black dark:group-focus-within/input:text-white transition-colors" />
+                                <input
+                                  name="niche"
+                                  defaultValue={activeAssignment?.niche ?? ""}
+                                  placeholder="Assignment / Niche (e.g. Recruiting, Clinics)"
+                                  className="pl-10 pr-4 py-3 bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-2xl text-[11px] font-bold text-gray-900 dark:text-white focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all w-full placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                className="bg-black dark:bg-white dark:text-black text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-95 shadow-lg shadow-gray-100 dark:shadow-none"
+                              >
+                                Deploy
                               </button>
                             </form>
+                          </div>
 
-                            {(session?.user as any).role === "super_admin" && (
-                              <form action={async () => {
-                                "use server"
-                                // Note: In a real app we'd use a custom client-side confirmation dialog
-                                await deleteUser(user.id)
-                              }}>
-                                <button type="submit"
-                                  className="p-3 rounded-xl bg-white dark:bg-white/5 text-gray-300 border border-gray-100 dark:border-white/10 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-95">
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </form>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
+                          {/* Operational Actions */}
+                          <div className="flex items-center justify-end gap-6 flex-shrink-0">
+                            <div className="text-right">
+                              <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter tabular-nums leading-none">{user._count.ownedLeads}</p>
+                              <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">Missions</p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {user.id !== session?.user?.id && (
+                                <>
+                                  <form action={async () => {
+                                    "use server"
+                                    await toggleUserActive(user.id, !user.active)
+                                  }}>
+                                    <button type="submit"
+                                      title={user.active ? "Suspend" : "Restore"}
+                                      className={`p-3 rounded-xl border transition-all active:scale-95 ${
+                                        user.active 
+                                          ? "bg-white dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/10 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/20" 
+                                          : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50 hover:bg-emerald-100"
+                                      }`}>
+                                      {user.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                    </button>
+                                  </form>
+
+                                  {(session?.user as any).role === "super_admin" && (
+                                    <form action={async () => {
+                                      "use server"
+                                      await deleteUser(user.id)
+                                    }}>
+                                      <button type="submit"
+                                        className="p-3 rounded-xl bg-white dark:bg-white/5 text-gray-300 border border-gray-100 dark:border-white/10 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-95">
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </form>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
                 ))
               )}

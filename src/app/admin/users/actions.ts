@@ -8,16 +8,24 @@ import bcrypt from "bcryptjs"
 
 export async function upsertAssignment(
   userId: string,
-  territory: string
+  formData: FormData
 ): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
 
+  const region = (formData.get("region") as string | null)?.trim() ?? ""
+  const niche = (formData.get("niche") as string | null)?.trim() ?? ""
+
   await db.assignment.deleteMany({ where: { userId } })
 
-  if (territory.trim()) {
+  if (region || niche) {
     await db.assignment.create({
-      data: { userId, niche: territory.trim(), status: "active" },
+      data: {
+        userId,
+        region: region || null,
+        niche: niche || null,
+        status: "active",
+      },
     })
   }
 
