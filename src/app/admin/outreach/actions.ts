@@ -37,6 +37,10 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
     const analysis = lead.analyses[0]
     const contact  = lead.company.contacts.find(c => c.email) || lead.company.contacts[0]
     const company  = lead.company
+    const analysisJson = analysis?.rawResponse
+      ? JSON.parse(analysis.rawResponse as string) as { recommended_owners?: string[] }
+      : null
+    const recommendedOwners = analysisJson?.recommended_owners ?? []
 
     const prompt = [
       `Write a 3-step strategic cold outreach sequence for this company.`,
@@ -45,16 +49,24 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       analysis?.companySummary ? `What they do: ${analysis.companySummary}` : "",
       analysis?.outreachAngle  ? `Initial outreach angle: ${analysis.outreachAngle}` : "",
       analysis?.painPoints ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}` : "",
+      recommendedOwners.length ? `Likely internal owners: ${recommendedOwners.join("; ")}` : "",
       contact?.roleTitle ? `Contact role: ${contact.roleTitle}` : "",
+      ``,
+      `About Brancr Labs:`,
+      `- Brancr Labs builds practical, human-in-the-loop AI workflow prototypes for small operational teams.`,
+      `- It is most credible when it shows it understands the prospect's workflow, bottlenecks, and who inside the company owns the process.`,
+      `- Do not invent fake case studies, fake client results, or unsupported social proof.`,
       ``,
       `Sequence Structure:`,
       `Step 1: Mission Launch - Intro + specific pain point + value prop. (0 delay)`,
-      `Step 2: Escalation - Deeper value or small case-study/social proof. (3 day delay)`,
+      `Step 2: Escalation - Deeper operational insight or a concrete example of the workflow Brancr could improve. (3 day delay)`,
       `Step 3: Signal Intercept - Quick low-friction check-in/breakup. (7 day delay)`,
       ``,
       `Rules:`,
       `- Keep emails short (3-4 sentences)`,
       `- Direct, professional, no fluff`,
+      `- Make Brancr Labs sound capable by showing operational understanding, not hype`,
+      `- If the likely owner/team is known, tailor the message to that role's responsibilities`,
       `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
       `- Return a JSON object with a "sequence" key holding an array of 3 objects: { subject, body, delayDays, stepNumber }`,
     ].join("\n")

@@ -37,6 +37,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const thread     = lead.threads[0]
   const messages   = thread?.messages || []
   const contact    = lead.company.contacts.find((c: any) => c.email) || lead.company.contacts[0]
+  const analysisJson = analysis?.rawResponse
+    ? JSON.parse(analysis.rawResponse as string) as { recommended_owners?: string[] }
+    : null
+  const recommendedOwners = analysisJson?.recommended_owners ?? []
 
   const stageLabel = STAGE_LABELS[lead.stage as keyof typeof STAGE_LABELS] ?? lead.stage
   const canApprove = lead.stage === "pending_review"
@@ -197,6 +201,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
                       {(JSON.parse(analysis.useCases as string) as string[]).map((u, i) => (
                         <li key={i}>{u}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {recommendedOwners.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 mb-2">Who Inside The Company Should Do What</p>
+                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                      {recommendedOwners.map((owner, i) => (
+                        <li key={i}>{owner}</li>
                       ))}
                     </ul>
                   </div>
