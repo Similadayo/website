@@ -5,6 +5,7 @@ import {
   CheckCircle2, XCircle, AlertCircle, Loader2,
   Building2, ArrowLeft, BrainCircuit, Copy
 } from "lucide-react"
+import { AutoRefresh } from "@/components/admin/AutoRefresh"
 
 // Auto-refresh while session is running
 export const dynamic = "force-dynamic"
@@ -48,7 +49,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
 
       {/* Auto-refresh meta while running */}
       {isRunning && (
-        <meta httpEquiv="refresh" content="4" />
+        <AutoRefresh intervalMs={4000} />
       )}
 
       {/* Progress ring */}
