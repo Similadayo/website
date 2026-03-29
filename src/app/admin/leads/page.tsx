@@ -9,13 +9,22 @@ import { ExportLeadButton } from "@/components/admin/ExportLeadButton"
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; sort?: string; order?: string }>
+  searchParams: Promise<{ page?: string; sort?: string; order?: string; member?: string }>
 }) {
-  const { page, sort = "created", order = "desc" } = await searchParams
+  const { page, sort = "created", order = "desc", member } = await searchParams
   const currentPage = Number(page) || 1
   const pageSize = 10
   
   const scope = await getAccessScope()
+  const selectedMemberId = typeof member === "string" && member.trim() ? member : scope.userId
+
+  const members = scope.isSuperAdmin
+    ? await db.user.findMany({
+        where: { active: true },
+        orderBy: [{ role: "asc" }, { name: "asc" }],
+        select: { id: true, name: true, email: true },
+      })
+    : []
 
   // Sorting logic mapping for standard fields
   const sortMap: Record<string, any> = {
@@ -27,9 +36,17 @@ export default async function LeadsPage({
   // We'll fetch more to allow manual sorting if needed, 
   // but for standard sorts we stay efficient.
   const isSpecialSort = sort === "fit"
+  const leadsWhere = scope.isSuperAdmin
+    ? {
+        OR: [
+          { ownerId: selectedMemberId },
+          { company: { createdById: selectedMemberId } },
+        ],
+      }
+    : scope.leadsFilter
   
   let allLeads = await db.lead.findMany({
-    where: scope.leadsFilter,
+    where: leadsWhere,
     orderBy: isSpecialSort ? undefined : (sortMap[sort] || { createdAt: "desc" }),
     include: {
       company: {
@@ -59,6 +76,31 @@ export default async function LeadsPage({
   const paginatedLeads = allLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   const toggleOrder = order === "asc" ? "desc" : "asc"
+  const selectedMember =
+    scope.isSuperAdmin
+      ? members.find((candidate) => candidate.id === selectedMemberId) ?? null
+      : null
+  const selectedMemberLabel =
+    selectedMemberId === scope.userId
+      ? "My Leads"
+      : selectedMember?.name || selectedMember?.email || "Member Leads"
+  const queryFor = (next: Record<string, string | undefined>) => {
+    const params = new URLSearchParams()
+    const entries = {
+      sort,
+      order,
+      page: currentPage > 1 ? String(currentPage) : undefined,
+      ...(scope.isSuperAdmin ? { member: selectedMemberId } : {}),
+      ...next,
+    }
+
+    for (const [key, value] of Object.entries(entries)) {
+      if (value) params.set(key, value)
+    }
+
+    const query = params.toString()
+    return `/admin/leads${query ? `?${query}` : ""}`
+  }
 
   return (
     <div className="space-y-8 animate-fadein pb-12">
@@ -75,6 +117,49 @@ export default async function LeadsPage({
         <ExportLeadButton leads={allLeads} />
       </div>
 
+      {scope.isSuperAdmin && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <div className="flex flex-col gap-4">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Lead Owner View</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Super admins default to their own pipeline. Open another member&apos;s lead list only when needed.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={queryFor({ member: scope.userId, page: undefined })}
+                className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                  selectedMemberId === scope.userId
+                    ? "border-black bg-black text-white"
+                    : "border-gray-200 bg-white text-gray-500 hover:text-black"
+                }`}
+              >
+                My Leads
+              </Link>
+              {members
+                .filter((candidate) => candidate.id !== scope.userId)
+                .map((candidate) => (
+                  <Link
+                    key={candidate.id}
+                    href={queryFor({ member: candidate.id, page: undefined })}
+                    className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                      selectedMemberId === candidate.id
+                        ? "border-black bg-black text-white"
+                        : "border-gray-200 bg-white text-gray-500 hover:text-black"
+                    }`}
+                  >
+                    {candidate.name || candidate.email || "Member"}
+                  </Link>
+                ))}
+            </div>
+            <p className="text-xs font-semibold text-gray-700">
+              Showing: {selectedMemberLabel}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
         {/* Mobile Scroll Hint */}
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none lg:hidden z-10 opaitcy-0 group-hover:opacity-100 transition-opacity" />
@@ -86,7 +171,7 @@ export default async function LeadsPage({
                 <tr>
                   <th className="px-8 py-5">
                     <Link 
-                      href={`/admin/leads?sort=name&order=${sort === "name" ? toggleOrder : "asc"}`}
+                      href={queryFor({ sort: "name", order: sort === "name" ? toggleOrder : "asc", page: undefined })}
                       className="flex items-center gap-1 hover:text-black transition-colors"
                     >
                       Company
@@ -95,7 +180,7 @@ export default async function LeadsPage({
                   </th>
                   <th className="px-8 py-5">
                     <Link 
-                      href={`/admin/leads?sort=stage&order=${sort === "stage" ? toggleOrder : "asc"}`}
+                      href={queryFor({ sort: "stage", order: sort === "stage" ? toggleOrder : "asc", page: undefined })}
                       className="flex items-center gap-1 hover:text-black transition-colors"
                     >
                       Stage
@@ -104,7 +189,7 @@ export default async function LeadsPage({
                   </th>
                   <th className="px-8 py-5">
                     <Link 
-                      href={`/admin/leads?sort=fit&order=${sort === "fit" ? toggleOrder : "desc"}`}
+                      href={queryFor({ sort: "fit", order: sort === "fit" ? toggleOrder : "desc", page: undefined })}
                       className="flex items-center gap-1 hover:text-black transition-colors"
                     >
                       Fit Score
@@ -114,7 +199,7 @@ export default async function LeadsPage({
                   <th className="px-8 py-5 font-black text-gray-400 hidden xl:table-cell">Analysis Summary</th>
                   <th className="px-8 py-5 text-right hidden lg:table-cell">
                     <Link 
-                      href={`/admin/leads?sort=created&order=${sort === "created" ? toggleOrder : "desc"}`}
+                      href={queryFor({ sort: "created", order: sort === "created" ? toggleOrder : "desc", page: undefined })}
                       className="flex items-center gap-1 hover:text-black transition-colors justify-end"
                     >
                       {sort === "created" ? (order === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
@@ -144,14 +229,10 @@ export default async function LeadsPage({
                         <td className="px-8 py-6">
                           <div className="font-black text-gray-900 group-hover:text-black transition-colors">{lead.company.name}</div>
                           <div className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-tight">{lead.company.niche || lead.company.domain || "Target"}</div>
-                          {scope.isSuperAdmin && (
+                          {scope.isSuperAdmin && selectedMemberId !== scope.userId && (
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
-                              <span className={`inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border ${
-                                isMine
-                                  ? "border-black bg-black text-white"
-                                  : "border-slate-200 bg-slate-50 text-slate-500"
-                              }`}>
-                                {isMine ? "My Lead" : "Other Member"}
+                              <span className="inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border border-slate-200 bg-slate-50 text-slate-500">
+                                Member View
                               </span>
                               <span className="text-slate-400 normal-case tracking-normal">
                                 Owner: {ownerName}
@@ -209,7 +290,7 @@ export default async function LeadsPage({
       <Pagination 
         totalItems={totalItems} 
         pageSize={pageSize} 
-        currentPage={currentPage} 
+        currentPage={currentPage}
       />
     </div>
   )
