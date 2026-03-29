@@ -11,6 +11,7 @@ import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
+import { pickBestOutreachContact } from "@/lib/contacts/priority"
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -48,11 +49,21 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const analysis   = lead.analyses[0]
   const thread     = lead.threads[0]
   const messages   = thread?.messages || []
-  const contact    = lead.company.contacts.find((c: any) => c.email) || lead.company.contacts[0]
+  const contact    = pickBestOutreachContact(lead.company.contacts as any[]) || lead.company.contacts[0]
   const analysisJson = analysis?.rawResponse
-    ? JSON.parse(analysis.rawResponse as string) as { recommended_owners?: string[] }
+    ? JSON.parse(analysis.rawResponse as string) as {
+        recommended_owners?: string[]
+        operator_contacts?: Array<{
+          role: string
+          name: string | null
+          email: string | null
+          linkedin_url: string | null
+          evidence: string
+        }>
+      }
     : null
   const recommendedOwners = analysisJson?.recommended_owners ?? []
+  const operatorContacts = analysisJson?.operator_contacts ?? []
 
   const stageLabel = STAGE_LABELS[lead.stage as keyof typeof STAGE_LABELS] ?? lead.stage
   const canApprove = lead.stage === "pending_review"
@@ -233,6 +244,27 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                         <li key={i}>{owner}</li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {operatorContacts.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 mb-2">Operator Contacts Found</p>
+                    <div className="space-y-3">
+                      {operatorContacts.map((operator, index) => (
+                        <div key={`${operator.role}-${operator.name ?? index}`} className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-gray-900">{operator.role}</span>
+                            {operator.name && <span className="text-gray-600">• {operator.name}</span>}
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                            {operator.email && <span>Email: {operator.email}</span>}
+                            {operator.linkedin_url && <span>LinkedIn: {operator.linkedin_url}</span>}
+                          </div>
+                          <p className="mt-2 text-xs text-gray-400">{operator.evidence}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

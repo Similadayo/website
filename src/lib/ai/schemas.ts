@@ -5,6 +5,13 @@ export interface AIAnalysisOutput {
   pain_points: string[]
   ai_use_cases: string[]
   recommended_owners: string[]
+  operator_contacts: Array<{
+    role: string
+    name: string | null
+    email: string | null
+    linkedin_url: string | null
+    evidence: string
+  }>
   best_outreach_angle: string
   fit_reasons: string
   gap_reasons: string
@@ -32,6 +39,20 @@ export function validateAIOutput(raw: unknown): string | null {
   }
   if (!Array.isArray(r.recommended_owners) || !r.recommended_owners.every((o) => typeof o === "string")) {
     return "recommended_owners must be a string array"
+  }
+  if (
+    !Array.isArray(r.operator_contacts) ||
+    !r.operator_contacts.every((contact) =>
+      contact &&
+      typeof contact === "object" &&
+      typeof (contact as Record<string, unknown>).role === "string" &&
+      ((contact as Record<string, unknown>).name === null || typeof (contact as Record<string, unknown>).name === "string") &&
+      ((contact as Record<string, unknown>).email === null || typeof (contact as Record<string, unknown>).email === "string") &&
+      ((contact as Record<string, unknown>).linkedin_url === null || typeof (contact as Record<string, unknown>).linkedin_url === "string") &&
+      typeof (contact as Record<string, unknown>).evidence === "string"
+    )
+  ) {
+    return "operator_contacts must be an array of contact objects"
   }
   if (typeof r.best_outreach_angle !== "string") {
     return "best_outreach_angle must be a string"
@@ -79,6 +100,22 @@ export const AI_RESPONSE_JSON_SCHEMA = {
       items: { type: "string" },
       description: "2-5 likely roles or teams inside the company that should own, approve, review, or benefit from the workflow change",
     },
+    operator_contacts: {
+      type: "array",
+      description: "Found leadership/operator contacts relevant for outreach",
+      items: {
+        type: "object",
+        properties: {
+          role: { type: "string" },
+          name: { type: ["string", "null"] },
+          email: { type: ["string", "null"] },
+          linkedin_url: { type: ["string", "null"] },
+          evidence: { type: "string" },
+        },
+        required: ["role", "name", "email", "linkedin_url", "evidence"],
+        additionalProperties: false,
+      },
+    },
     best_outreach_angle: {
       type: "string",
       description: "One sentence: the strongest angle to lead with in outreach",
@@ -103,6 +140,7 @@ export const AI_RESPONSE_JSON_SCHEMA = {
     "pain_points",
     "ai_use_cases",
     "recommended_owners",
+    "operator_contacts",
     "best_outreach_angle",
     "fit_reasons",
     "gap_reasons",

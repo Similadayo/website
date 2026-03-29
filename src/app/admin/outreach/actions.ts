@@ -7,6 +7,7 @@ import { redirect } from "next/navigation"
 import { isValidTransition } from "@/lib/stages"
 import { logStageChange } from "@/lib/activity-log"
 import { getScopedLeadWhere } from "@/lib/auth/scope"
+import { pickBestOutreachContact } from "@/lib/contacts/priority"
 
 // ── Generate outreach draft ──────────────────────────────────────────────────
 
@@ -36,12 +37,22 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
     }
 
     const analysis = lead.analyses[0]
-    const contact  = lead.company.contacts.find(c => c.email) || lead.company.contacts[0]
+    const contact  = pickBestOutreachContact(lead.company.contacts as any[]) || lead.company.contacts[0]
     const company  = lead.company
     const analysisJson = analysis?.rawResponse
-      ? JSON.parse(analysis.rawResponse as string) as { recommended_owners?: string[] }
+      ? JSON.parse(analysis.rawResponse as string) as {
+          recommended_owners?: string[]
+          operator_contacts?: Array<{
+            role: string
+            name: string | null
+            email: string | null
+            linkedin_url: string | null
+            evidence: string
+          }>
+        }
       : null
     const recommendedOwners = analysisJson?.recommended_owners ?? []
+    const operatorContacts = analysisJson?.operator_contacts ?? []
 
     const prompt = [
       `Write a 3-step strategic cold outreach sequence for this company.`,
@@ -51,6 +62,7 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       analysis?.outreachAngle  ? `Initial outreach angle: ${analysis.outreachAngle}` : "",
       analysis?.painPoints ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}` : "",
       recommendedOwners.length ? `Likely internal owners: ${recommendedOwners.join("; ")}` : "",
+      operatorContacts.length ? `Operator contacts found: ${operatorContacts.map((contact) => `${contact.role}${contact.name ? ` - ${contact.name}` : ""}${contact.email ? ` - ${contact.email}` : ""}${contact.linkedin_url ? ` - ${contact.linkedin_url}` : ""}`).join("; ")}` : "",
       contact?.roleTitle ? `Contact role: ${contact.roleTitle}` : "",
       ``,
       `About Brancr Labs:`,

@@ -42,6 +42,7 @@ Focus on:
 - Company size indicators (team page, About Us, review count, office count)
 - Decision-maker accessibility (founders, ops managers, HR leads visible on website/LinkedIn)
 - Which internal roles or functions should do what if Brancr Labs were engaged
+- Whether specific operator contacts are visible for founder/COO/operations leadership outreach
 
 Always base inferences on the content provided, not assumptions. Do not fabricate specifics.`
 
@@ -56,8 +57,9 @@ In your analysis:
 3. Check for visible AI usage that would reduce need for Brancr's services
 4. Suggest realistic AI automation use cases Brancr could offer
 5. Identify which people, departments, or functions inside the company should do what if Brancr Labs were engaged
-6. Identify the best outreach path (decision-maker role if visible, or general contact path)
-7. Explain why the company is a fit and why it is not a perfect fit
+6. Identify any visible operator contacts for founder, CEO, COO, managing director, operations lead, or equivalent. Email or LinkedIn is compulsory if it is visible in the content.
+7. Identify the best outreach path (decision-maker role if visible, or general contact path)
+8. Explain why the company is a fit and why it is not a perfect fit
 
 Return your analysis as a structured JSON object following the schema exactly:
 - fit_score: 0-100
@@ -66,6 +68,7 @@ Return your analysis as a structured JSON object following the schema exactly:
 - pain_points: list of strings
 - ai_use_cases: list of strings
 - recommended_owners: list of strings in the form "Role/Team - likely responsibility"
+- operator_contacts: list of objects with { role, name, email, linkedin_url, evidence }
 - best_outreach_angle: specific hook for email
 - fit_reasons: why it's a good target
 - gap_reasons: potential blockers or reasons it's not a fit
@@ -74,6 +77,10 @@ Return your analysis as a structured JSON object following the schema exactly:
 Important:
 - recommended_owners must identify concrete roles or functions such as founder, operations manager, account manager, recruiter, support lead, marketing ops, or agency leadership
 - explain what each role would likely own, change, review, or approve
+- operator_contacts must prioritize founder, CEO, COO, managing director, operations lead, or equivalent operators before generic contacts
+- if no founder/COO/operator contact is visible, return an empty array rather than inventing one
+- only include email or linkedin_url when explicitly visible or strongly evidenced in the content
+- evidence must briefly state where the contact signal came from
 - do not invent names if they are not visible
 - only include inferences you can reasonably support from the content above.`
 }

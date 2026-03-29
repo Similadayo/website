@@ -10,6 +10,30 @@ interface SendEmailResult {
   error?: string
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+function formatEmailHtml(body: string) {
+  const paragraphs = body
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+
+  if (paragraphs.length === 0) {
+    return "<p></p>"
+  }
+
+  return paragraphs
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br />")}</p>`)
+    .join("")
+}
+
 export async function sendEmail(
   to:       string,
   subject:  string,
@@ -18,7 +42,7 @@ export async function sendEmail(
   apiKey?: string
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   const key    = apiKey || process.env.RESEND_API_KEY
-  const from   = fromOverride || process.env.OUTREACH_FROM_EMAIL || "contact@brancr.com"
+  const from   = fromOverride || process.env.OUTREACH_FROM_EMAIL || "outreach@brancr.com"
 
   if (!key) {
     return { success: false, error: "RESEND_API_KEY not set — email logged but not sent" }
@@ -35,7 +59,8 @@ export async function sendEmail(
         from,
         to,
         subject,
-        html: body,
+        text: body,
+        html: formatEmailHtml(body),
       }),
     })
 

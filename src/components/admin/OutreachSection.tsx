@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, SendHorizontal, BrainCircuit, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Mail, SendHorizontal, BrainCircuit, CheckCircle2, AlertCircle, Loader2, Edit3, Save, X } from "lucide-react"
+import { updateOutreachMessage } from "@/app/admin/outreach/actions"
 
 interface OutreachSectionProps {
   leadId: string
@@ -33,6 +34,10 @@ export function OutreachSection({
   const [isDrafting, setIsDrafting] = useState(false)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
   const [recipientEmail, setRecipientEmail] = useState(contactEmail || "")
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draftSubject, setDraftSubject] = useState("")
+  const [draftBody, setDraftBody] = useState("")
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
 
   const handleSend = async (msg: any) => {
     const targetEmail = recipientEmail.trim()
@@ -67,6 +72,36 @@ export function OutreachSection({
       setResult({ success: false, message: err.message })
     } finally {
       setIsDrafting(false)
+    }
+  }
+
+  const handleStartEdit = (msg: any) => {
+    setEditingId(msg.id)
+    setDraftSubject(msg.subject || "")
+    setDraftBody(msg.body || "")
+    setResult(null)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setDraftSubject("")
+    setDraftBody("")
+  }
+
+  const handleSaveDraft = async (messageId: string) => {
+    setIsSavingDraft(true)
+    setResult(null)
+    try {
+      await updateOutreachMessage(messageId, {
+        subject: draftSubject,
+        body: draftBody,
+      })
+      setEditingId(null)
+      setResult({ success: true, message: "Draft updated and ready to send." })
+    } catch (err: any) {
+      setResult({ success: false, message: err.message || "Failed to update draft" })
+    } finally {
+      setIsSavingDraft(false)
     }
   }
 
@@ -150,26 +185,80 @@ export function OutreachSection({
                       {idx === 0 ? "Step 1: Mission Launch" : idx === 1 ? "Step 2: Escalation" : "Step 3: Signal Intercept"}
                       {msg.delayDays > 0 && ` (+${msg.delayDays}d)`}
                     </span>
-                    {msg.sentAt && (
-                      <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">
-                        Dispatched {new Date(msg.sentAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">
-                      {msg.subject}
-                    </p>
-                    <div className="text-[11px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed font-medium italic border-l-2 border-gray-100 dark:border-white/10 pl-4 py-1">
-                      {msg.body}
+                    <div className="flex items-center gap-3">
+                      {!msg.sentAt && (
+                        <button
+                          onClick={() => handleStartEdit(msg)}
+                          disabled={editingId !== null && editingId !== msg.id}
+                          className="p-2 text-gray-300 hover:text-black dark:hover:text-white hover:bg-white dark:hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-gray-100 dark:hover:border-white/10 disabled:opacity-30"
+                          title="Edit draft"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {msg.sentAt && (
+                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">
+                          Dispatched {new Date(msg.sentAt).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   </div>
+                  {editingId === msg.id ? (
+                    <div className="p-6 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subject</label>
+                        <input
+                          value={draftSubject}
+                          onChange={(event) => setDraftSubject(event.target.value)}
+                          className="w-full rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-3 text-sm font-black text-gray-900 dark:text-white outline-none transition-all focus:border-black dark:focus:border-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Body</label>
+                        <textarea
+                          value={draftBody}
+                          onChange={(event) => setDraftBody(event.target.value)}
+                          rows={10}
+                          className="w-full rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 outline-none transition-all focus:border-black dark:focus:border-white leading-relaxed"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={handleCancelEdit}
+                          disabled={isSavingDraft}
+                          className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors disabled:opacity-40"
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleSaveDraft(msg.id)}
+                          disabled={isSavingDraft}
+                          className="rounded-2xl bg-black dark:bg-white px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white dark:text-black transition-all hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-40 inline-flex items-center gap-2"
+                        >
+                          {isSavingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                          Save Draft
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 space-y-4">
+                      <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">
+                        {msg.subject}
+                      </p>
+                      <div className="text-[11px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed font-medium italic border-l-2 border-gray-100 dark:border-white/10 pl-4 py-1">
+                        {msg.body}
+                      </div>
+                    </div>
+                  )}
 
                   {!msg.sentAt && (
                     <div className="px-6 py-4 bg-gray-50/50 dark:bg-white/5 flex justify-end items-center gap-4">
                       <button
                         onClick={() => handleSend(msg)}
-                        disabled={!!isSendingId || !canSend || !recipientEmail.trim()}
+                        disabled={!!isSendingId || !canSend || !recipientEmail.trim() || editingId === msg.id}
                         className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95 disabled:opacity-40 flex items-center gap-2">
                         {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5" />}
                         Dispatch to {recipientEmail.trim() || "recipient"}

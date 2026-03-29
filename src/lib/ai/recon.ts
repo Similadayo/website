@@ -1,9 +1,10 @@
 import OpenAI from "openai"
 import { searchSerperWeb } from "../search/serper"
 import { db } from "../db"
+import { isLeadershipRole } from "../contacts/priority"
 
 /**
- * Deep Reconnaissance: Finds specific decision makers via LinkedIn search and parses them with AI.
+ * Deep Reconnaissance: Finds operator-level decision makers via LinkedIn and web search.
  */
 export async function runDeepRecon(leadId: string): Promise<any[]> {
   const lead = await db.lead.findUnique({
@@ -14,11 +15,19 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
   if (!lead) throw new Error("Lead not found for recon")
 
   const companyName = lead.company.name
-  // We prioritize executive and growth roles relevant to recruitment/agency focus
-  const searchQuery = `site:linkedin.com/in "${companyName}" (Founder OR CEO OR "Managing Director" OR recruitment OR "Head of Talent")`
-  
-  const searchResults = await searchSerperWeb(searchQuery, 10)
-  
+  const leadershipQuery = `site:linkedin.com/in "${companyName}" (Founder OR CEO OR COO OR "Managing Director" OR "Head of Operations" OR "Operations Manager" OR Owner)`
+  const companyQuery = `"${companyName}" (founder OR CEO OR COO OR "managing director" OR "head of operations" OR operator) (email OR linkedin OR contact)`
+
+  const [linkedinResults, webResults] = await Promise.all([
+    searchSerperWeb(leadershipQuery, 10),
+    searchSerperWeb(companyQuery, 10),
+  ])
+
+  const searchResults = [...linkedinResults, ...webResults].filter(
+    (result, index, items) =>
+      items.findIndex((candidate) => candidate.url === result.url) === index
+  )
+
   if (searchResults.length === 0) return []
 
   const contextText = searchResults.map(r => `Title: ${r.name}\nSnippet: ${r.description}\nLink: ${r.url}`).join("\n\n---\n\n")
@@ -30,9 +39,11 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
     messages: [
       {
         role: "system",
-        content: `You are a corporate intelligence analyst. Given search results for LinkedIn profiles at "${companyName}", identify and extract the most relevant decision makers.
-        Return a JSON array of objects: [{ "name": "...", "role": "...", "linkedinUrl": "...", "confidence": 0.0-1.0 }]
-        Focus only on people actually working at this company currently. Avoid past employees or similar sounding agencies.`
+        content: `You are a corporate intelligence analyst. Given web and LinkedIn search results for "${companyName}", identify founder/operator decision makers.
+        Prioritize founder, co-founder, CEO, COO, managing director, owner, head of operations, and operations manager.
+        Return JSON with a "contacts" key holding an array of objects:
+        [{ "name": "...", "role": "...", "email": null, "linkedinUrl": null, "confidence": 0.0-1.0, "evidence": "..." }]
+        Use email only if clearly visible in the source text. Use linkedinUrl when present. Keep only current employees or current operators. Avoid past employees or similar sounding companies.`
       },
       { role: "user", content: contextText }
     ],
@@ -48,16 +59,37 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
   // Clean and save
   const savedContacts = []
   for (const c of contacts) {
-    if (!c.name || !c.linkedinUrl) continue
-    
+    const role = typeof c.role === "string" ? c.role : null
+    const linkedinUrl = typeof c.linkedinUrl === "string" ? c.linkedinUrl : null
+    const email = typeof c.email === "string" ? c.email : null
+
+    if (!role || (!linkedinUrl && !email) || !isLeadershipRole(role)) continue
+
+    const existing = await db.contact.findFirst({
+      where: {
+        companyId: lead.companyId,
+        OR: [
+          ...(linkedinUrl ? [{ linkedinUrl }] : []),
+          ...(email ? [{ email }] : []),
+          ...(c.name ? [{ name: c.name, roleTitle: role }] : []),
+        ],
+      },
+    })
+
+    if (existing) {
+      savedContacts.push(existing)
+      continue
+    }
+
     const saved = await db.contact.create({
       data: {
         companyId: lead.companyId,
-        name: c.name,
-        roleTitle: c.role,
-        linkedinUrl: c.linkedinUrl,
+        name: typeof c.name === "string" ? c.name : null,
+        roleTitle: role,
+        email,
+        linkedinUrl,
         confidenceScore: c.confidence || 0.5,
-        contactType: "linkedin_discovery"
+        contactType: "operator_recon"
       }
     })
     savedContacts.push(saved)
