@@ -55,7 +55,7 @@ export async function getAccessScope(): Promise<DashboardScope> {
   const scopedFilter = {
     OR: [
       { ownerId: userId },
-      { createdById: userId },
+      { company: { createdById: userId } },
       ...(territory?.region || territory?.niche ? [{
         company: {
           AND: [
