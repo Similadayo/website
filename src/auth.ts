@@ -25,8 +25,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         })
 
         if (!user || !user.passwordHash) {
-          // Guaranteed admin initialization (Super Admin fallback)
-          if (credentials.email === "admin@brancr.com" && credentials.password === "admin") {
+          // Check for existing users to decide on fallback
+          const userCount = await db.user.count();
+          
+          // Guaranteed admin initialization (Only if database is empty)
+          if (userCount === 0 && credentials.email === "admin@brancr.com" && credentials.password === "admin") {
              const hash = await bcrypt.hash("admin", 10);
              const newUser = await db.user.upsert({
                where: { email: "admin@brancr.com" },
