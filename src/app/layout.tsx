@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Outfit, Geist } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
-const inter  = Inter ({ subsets: ["latin"], variable: "--font-inter"  });
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", weight: ["400","500","600","700","800"] });
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "Brancr Labs | AI Workflow Prototypes for Small Teams",
@@ -21,12 +13,14 @@ export const metadata: Metadata = {
 import { SiteWrapper } from "@/components/layout/SiteWrapper";
 import { AuthProvider } from "@/components/layout/AuthProvider";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
+
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className="font-sans">
       <head />
-      <body className={`${inter.variable} ${outfit.variable}`} style={{ minHeight: "100vh" }}>
-        <AuthProvider>
+      <body style={{ minHeight: "100vh" }}>
+        <AuthProvider session={session}>
           <ThemeProvider>
             <SiteWrapper>
               {children}

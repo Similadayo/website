@@ -75,7 +75,7 @@ html { scroll-behavior: smooth; }
 body {
   background-color: var(--bg);
   color: var(--fg);
-  font-family: 'Inter', sans-serif;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   font-size: 1rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -89,7 +89,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 img, video { max-width: 100%; display: block; }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Outfit', sans-serif;
+  font-family: "Arial Narrow", "Segoe UI", Arial, sans-serif;
   line-height: 1.13;
   letter-spacing: -0.028em;
   color: var(--fg);
@@ -322,6 +322,6 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--foreground);
   }
   html {
-    font-family: var(--font-sans), sans-serif;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   }
 }

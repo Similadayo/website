@@ -5,16 +5,22 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-function createPrismaClient() {
-  const url = process.env.DATABASE_URL
-  const authToken = process.env.AUTH_TOKEN
-  const adapter = new PrismaLibSql({ url: url!, authToken })
-  return new PrismaClient({ adapter })
+function normalizeDatabaseUrl(url: string) {
+  return url.replace(".aws-us-west-2", "")
 }
 
-// Force re-creation if schema changed (dev only)
-if (process.env.NODE_ENV !== "production") {
-  delete globalForPrisma.prisma
+function createPrismaClient() {
+  const rawUrl = process.env.DATABASE_URL
+  const authToken = process.env.AUTH_TOKEN
+
+  if (!rawUrl) {
+    throw new Error("DATABASE_URL is not defined in environment.")
+  }
+
+  const url = normalizeDatabaseUrl(rawUrl)
+  const adapter = new PrismaLibSql({ url, authToken })
+
+  return new PrismaClient({ adapter })
 }
 
 export const db = globalForPrisma.prisma ?? createPrismaClient()

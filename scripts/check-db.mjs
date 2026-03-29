@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client"
 import { PrismaLibSql } from "@prisma/adapter-libsql"
-import { createClient } from "@libsql/client"
 import dotenv from "dotenv"
 
 dotenv.config()
@@ -8,8 +7,7 @@ dotenv.config()
 const url = process.env.DATABASE_URL
 const authToken = process.env.AUTH_TOKEN
 
-const client = createClient({ url, authToken })
-const adapter = new PrismaLibSql(client)
+const adapter = new PrismaLibSql({ url, authToken })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
