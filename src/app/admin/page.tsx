@@ -156,29 +156,32 @@ export default async function AdminDashboardPage() {
               {recentActivity.length === 0 ? (
                 <div className="p-12 text-center text-gray-400 font-medium italic">No recent maneuvers detected.</div>
               ) : (
-                recentActivity.map((log: any) => (
-                  <div key={log.id} className="p-8 flex items-start gap-4 hover:bg-gray-50/20 dark:hover:bg-white/5 transition-colors group">
-                    <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                      log.actionType === "STAGE_CHANGE" && log.newValue === "contacted" ? "bg-green-500" :
-                      log.actionType === "STAGE_CHANGE" && log.newValue === "approved" ? "bg-blue-500" :
-                      "bg-gray-300 dark:bg-white/10"
-                    }`} />
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <div className="text-sm font-bold text-gray-900 dark:text-white">
-                          <span className="text-blue-600 dark:text-blue-400">{log.actor?.name || "AI"}</span>{" "}
-                          <span className="font-medium text-gray-400">
-                            {formatAction(log.actionType, log.newValue)}
-                          </span>{" "}
-                          <span className="font-black underline decoration-gray-100 dark:decoration-white/10 decoration-2 underline-offset-4">{log.lead.company.name}</span>
+                recentActivity.map((log: any) => {
+                  const companyName = log.lead?.company?.name || "Unknown Entity";
+                  return (
+                    <div key={log.id} className="p-8 flex items-start gap-4 hover:bg-gray-50/20 dark:hover:bg-white/5 transition-colors group">
+                      <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                        log.actionType === "STAGE_CHANGE" && log.newValue === "contacted" ? "bg-green-500" :
+                        log.actionType === "STAGE_CHANGE" && log.newValue === "approved" ? "bg-blue-500" :
+                        "bg-gray-300 dark:bg-white/10"
+                      }`} />
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <div className="text-sm font-bold text-gray-900 dark:text-white">
+                            <span className="text-blue-600 dark:text-blue-400">{log.actor?.name || "AI"}</span>{" "}
+                            <span className="font-medium text-gray-400">
+                              {formatAction(log.actionType, log.newValue)}
+                            </span>{" "}
+                            <span className="font-black underline decoration-gray-100 dark:decoration-white/10 decoration-2 underline-offset-4">{companyName}</span>
+                          </div>
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter whitespace-nowrap ml-4">
+                            {formatTime(log.createdAt)}
+                          </span>
                         </div>
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter whitespace-nowrap ml-4">
-                          {formatTime(log.createdAt)}
-                        </span>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
