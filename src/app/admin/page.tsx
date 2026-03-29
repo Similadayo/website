@@ -289,19 +289,21 @@ function MetricCard({ title, value, icon, description, trend, highlight }: {
   )
 }
 
-function formatAction(type: string, value: string | null) {
+function formatAction(type: string | null, value: string | null) {
+  if (!type) return "performed an action"
   if (type === "STAGE_CHANGE") {
     if (value === "contacted") return "sent personalized outreach to"
     if (value === "approved") return "approved for the pipeline"
     if (value === "analyzed") return "finished AI qualification for"
-    return `moved to ${value?.replace('_', ' ')}`
+    return `moved to ${value?.replace('_', ' ') || "next stage"}`
   }
   if (type === "EMAIL_SENT") return "sent a direct message to"
   if (type === "AI_ANALYSIS_TRIGGERED") return "started AI analysis for"
   return "updated"
 }
 
-function formatTime(date: Date) {
+function formatTime(date: Date | null) {
+  if (!date) return "Indeterminate"
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const mins = Math.floor(diff / 60000)
