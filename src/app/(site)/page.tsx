@@ -1,6 +1,15 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import { Database, MessageSquare, Users, FileText, ArrowRight, FlaskConical, ShieldCheck, Layers, Zap, Search, Route, Mail, MapPin, AlertTriangle, Eye, CheckSquare } from "lucide-react";
 import styles from "@/components/home/Home.module.css";
+
+export const metadata: Metadata = {
+  title: "Brancr Labs | Practical AI Workflow Automation for Small Teams",
+  description: "Stop doing manual repetitive work. We build practical AI workflows and prototypes for recruiting firms, agencies, and small SaaS operations.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
 export default function Home() {
   return (

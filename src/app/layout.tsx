@@ -4,9 +4,35 @@ import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { auth } from "@/auth";
 
 export const metadata: Metadata = {
-  title: "Brancr Labs | AI Workflow Prototypes for Small Teams",
-  description: "Brancr Labs helps recruiting firms, agencies, and small SaaS teams reduce repetitive work with practical, human-in-the-loop AI workflow prototypes.",
-  keywords: ["AI workflow", "automation", "recruiting", "agency", "SaaS", "prototype"],
+  metadataBase: new URL("https://labs.brancr.com"),
+  title: {
+    template: "%s | Brancr Labs",
+    default: "Brancr Labs | AI Workflow Prototypes for Small Teams",
+  },
+  description: "Brancr Labs builds practical AI workflow automation and prototypes for recruiting firms, agencies, and small SaaS teams to eliminate repetitive tasks.",
+  keywords: [
+    "AI workflow automation for recruiting firms",
+    "AI workflow prototypes for agencies",
+    "practical AI workflows for small teams",
+    "AI automation for repetitive admin work",
+    "Brancr Labs"
+  ],
+  openGraph: {
+    title: "Brancr Labs | Practical AI Workflow Automation",
+    description: "AI workflow prototypes for recruiting firms, agencies, and small SaaS teams.",
+    url: "https://labs.brancr.com",
+    siteName: "Brancr Labs",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Brancr Labs | AI Workflow Automation",
+    description: "Practical AI workflows and prototypes for recruiting firms and small teams.",
+  },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 
