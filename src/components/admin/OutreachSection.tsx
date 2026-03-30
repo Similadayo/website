@@ -255,13 +255,13 @@ export function OutreachSection({
                   )}
 
                   {!msg.sentAt && (
-                    <div className="px-6 py-4 bg-gray-50/50 dark:bg-white/5 flex justify-end items-center gap-4">
+                    <div className="p-4 sm:px-6 sm:py-4 bg-gray-50/50 dark:bg-white/5 flex justify-end items-center">
                       <button
                         onClick={() => handleSend(msg)}
                         disabled={!!isSendingId || !canSend || !recipientEmail.trim() || editingId === msg.id}
-                        className="bg-black dark:bg-white text-white dark:text-black px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95 disabled:opacity-40 flex items-center gap-2">
-                        {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <SendHorizontal className="w-3.5 h-3.5" />}
-                        Dispatch to {recipientEmail.trim() || "recipient"}
+                        className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-4 sm:px-6 py-3 sm:py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-lg active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2 overflow-hidden">
+                        {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <SendHorizontal className="w-3.5 h-3.5 shrink-0" />}
+                        <span className="truncate">Dispatch to {recipientEmail.trim() || "recipient"}</span>
                       </button>
                     </div>
                   )}

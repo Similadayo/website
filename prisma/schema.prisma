@@ -156,6 +156,12 @@ model Contact {
   contactType     String?
   confidenceScore Float?
   sourceUrl       String?
+  sourceEvidence  String?
+  verified        Boolean  @default(false)
+  isGenericInbox  Boolean  @default(false)
+  isPrimaryDecisionMaker Boolean @default(false)
+  contactTier     String?
+  outreachRecommendation String?
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   threads OutreachThread[]

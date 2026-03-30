@@ -7,7 +7,7 @@ import { redirect } from "next/navigation"
 import { isValidTransition } from "@/lib/stages"
 import { logStageChange } from "@/lib/activity-log"
 import { getScopedLeadWhere } from "@/lib/auth/scope"
-import { pickBestOutreachContact } from "@/lib/contacts/priority"
+import { getLeadContactStrategy } from "@/lib/contacts/priority"
 
 // ── Generate outreach draft ──────────────────────────────────────────────────
 
@@ -37,7 +37,10 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
     }
 
     const analysis = lead.analyses[0]
-    const contact  = pickBestOutreachContact(lead.company.contacts as any[]) || lead.company.contacts[0]
+    const contactStrategy = getLeadContactStrategy(lead.company.contacts as any[])
+    const contact = contactStrategy.primarySendContact
+    const bestContact = contactStrategy.bestContact
+    const fallbackContact = contactStrategy.fallbackContact
     const company  = lead.company
     const analysisJson = analysis?.rawResponse
       ? JSON.parse(analysis.rawResponse as string) as {
@@ -63,7 +66,13 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       analysis?.painPoints ? `Pain points: ${(JSON.parse(analysis.painPoints as string) as string[]).join(", ")}` : "",
       recommendedOwners.length ? `Likely internal owners: ${recommendedOwners.join("; ")}` : "",
       operatorContacts.length ? `Operator contacts found: ${operatorContacts.map((contact) => `${contact.role}${contact.name ? ` - ${contact.name}` : ""}${contact.email ? ` - ${contact.email}` : ""}${contact.linkedin_url ? ` - ${contact.linkedin_url}` : ""}`).join("; ")}` : "",
-      contact?.roleTitle ? `Contact role: ${contact.roleTitle}` : "",
+      bestContact?.name ? `Best contact: ${bestContact.name}` : "",
+      bestContact?.roleTitle ? `Best contact role: ${bestContact.roleTitle}` : "",
+      bestContact?.email ? `Best contact email: ${bestContact.email}` : "",
+      fallbackContact?.email ? `Fallback contact: ${fallbackContact.email}` : "",
+      `Contact coverage: ${contactStrategy.coverageStatus}`,
+      `Contact strategy: ${contactStrategy.recommendation}`,
+      `Contact rationale: ${contactStrategy.reason}`,
       ``,
       `About Brancr Labs:`,
       `- Brancr Labs builds practical, human-in-the-loop AI workflow prototypes for small operational teams.`,
@@ -114,7 +123,7 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       thread = await db.outreachThread.create({
         data: {
           leadId,
-          contactId: contact?.id ?? null,
+          contactId: contact?.id ?? bestContact?.id ?? null,
           channel:   "email",
           status:    "drafted",
         },

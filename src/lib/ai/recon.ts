@@ -1,7 +1,11 @@
 import OpenAI from "openai"
 import { searchSerperWeb } from "../search/serper"
 import { db } from "../db"
-import { isLeadershipRole } from "../contacts/priority"
+import {
+  getContactTier,
+  getOutreachRecommendation,
+  isLeadershipRole,
+} from "../contacts/priority"
 
 /**
  * Deep Reconnaissance: Finds operator-level decision makers via LinkedIn and web search.
@@ -77,7 +81,32 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
     })
 
     if (existing) {
-      savedContacts.push(existing)
+      const updated = await db.contact.update({
+        where: { id: existing.id },
+        data: {
+          roleTitle: existing.roleTitle || role,
+          email: existing.email || email,
+          linkedinUrl: existing.linkedinUrl || linkedinUrl,
+          confidenceScore: Math.max(existing.confidenceScore ?? 0, c.confidence || 0.5),
+          sourceEvidence: existing.sourceEvidence || (typeof c.evidence === "string" ? c.evidence : "Operator discovered via deep recon."),
+          verified: existing.verified || !!email || !!linkedinUrl,
+          isPrimaryDecisionMaker: true,
+          isGenericInbox: false,
+          contactTier: getContactTier({
+            roleTitle: existing.roleTitle || role,
+            email: existing.email || email,
+            linkedinUrl: existing.linkedinUrl || linkedinUrl,
+            isPrimaryDecisionMaker: true,
+          }),
+          outreachRecommendation: getOutreachRecommendation({
+            roleTitle: existing.roleTitle || role,
+            email: existing.email || email,
+            linkedinUrl: existing.linkedinUrl || linkedinUrl,
+            isPrimaryDecisionMaker: true,
+          }),
+        },
+      })
+      savedContacts.push(updated)
       continue
     }
 
@@ -89,7 +118,23 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
         email,
         linkedinUrl,
         confidenceScore: c.confidence || 0.5,
-        contactType: "operator_recon"
+        contactType: "operator_recon",
+        sourceEvidence: typeof c.evidence === "string" ? c.evidence : "Operator discovered via deep recon.",
+        verified: true,
+        isGenericInbox: false,
+        isPrimaryDecisionMaker: true,
+        contactTier: getContactTier({
+          roleTitle: role,
+          email,
+          linkedinUrl,
+          isPrimaryDecisionMaker: true,
+        }),
+        outreachRecommendation: getOutreachRecommendation({
+          roleTitle: role,
+          email,
+          linkedinUrl,
+          isPrimaryDecisionMaker: true,
+        }),
       }
     })
     savedContacts.push(saved)

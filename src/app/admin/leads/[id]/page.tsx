@@ -11,7 +11,7 @@ import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
-import { pickBestOutreachContact } from "@/lib/contacts/priority"
+import { getLeadContactStrategy, getContactTier } from "@/lib/contacts/priority"
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -49,7 +49,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const analysis   = lead.analyses[0]
   const thread     = lead.threads[0]
   const messages   = thread?.messages || []
-  const contact    = pickBestOutreachContact(lead.company.contacts as any[]) || lead.company.contacts[0]
+  const contactStrategy = getLeadContactStrategy(lead.company.contacts as any[])
+  const contact    = contactStrategy.primarySendContact
   const analysisJson = analysis?.rawResponse
     ? JSON.parse(analysis.rawResponse as string) as {
         recommended_owners?: string[]
@@ -79,13 +80,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     <div className="space-y-6 animate-fadein pb-12">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5">
-          <div>
-            <div className="flex items-center gap-4 flex-wrap">
-              <h1 className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase">{lead.company.name}</h1>
-            <span className="bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-black dark:border-white">
-              {stageLabel}
-            </span>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 sm:gap-6 bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 w-full">
+          <div className="w-full lg:w-auto min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase break-words w-full sm:w-auto leading-tight">{lead.company.name}</h1>
+              <span className="w-fit shrink-0 bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-black dark:border-white">
+                {stageLabel}
+              </span>
             </div>
             {scope.isSuperAdmin && (
               <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-bold">
@@ -140,8 +141,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <div className="lg:col-span-2 space-y-6">
 
           {/* AI Qualification */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-6">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2 mb-6">
               <BrainCircuit className="w-5 h-5 text-indigo-600" /> AI Qualification
             </h2>
 
@@ -166,18 +167,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             ) : (
               <div className="space-y-6">
                 {/* Scores */}
-                <div className="flex gap-6">
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-500 mb-1">Fit Score</p>
-                    <div className={`text-3xl font-bold ${
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                  <div className="flex-1 bg-gray-50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-500 mb-1">Fit Score</p>
+                    <div className={`text-2xl sm:text-3xl font-bold ${
                       (analysis.fitScore ?? 0) >= 70 ? "text-green-600" :
                       (analysis.fitScore ?? 0) >= 50 ? "text-yellow-600" : "text-red-500"
                     }`}>
-                      {analysis.fitScore ?? "—"} <span className="text-sm font-medium text-gray-400">/ 100</span>
+                      {analysis.fitScore ?? "—"} <span className="text-xs sm:text-sm font-medium text-gray-400">/ 100</span>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-500 mb-1">Confidence</p>
+                  <div className="flex-1 bg-gray-50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-500 mb-1">Confidence</p>
                     <div className="text-xl font-bold text-gray-800">
                       {((analysis.confidenceScore ?? 0) * 100).toFixed(0)}%
                     </div>
@@ -268,6 +269,59 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 )}
 
+                <div>
+                  <p className="text-sm font-semibold text-gray-500 mb-2">Recommended Contact Strategy</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Best Contact</p>
+                      {contactStrategy.bestContact ? (
+                        <div className="space-y-1 text-sm text-gray-700">
+                          <p className="font-semibold text-gray-900">
+                            {contactStrategy.bestContact.name || contactStrategy.bestContact.email || "Unnamed contact"}
+                          </p>
+                          <p>{contactStrategy.bestContact.roleTitle || "No role title captured"}</p>
+                          {contactStrategy.bestContact.email && <p>Email: {contactStrategy.bestContact.email}</p>}
+                          {contactStrategy.bestContact.linkedinUrl && <p>LinkedIn: {contactStrategy.bestContact.linkedinUrl}</p>}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">No credible contact identified yet.</p>
+                      )}
+                    </div>
+                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Fallback Route</p>
+                      {contactStrategy.fallbackContact ? (
+                        <div className="space-y-1 text-sm text-gray-700">
+                          <p className="font-semibold text-gray-900">
+                            {contactStrategy.fallbackContact.name || contactStrategy.fallbackContact.email || "Fallback contact"}
+                          </p>
+                          <p>{contactStrategy.fallbackContact.roleTitle || "Public company route"}</p>
+                          {contactStrategy.fallbackContact.email && <p>Email: {contactStrategy.fallbackContact.email}</p>}
+                          {contactStrategy.fallbackContact.sourceUrl && <p>Source: {contactStrategy.fallbackContact.sourceUrl}</p>}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">No fallback route stored.</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span className={`rounded-full px-3 py-1 font-semibold uppercase tracking-widest ${
+                      contactStrategy.coverageStatus === "high"
+                        ? "bg-green-100 text-green-700"
+                        : contactStrategy.coverageStatus === "medium"
+                          ? "bg-blue-100 text-blue-700"
+                          : contactStrategy.coverageStatus === "low"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-gray-100 text-gray-600"
+                    }`}>
+                      {contactStrategy.coverageStatus} coverage
+                    </span>
+                    <span className="rounded-full bg-black px-3 py-1 font-semibold uppercase tracking-widest text-white">
+                      {contactStrategy.recommendation.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-gray-600">{contactStrategy.reason}</p>
+                </div>
+
                 {/* Outreach Angle */}
                 {analysis.outreachAngle && (
                   <div>
@@ -309,8 +363,8 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Company Details */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm sm:text-base">
               <Building2 className="w-4 h-4 text-gray-400" /> Company Details
             </h3>
             <div className="space-y-3 text-sm">
@@ -336,10 +390,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
 
           {/* Contacts & Decision Makers */}
-          <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                <Linkedin className="w-4 h-4 text-blue-500" /> Decision Makers
+          <div className="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300 overflow-hidden">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+              <h3 className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2 sm:gap-3">
+                <Linkedin className="w-4 h-4 text-blue-500 shrink-0" /> Decision Makers
               </h3>
               <form action={async () => {
                 "use server"
@@ -359,16 +413,31 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Awaiting Intelligence</p>
                 </div>
               ) : (
-                lead.company.contacts.map((c: any) => (
-                  <div key={c.id} className="p-5 rounded-3xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 group/item hover:bg-black dark:hover:bg-white transition-all cursor-default">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm font-black text-gray-900 dark:text-white group-hover/item:text-white dark:group-hover/item:text-black transition-colors">{c.name}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 transition-colors">
+                contactStrategy.ranked.map((c: any) => (
+                  <div key={c.id} className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 group/item hover:bg-black dark:hover:bg-white transition-all cursor-default overflow-hidden">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                      <div className="min-w-0 pr-4 w-full">
+                        <p className="text-sm font-black text-gray-900 dark:text-white group-hover/item:text-white dark:group-hover/item:text-black transition-colors break-words leading-tight">{c.name || c.email || "Unnamed contact"}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 transition-colors truncate">
                           {c.roleTitle || "Executive"}
                         </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                          <span className="rounded-full bg-white px-2 py-1 text-gray-500">
+                            {getContactTier(c)}
+                          </span>
+                          {c.outreachRecommendation && (
+                            <span className="rounded-full bg-gray-200 px-2 py-1 text-gray-600">
+                              {c.outreachRecommendation.replace(/_/g, " ")}
+                            </span>
+                          )}
+                        </div>
+                        {c.sourceEvidence && (
+                          <p className="mt-2 text-xs text-gray-500 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 line-clamp-3">
+                            {c.sourceEvidence}
+                          </p>
+                        )}
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 self-end sm:self-auto shrink-0">
                         {c.linkedinUrl && (
                           <a href={c.linkedinUrl} target="_blank" rel="noopener noreferrer"
                              className="w-8 h-8 rounded-lg bg-white dark:bg-black/20 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-110 transition-transform shadow-sm">

@@ -50,6 +50,36 @@ async function main() {
     "User.resendApiKey already exists"
   )
 
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN sourceEvidence TEXT",
+    "Contact.sourceEvidence already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN verified INTEGER NOT NULL DEFAULT 0",
+    "Contact.verified already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN isGenericInbox INTEGER NOT NULL DEFAULT 0",
+    "Contact.isGenericInbox already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN isPrimaryDecisionMaker INTEGER NOT NULL DEFAULT 0",
+    "Contact.isPrimaryDecisionMaker already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN contactTier TEXT",
+    "Contact.contactTier already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN outreachRecommendation TEXT",
+    "Contact.outreachRecommendation already exists"
+  )
+
   console.log("Schema sync complete")
 }
 

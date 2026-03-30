@@ -7,6 +7,11 @@ import { revalidatePath } from "next/cache"
 import { discoverCompanies } from "@/lib/search"
 import { isValidTransition } from "@/lib/stages"
 import { extractContacts } from "@/lib/contacts/extractor"
+import {
+  getContactTier,
+  getOutreachRecommendation,
+  isGenericInboxEmail,
+} from "@/lib/contacts/priority"
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { normalizeDomain } from "@/lib/validators"
 import { runAIFitAnalysis } from "@/lib/ai/analyzer"
@@ -155,6 +160,10 @@ export async function startResearchSession(
               name:        `Phone: ${company.phone}`,
               contactType: "places",
               sourceUrl:   newCompany.websiteUrl ?? undefined,
+              sourceEvidence: "Phone number surfaced from discovery results.",
+              verified: true,
+              contactTier: "tier_3",
+              outreachRecommendation: "manual_review",
             },
           })
         } catch { /* non-fatal */ }
@@ -195,12 +204,20 @@ export async function startResearchSession(
           }
 
           for (const email of contacts.emails.slice(0, 3)) {
+            const isGenericInbox = isGenericInboxEmail(email)
             await db.contact.create({
               data: {
                 companyId:   newCompany.id,
                 email,
                 contactType: "extracted",
                 sourceUrl:   newCompany.websiteUrl,
+                sourceEvidence: `Public email extracted from ${newCompany.websiteUrl}`,
+                verified: true,
+                isGenericInbox,
+                isPrimaryDecisionMaker: false,
+                confidenceScore: isGenericInbox ? 0.6 : 0.7,
+                contactTier: getContactTier({ email, isGenericInbox, sourceUrl: newCompany.websiteUrl }),
+                outreachRecommendation: getOutreachRecommendation({ email, isGenericInbox, sourceUrl: newCompany.websiteUrl }),
               },
             })
           }
@@ -212,6 +229,26 @@ export async function startResearchSession(
                 name:        `Phone: ${phone}`,
                 contactType: "extracted",
                 sourceUrl:   newCompany.websiteUrl,
+                sourceEvidence: `Public phone extracted from ${newCompany.websiteUrl}`,
+                verified: true,
+                contactTier: "tier_3",
+                outreachRecommendation: "manual_review",
+              },
+            })
+          }
+
+          if (contacts.contactPage) {
+            await db.contact.create({
+              data: {
+                companyId: newCompany.id,
+                name: "Contact Form",
+                contactType: "contact_page",
+                sourceUrl: contacts.contactPage,
+                sourceEvidence: `Contact page discovered while scanning ${newCompany.websiteUrl}`,
+                verified: true,
+                contactTier: "tier_3",
+                outreachRecommendation: "manual_review",
+                confidenceScore: 0.55,
               },
             })
           }
