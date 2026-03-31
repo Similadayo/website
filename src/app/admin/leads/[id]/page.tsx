@@ -6,12 +6,20 @@ import {
   ExternalLink, Activity, AlertCircle, Loader2, Mail, Phone, Linkedin,
   SendHorizontal
 } from "lucide-react"
-import { updateLeadStage, runLeadAIAnalysis, sendLeadEmail, startDeepRecon } from "./actions"
+import {
+  updateLeadStage,
+  runLeadAIAnalysis,
+  sendLeadEmail,
+  startDeepRecon,
+  setPrimaryContact,
+  approveGenericInboxContact,
+  markContactForManualReview,
+} from "./actions"
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
-import { getLeadContactStrategy, getContactTier } from "@/lib/contacts/priority"
+import { getLeadContactStrategy, getContactTier, requiresManualContactReview } from "@/lib/contacts/priority"
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -353,6 +361,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             leadId={lead.id}
             messages={messages as any}
             contactEmail={contact?.email ?? undefined}
+            dispatchRecommendation={contactStrategy.recommendation}
+            dispatchReason={contactStrategy.reason}
+            requiresContactReview={requiresManualContactReview(contactStrategy.recommendation)}
             canDraft={canDraft}
             canSend={canSend as boolean}
             onSend={sendLeadEmail}
@@ -422,6 +433,16 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                           {c.roleTitle || "Executive"}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                          {contactStrategy.bestContact?.id === c.id && (
+                            <span className="rounded-full bg-black px-2 py-1 text-white">
+                              Primary
+                            </span>
+                          )}
+                          {contactStrategy.fallbackContact?.id === c.id && (
+                            <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                              Fallback
+                            </span>
+                          )}
                           <span className="rounded-full bg-white px-2 py-1 text-gray-500">
                             {getContactTier(c)}
                           </span>
@@ -436,6 +457,43 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                             {c.sourceEvidence}
                           </p>
                         )}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <form action={async () => {
+                            "use server"
+                            await setPrimaryContact(lead.id, c.id)
+                          }}>
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-black hover:text-black"
+                            >
+                              Promote Primary
+                            </button>
+                          </form>
+                          {c.email && (
+                            <form action={async () => {
+                              "use server"
+                              await approveGenericInboxContact(lead.id, c.id)
+                            }}>
+                              <button
+                                type="submit"
+                                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-black hover:text-black"
+                              >
+                                Approve Inbox
+                              </button>
+                            </form>
+                          )}
+                          <form action={async () => {
+                            "use server"
+                            await markContactForManualReview(lead.id, c.id)
+                          }}>
+                            <button
+                              type="submit"
+                              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:text-amber-900"
+                            >
+                              Needs Review
+                            </button>
+                          </form>
+                        </div>
                       </div>
                       <div className="flex gap-2 self-end sm:self-auto shrink-0">
                         {c.linkedinUrl && (
@@ -479,9 +537,20 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                           <span className="text-gray-500 font-normal"> by {log.actor.name}</span>
                         )}
                       </p>
-                      {log.newValue && (
-                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{log.newValue}</p>
-                      )}
+                      {log.newValue && (() => {
+                        let parsed: any = null
+                        try {
+                          parsed = JSON.parse(log.newValue)
+                        } catch {
+                          parsed = null
+                        }
+
+                        if (parsed?.summary) {
+                          return <p className="text-xs text-gray-500 mt-0.5">{parsed.summary}</p>
+                        }
+
+                        return <p className="text-xs text-gray-500 mt-0.5 font-mono">{log.newValue}</p>
+                      })()}
                       <p className="text-xs text-gray-400 mt-0.5">
                         {new Date(log.createdAt).toLocaleString()}
                       </p>

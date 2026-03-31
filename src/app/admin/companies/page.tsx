@@ -3,6 +3,7 @@ import { Building2, Plus, ExternalLink, Search, ArrowUp, ArrowDown, ArrowUpDown 
 import Link from "next/link"
 import { Pagination } from "@/components/admin/Pagination"
 import { getAccessScope } from "@/lib/auth/scope"
+import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
 
 export default async function CompaniesPage({
   searchParams,
@@ -39,6 +40,20 @@ export default async function CompaniesPage({
       take: pageSize,
       orderBy: sortMap[sort] || { createdAt: "desc" },
       include: {
+        leads: {
+          include: {
+            threads: {
+              include: {
+                messages: {
+                  where: { sentAt: { not: null } },
+                  select: { sentAt: true },
+                  take: 1,
+                },
+              },
+              take: 1,
+            },
+          },
+        },
         _count: {
           select: { leads: true }
         }
@@ -143,6 +158,13 @@ export default async function CompaniesPage({
                             {company.domain || new URL(company.websiteUrl).hostname}
                             <ExternalLink className="w-3 h-3" />
                           </a>
+                        )}
+                        {company.leads.some((lead: any) => hasLeadBeenReachedOutTo(lead)) && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center rounded-lg border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                              Reached Out
+                            </span>
+                          </div>
                         )}
                       </td>
                       <td className="px-8 py-6 text-center hidden md:table-cell">

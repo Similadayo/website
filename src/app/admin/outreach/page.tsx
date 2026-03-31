@@ -4,6 +4,7 @@ import Link from "next/link"
 import { generateOutreachSequence, markOutreachSent } from "./actions"
 import { OutreachDraftCard } from "@/components/admin/OutreachDraftCard"
 import { getAccessScope } from "@/lib/auth/scope"
+import { formatOutreachRecommendation, getLeadContactStrategy, requiresManualContactReview } from "@/lib/contacts/priority"
 
 export default async function OutreachPage() {
   const scope = await getAccessScope()
@@ -18,6 +19,7 @@ export default async function OutreachPage() {
     include: {
       company: {
         include: {
+          contacts: true,
           createdBy: {
             select: { id: true, name: true, email: true },
           },
@@ -37,6 +39,8 @@ export default async function OutreachPage() {
 
   const noDraftLeads   = outreachLeads.filter((l: any) => l.threads.length === 0 && l.stage === "approved")
   const draftReady     = outreachLeads.filter((l: any) => l.threads.length > 0 && l.stage !== "contacted")
+  const sendReadyDrafts = draftReady.filter((lead: any) => !requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
+  const reviewRequiredDrafts = draftReady.filter((lead: any) => requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
   const contacted      = outreachLeads.filter((l: any) => l.stage === "contacted")
 
   return (
@@ -62,6 +66,7 @@ export default async function OutreachPage() {
                 <div className="flex-1">
                   <h3 className="font-extrabold text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-1.5">{lead.company.niche ?? "Target Account"}</p>
+                  <ContactStrategyLine lead={lead} />
                   {scope.isSuperAdmin && (
                     <OwnershipBadge lead={lead} currentUserId={scope.userId} />
                   )}
@@ -82,14 +87,35 @@ export default async function OutreachPage() {
       )}
 
       {/* Draft ready */}
-      {draftReady.length > 0 && (
+      {sendReadyDrafts.length > 0 && (
         <section>
           <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
              <div className="w-2 h-2 rounded-full bg-black shadow-sm" />
-             Pending Human Approval ({draftReady.length})
+             Send-Ready Drafts ({sendReadyDrafts.length})
           </h2>
           <div className="space-y-8">
-            {draftReady.map((lead: any) => (
+            {sendReadyDrafts.map((lead: any) => (
+              <OutreachDraftCard 
+                key={lead.id} 
+                lead={lead} 
+                message={lead.threads[0]?.messages[0]} 
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {reviewRequiredDrafts.length > 0 && (
+        <section>
+          <h2 className="text-[11px] font-black text-amber-700 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-amber-500 shadow-sm" />
+             Needs Contact Review ({reviewRequiredDrafts.length})
+          </h2>
+          <p className="mb-6 text-sm text-gray-500">
+            These drafts exist, but the contact path is still weak or indirect. Review the lead, improve the contact route, or use a deliberate test-send override from the lead detail page.
+          </p>
+          <div className="space-y-8">
+            {reviewRequiredDrafts.map((lead: any) => (
               <OutreachDraftCard 
                 key={lead.id} 
                 lead={lead} 
@@ -113,6 +139,7 @@ export default async function OutreachPage() {
                 <div className="flex-1">
                   <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">{lead.company.name}</h3>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-1.5">{lead.company.niche ?? "Target Account"}</p>
+                  <ContactStrategyLine lead={lead} />
                   {scope.isSuperAdmin && (
                     <OwnershipBadge lead={lead} currentUserId={scope.userId} />
                   )}
@@ -143,6 +170,37 @@ export default async function OutreachPage() {
           </Link>
         </div>
       )}
+    </div>
+  )
+}
+
+function ContactStrategyLine({ lead }: { lead: any }) {
+  const strategy = getLeadContactStrategy(lead.company.contacts || [])
+
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`inline-flex items-center rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
+          strategy.coverageStatus === "high"
+            ? "bg-green-50 text-green-700 border border-green-100"
+            : strategy.coverageStatus === "medium"
+              ? "bg-blue-50 text-blue-700 border border-blue-100"
+              : strategy.coverageStatus === "low"
+                ? "bg-yellow-50 text-yellow-700 border border-yellow-100"
+                : "bg-gray-50 text-gray-500 border border-gray-100"
+        }`}>
+          {strategy.coverageStatus} contact coverage
+        </span>
+        <span className="inline-flex items-center rounded-lg border border-gray-100 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
+          {formatOutreachRecommendation(strategy.recommendation)}
+        </span>
+      </div>
+      <p className="text-xs text-gray-500">
+        {strategy.bestContact
+          ? `Best contact: ${strategy.bestContact.name || strategy.bestContact.email || "Unnamed contact"}`
+          : "Best contact: manual review needed"}
+        {strategy.fallbackContact?.email ? ` • Fallback: ${strategy.fallbackContact.email}` : ""}
+      </p>
     </div>
   )
 }

@@ -15,9 +15,12 @@ interface OutreachSectionProps {
     delayDays: number
   }>
   contactEmail?: string
+  dispatchRecommendation?: string
+  dispatchReason?: string
+  requiresContactReview?: boolean
   canDraft: boolean
   canSend: boolean
-  onSend: (leadId: string, to: string, subject: string, body: string, messageId?: string) => Promise<{ success: boolean; error?: string }>
+  onSend: (leadId: string, to: string, subject: string, body: string, messageId?: string, overrideContactReview?: boolean) => Promise<{ success: boolean; error?: string }>
   onGenerateSequence: (leadId: string) => Promise<{ success: boolean; error?: string }>
 }
 
@@ -25,6 +28,9 @@ export function OutreachSection({
   leadId,
   messages = [],
   contactEmail,
+  dispatchRecommendation,
+  dispatchReason,
+  requiresContactReview = false,
   canDraft,
   canSend,
   onSend,
@@ -38,6 +44,7 @@ export function OutreachSection({
   const [draftSubject, setDraftSubject] = useState("")
   const [draftBody, setDraftBody] = useState("")
   const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const [allowOverrideSend, setAllowOverrideSend] = useState(false)
 
   const handleSend = async (msg: any) => {
     const targetEmail = recipientEmail.trim()
@@ -45,7 +52,7 @@ export function OutreachSection({
     setIsSendingId(msg.id)
     setResult(null)
     try {
-      const res = await onSend(leadId, targetEmail, msg.subject!, msg.body, msg.id)
+      const res = await onSend(leadId, targetEmail, msg.subject!, msg.body, msg.id, allowOverrideSend)
       if (res.success) {
         setResult({ success: true, message: "Step transmission successful!" })
       } else {
@@ -156,7 +163,33 @@ export function OutreachSection({
                 ? `Detected lead email: ${contactEmail}. You can override it here for testing.`
                 : "No contact email was found on this lead. Enter a recipient email to test Resend."}
             </p>
+            {dispatchRecommendation && (
+              <p className="text-xs text-gray-500">
+                Current dispatch path: <span className="font-semibold uppercase">{dispatchRecommendation.replace(/_/g, " ")}</span>
+              </p>
+            )}
           </div>
+
+          {requiresContactReview && (
+            <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 space-y-3">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700">
+                <AlertCircle className="w-4 h-4" />
+                Manual contact review required
+              </div>
+              <p className="text-sm text-amber-900">
+                {dispatchReason || "This lead does not yet have a send-ready contact path."}
+              </p>
+              <label className="flex items-start gap-3 text-sm text-amber-900">
+                <input
+                  type="checkbox"
+                  checked={allowOverrideSend}
+                  onChange={(event) => setAllowOverrideSend(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-amber-300 text-black focus:ring-black"
+                />
+                <span>Enable test-send override for this lead. Use only for internal QA or verification.</span>
+              </label>
+            </div>
+          )}
 
           {result && (
             <div className={`p-5 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest animate-fadein ${
@@ -258,7 +291,7 @@ export function OutreachSection({
                     <div className="p-4 sm:px-6 sm:py-4 bg-gray-50/50 dark:bg-white/5 flex justify-end items-center">
                       <button
                         onClick={() => handleSend(msg)}
-                        disabled={!!isSendingId || !canSend || !recipientEmail.trim() || editingId === msg.id}
+                        disabled={!!isSendingId || !canSend || !recipientEmail.trim() || editingId === msg.id || (requiresContactReview && !allowOverrideSend)}
                         className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-4 sm:px-6 py-3 sm:py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-lg active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2 overflow-hidden">
                         {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <SendHorizontal className="w-3.5 h-3.5 shrink-0" />}
                         <span className="truncate">Dispatch to {recipientEmail.trim() || "recipient"}</span>

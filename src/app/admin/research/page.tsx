@@ -13,6 +13,7 @@ import {
 import { deleteResearchSession, startResearchSession } from "./actions"
 import { ResearchStartButton } from "@/components/admin/ResearchStartButton"
 import { Pagination } from "@/components/admin/Pagination"
+import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
 
 export default async function ResearchPage({
   searchParams,
@@ -37,6 +38,7 @@ export default async function ResearchPage({
         take: pageSize,
         include: {
           user: { select: { name: true, email: true } },
+          results: true,
         },
       }),
       db.researchSession.count({
@@ -47,6 +49,30 @@ export default async function ResearchPage({
       where: { userId: session.user.id, status: "active" },
     }),
   ])
+
+  const leadIds = pastSessions.flatMap((researchSession: any) =>
+    researchSession.results.map((result: any) => result.leadId).filter(Boolean)
+  )
+  const reachedOutLeads = leadIds.length > 0
+    ? await db.lead.findMany({
+        where: { id: { in: leadIds } },
+        include: {
+          threads: {
+            include: {
+              messages: {
+                where: { sentAt: { not: null } },
+                select: { sentAt: true },
+                take: 1,
+              },
+            },
+            take: 1,
+          },
+        },
+      })
+    : []
+  const reachedOutLeadIds = new Set(
+    reachedOutLeads.filter((lead: any) => hasLeadBeenReachedOutTo(lead)).map((lead: any) => lead.id)
+  )
 
   const hasKey = !!(process.env.SERPER_API_KEY || process.env.OPENAI_API_KEY)
 
@@ -110,7 +136,10 @@ export default async function ResearchPage({
           </div>
           <div className="overflow-x-auto">
             <div className="min-w-full md:min-w-[800px] divide-y divide-gray-50 dark:divide-white/5">
-              {(pastSessions as any[]).map((researchSession: any) => (
+              {(pastSessions as any[]).map((researchSession: any) => {
+                const reachedOutCount = researchSession.results.filter((result: any) => result.leadId && reachedOutLeadIds.has(result.leadId)).length
+
+                return (
                 <div
                   key={researchSession.id}
                   className="flex items-center justify-between gap-4 px-8 py-6 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
@@ -140,6 +169,7 @@ export default async function ResearchPage({
                     </div>
                     <div className="flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-gray-400">
                       <span className="hidden md:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-400" /><strong className="text-gray-900 dark:text-gray-300">{researchSession.totalAnalyzed}</strong> Discovery</span>
+                      <span className="hidden md:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /><strong className="text-gray-900 dark:text-gray-300">{reachedOutCount}</strong> Reached Out</span>
                       <span className="hidden lg:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700" /><strong className="text-gray-900 dark:text-gray-300">{researchSession.totalSkipped}</strong> Filters</span>
                       <span className="text-black dark:text-white font-black opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                         View Report â†’
@@ -158,7 +188,7 @@ export default async function ResearchPage({
                     </form>
                   )}
                 </div>
-              ))}
+              )})}
             </div>
           </div>
           <Pagination totalItems={totalSessions} pageSize={pageSize} currentPage={currentPage} />

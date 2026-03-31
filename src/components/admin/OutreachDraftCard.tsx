@@ -5,6 +5,7 @@ import { CheckCircle2, Edit3, Save, X, RefreshCw } from "lucide-react"
 import { updateOutreachMessage, markOutreachSent } from "@/app/admin/outreach/actions"
 import { reAnalyzeAndRegenerateOutreach } from "@/app/admin/leads/[id]/actions"
 import Link from "next/link"
+import { formatOutreachRecommendation, getLeadContactStrategy, requiresManualContactReview } from "@/lib/contacts/priority"
 
 interface OutreachDraftCardProps {
   lead: any
@@ -12,6 +13,8 @@ interface OutreachDraftCardProps {
 }
 
 export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
+  const contactStrategy = getLeadContactStrategy(lead.company.contacts || [])
+  const requiresReview = requiresManualContactReview(contactStrategy.recommendation)
   const [isEditing, setIsEditing] = useState(false)
   const [subject, setSubject] = useState(message.subject || "")
   const [body, setBody] = useState(message.body || "")
@@ -53,6 +56,30 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
         <div>
           <h3 className="font-black text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">{lead.company.niche ?? "Target Account"}</p>
+          <div className="mt-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
+                contactStrategy.coverageStatus === "high"
+                  ? "bg-green-50 text-green-700 border border-green-100"
+                  : contactStrategy.coverageStatus === "medium"
+                    ? "bg-blue-50 text-blue-700 border border-blue-100"
+                    : contactStrategy.coverageStatus === "low"
+                      ? "bg-yellow-50 text-yellow-700 border border-yellow-100"
+                      : "bg-gray-50 text-gray-500 border border-gray-100"
+              }`}>
+                {contactStrategy.coverageStatus} contact coverage
+              </span>
+              <span className="inline-flex items-center rounded-lg border border-gray-100 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                {formatOutreachRecommendation(contactStrategy.recommendation)}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">
+              {contactStrategy.bestContact
+                ? `Best contact: ${contactStrategy.bestContact.name || contactStrategy.bestContact.email || "Unnamed contact"}`
+                : "Best contact: manual review needed"}
+              {contactStrategy.fallbackContact?.email ? ` • Fallback: ${contactStrategy.fallbackContact.email}` : ""}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
            <span className="text-[10px] bg-black text-white font-black px-4 py-2 rounded-xl border border-black uppercase tracking-widest shadow-lg shadow-gray-200">
@@ -62,6 +89,12 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
       </div>
 
       <div className="bg-gray-50/50 rounded-3xl p-8 border border-gray-100 space-y-6 relative">
+        {requiresReview && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Manual contact review required</p>
+            <p className="mt-2">{contactStrategy.reason}</p>
+          </div>
+        )}
         {isEditing ? (
           <div className="space-y-6 animate-fadein transition-all">
             <div className="space-y-2">
@@ -125,11 +158,11 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
       <div className="flex flex-col sm:flex-row gap-4 pt-4">
         <button 
           onClick={handleSend}
-          disabled={isSending || isEditing}
+          disabled={isSending || isEditing || requiresReview}
           className="flex-1 sm:flex-none bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-10 py-5 rounded-3xl hover:bg-gray-800 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-gray-200 active:scale-95 disabled:opacity-30"
         >
           {isSending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-          Transmit Now
+          {requiresReview ? "Manual Review Needed" : "Transmit Now"}
         </button>
         <button 
           onClick={handleRegenerate}

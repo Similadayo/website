@@ -52,6 +52,19 @@ export function getOutreachRecommendation(contact: ContactCandidate) {
   return "skip"
 }
 
+export function formatOutreachRecommendation(recommendation?: string | null) {
+  if (!recommendation) return "unknown"
+  return recommendation.replace(/_/g, " ")
+}
+
+export function isEmailDispatchReady(recommendation?: string | null) {
+  return recommendation === "personalized_email" || recommendation === "generic_inbox_fallback"
+}
+
+export function requiresManualContactReview(recommendation?: string | null) {
+  return !isEmailDispatchReady(recommendation)
+}
+
 function numericTier(tier: string) {
   if (tier === "tier_1") return 1
   if (tier === "tier_2") return 2

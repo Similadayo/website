@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { AutoRefresh } from "@/components/admin/AutoRefresh"
 import { deleteResearchSession } from "../actions"
+import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -38,6 +39,28 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
     session.totalFound > 0
       ? Math.round(((session.totalAnalyzed + session.totalSkipped) / session.totalFound) * 100)
       : 0
+  const leadIds = session.results.map((result: any) => result.leadId).filter(Boolean)
+  const reachedOutLeads = leadIds.length > 0
+    ? await db.lead.findMany({
+        where: { id: { in: leadIds } },
+        include: {
+          threads: {
+            include: {
+              messages: {
+                where: { sentAt: { not: null } },
+                select: { sentAt: true },
+                take: 1,
+              },
+            },
+            take: 1,
+          },
+        },
+      })
+    : []
+  const reachedOutLeadIds = new Set(
+    reachedOutLeads.filter((lead: any) => hasLeadBeenReachedOutTo(lead)).map((lead: any) => lead.id)
+  )
+  const reachedOutCount = session.results.filter((result: any) => result.leadId && reachedOutLeadIds.has(result.leadId)).length
 
   return (
     <div className="space-y-6 animate-fadein">
@@ -127,7 +150,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
               {[
                 { label: "Found", value: session.totalFound, color: "text-gray-900" },
                 { label: "Analyzed", value: session.totalAnalyzed, color: "text-indigo-600" },
-                { label: "Skipped", value: session.totalSkipped, color: "text-amber-600" },
+                { label: "Reached", value: reachedOutCount, color: "text-emerald-600" },
               ].map((metric: any) => (
                 <div key={metric.label} className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
                   <div className={`text-2xl font-bold ${metric.color}`}>{metric.value}</div>
@@ -154,6 +177,11 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
                     <p className="text-xs text-gray-400 truncate">{result.domain ?? "â€”"}</p>
                     {result.note && (
                       <p className="text-xs text-amber-600 mt-0.5">{result.note}</p>
+                    )}
+                    {result.leadId && reachedOutLeadIds.has(result.leadId) && (
+                      <p className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                        Reached Out
+                      </p>
                     )}
                   </div>
                 </div>

@@ -7,7 +7,7 @@ import { redirect } from "next/navigation"
 import { isValidTransition } from "@/lib/stages"
 import { logStageChange } from "@/lib/activity-log"
 import { getScopedLeadWhere } from "@/lib/auth/scope"
-import { getLeadContactStrategy } from "@/lib/contacts/priority"
+import { formatOutreachRecommendation, getLeadContactStrategy } from "@/lib/contacts/priority"
 
 // ── Generate outreach draft ──────────────────────────────────────────────────
 
@@ -41,6 +41,7 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
     const contact = contactStrategy.primarySendContact
     const bestContact = contactStrategy.bestContact
     const fallbackContact = contactStrategy.fallbackContact
+    const outreachRecommendation = formatOutreachRecommendation(contactStrategy.recommendation)
     const company  = lead.company
     const analysisJson = analysis?.rawResponse
       ? JSON.parse(analysis.rawResponse as string) as {
@@ -71,7 +72,7 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       bestContact?.email ? `Best contact email: ${bestContact.email}` : "",
       fallbackContact?.email ? `Fallback contact: ${fallbackContact.email}` : "",
       `Contact coverage: ${contactStrategy.coverageStatus}`,
-      `Contact strategy: ${contactStrategy.recommendation}`,
+      `Contact strategy: ${outreachRecommendation}`,
       `Contact rationale: ${contactStrategy.reason}`,
       ``,
       `About Brancr Labs:`,
@@ -89,6 +90,9 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       `- Keep each email tight: 80-140 words, 2 short paragraphs max`,
       `- Tone: convincing, professional, sharp, commercially aware`,
       `- Avoid generic AI buzzwords, hype, and filler phrases like "hope you're well", "just checking in", or "reaching out because"`,
+      `- Never use placeholder tokens such as [First Name], [Company Name], or [Role]`,
+      `- If a named operator is available, greet them naturally by name`,
+      `- If no named operator is available, use a neutral greeting like "Hello," and write the message so it can be forwarded internally`,
       `- Make Brancr Labs sound capable by showing operational understanding, a plausible workflow diagnosis, and a clear reason Brancr is qualified to help`,
       `- If the likely owner/team is known, tailor the message to that role's responsibilities`,
       `- Use concrete language about operational workflows, handoffs, repetitive tasks, response time, quality control, or client delivery where relevant`,
@@ -97,6 +101,10 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       `- Step 1 should feel like an informed first contact, not a template`,
       `- Step 2 should deepen credibility with a stronger operational point of view, not weak follow-up language`,
       `- Step 3 should stay professional and concise, not passive-aggressive or needy`,
+      `- Contact-path rule: "${outreachRecommendation}"`,
+      `- If the contact path is personalized email, write directly to the named operator and make the message role-aware`,
+      `- If the contact path is generic inbox fallback, do not pretend you know the recipient. Ask briefly to be pointed to the person who owns the relevant workflow`,
+      `- If the contact path is linkedin or manual review, keep the copy adaptable and do not over-personalize unsupported details`,
       `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,
       `- Return a JSON object with a "sequence" key holding an array of 3 objects: { subject, body, delayDays, stepNumber }`,
     ].join("\n")

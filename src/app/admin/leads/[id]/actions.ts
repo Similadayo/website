@@ -9,6 +9,7 @@ import { runAIFitAnalysis } from "@/lib/ai/analyzer"
 import { sendEmail } from "@/lib/email/resend"
 import { generateOutreachSequence as generateDraftFn } from "@/app/admin/outreach/actions"
 import { getScopedLeadWhere } from "@/lib/auth/scope"
+import { getLeadContactStrategy, requiresManualContactReview } from "@/lib/contacts/priority"
 
 // ─── Stage Update ───────────────────────────────────────────────────────────
 
@@ -179,10 +180,32 @@ export async function sendLeadEmail(
   to: string,
   subject: string,
   body: string,
-  messageId?: string // if it was already drafted
+  messageId?: string, // if it was already drafted
+  overrideContactReview = false
 ): Promise<{ success: boolean; error?: string }> {
   const session = await auth()
   if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const leadForDispatch = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
+    include: {
+      company: {
+        include: {
+          contacts: true,
+        },
+      },
+    },
+  })
+
+  if (!leadForDispatch) return { success: false, error: "Lead not found" }
+
+  const contactStrategy = getLeadContactStrategy(leadForDispatch.company.contacts as any[])
+  if (requiresManualContactReview(contactStrategy.recommendation) && !overrideContactReview) {
+    return {
+      success: false,
+      error: "This lead still needs manual contact review before dispatch. Use a verified operator or enable a test-send override.",
+    }
+  }
 
   const currentUser = await (db.user as any).findUnique({
     where: { id: session.user.id },
@@ -201,7 +224,7 @@ export async function sendLeadEmail(
   }
 
   // Update lead stage
-  const lead = await db.lead.findFirst({ where: await getScopedLeadWhere(leadId) })
+  const lead = leadForDispatch
   if (lead && isValidTransition(lead.stage, "contacted")) {
     await db.lead.update({
       where: { id: leadId },
@@ -283,6 +306,149 @@ export async function startDeepRecon(leadId: string): Promise<{ success: boolean
   } catch (err: any) {
     return { success: false, error: err.message }
   }
+}
+
+export async function setPrimaryContact(
+  leadId: string,
+  contactId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
+    include: { company: { include: { contacts: true } } },
+  })
+
+  if (!lead) return { success: false, error: "Lead not found" }
+
+  const target = lead.company.contacts.find((contact) => contact.id === contactId)
+  if (!target) return { success: false, error: "Contact not found" }
+
+  await db.contact.updateMany({
+    where: { companyId: lead.companyId },
+    data: { isPrimaryDecisionMaker: false },
+  })
+
+  await db.contact.update({
+    where: { id: contactId },
+    data: {
+      isPrimaryDecisionMaker: true,
+      verified: true,
+      contactTier: target.email ? "tier_1" : "tier_2",
+      outreachRecommendation: target.email ? "personalized_email" : "linkedin_or_manual_review",
+    },
+  })
+
+  await logActivity({
+    entity: "lead",
+    entityId: leadId,
+    actorId: session.user.id,
+    action: "PRIMARY_CONTACT_SET",
+    metadata: {
+      contactId,
+      contactName: target.name || target.email || "Unnamed contact",
+      roleTitle: target.roleTitle || null,
+      summary: `Primary contact set to ${target.name || target.email || "Unnamed contact"}${target.roleTitle ? ` (${target.roleTitle})` : ""}`,
+    },
+  })
+
+  revalidatePath(`/admin/leads/${leadId}`)
+  revalidatePath("/admin/leads")
+  revalidatePath("/admin/outreach")
+  return { success: true }
+}
+
+export async function approveGenericInboxContact(
+  leadId: string,
+  contactId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
+    include: { company: { include: { contacts: true } } },
+  })
+
+  if (!lead) return { success: false, error: "Lead not found" }
+
+  const target = lead.company.contacts.find((contact) => contact.id === contactId)
+  if (!target) return { success: false, error: "Contact not found" }
+
+  await db.contact.update({
+    where: { id: contactId },
+    data: {
+      verified: true,
+      isGenericInbox: true,
+      contactTier: "tier_3",
+      outreachRecommendation: "generic_inbox_fallback",
+    },
+  })
+
+  await logActivity({
+    entity: "lead",
+    entityId: leadId,
+    actorId: session.user.id,
+    action: "GENERIC_INBOX_APPROVED",
+    metadata: {
+      contactId,
+      contactName: target.name || target.email || "Fallback inbox",
+      roleTitle: target.roleTitle || null,
+      summary: `Fallback inbox approved: ${target.email || target.name || "Public company route"}`,
+    },
+  })
+
+  revalidatePath(`/admin/leads/${leadId}`)
+  revalidatePath("/admin/leads")
+  revalidatePath("/admin/outreach")
+  return { success: true }
+}
+
+export async function markContactForManualReview(
+  leadId: string,
+  contactId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
+    include: { company: { include: { contacts: true } } },
+  })
+
+  if (!lead) return { success: false, error: "Lead not found" }
+
+  const target = lead.company.contacts.find((contact) => contact.id === contactId)
+  if (!target) return { success: false, error: "Contact not found" }
+
+  await db.contact.update({
+    where: { id: contactId },
+    data: {
+      verified: false,
+      contactTier: target.email ? "tier_3" : "tier_4",
+      outreachRecommendation: "manual_review",
+      isPrimaryDecisionMaker: false,
+    },
+  })
+
+  await logActivity({
+    entity: "lead",
+    entityId: leadId,
+    actorId: session.user.id,
+    action: "CONTACT_MARKED_FOR_MANUAL_REVIEW",
+    metadata: {
+      contactId,
+      contactName: target.name || target.email || "Unnamed contact",
+      roleTitle: target.roleTitle || null,
+      summary: `Contact marked for manual review: ${target.name || target.email || "Unnamed contact"}`,
+    },
+  })
+
+  revalidatePath(`/admin/leads/${leadId}`)
+  revalidatePath("/admin/leads")
+  revalidatePath("/admin/outreach")
+  return { success: true }
 }
 
 // ─── CRM Synchronization ───────────────────────────────────────────────────
