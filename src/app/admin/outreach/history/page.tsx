@@ -47,7 +47,7 @@ export default async function OutreachHistoryPage({
 
       <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden relative group">
         {/* Mobile Scroll Hint */}
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none lg:hidden z-10 opaitcy-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none lg:hidden z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
         
         <div className="overflow-x-auto">
           <div className="min-w-full md:min-w-[1000px]">

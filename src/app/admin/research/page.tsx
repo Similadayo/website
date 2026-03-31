@@ -129,7 +129,7 @@ export default async function ResearchPage({
 
       {pastSessions.length > 0 && (
         <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm dark:shadow-none overflow-hidden relative group">
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent pointer-events-none lg:hidden z-10 opaitcy-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-gray-900 to-transparent pointer-events-none lg:hidden z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
 
           <div className="px-8 py-6 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
             <h2 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Activity History</h2>
