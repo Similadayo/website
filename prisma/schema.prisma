@@ -152,6 +152,9 @@ model Contact {
   name            String?
   roleTitle       String?
   email           String?
+  emailStatus     String?
+  emailEvidenceLevel String?
+  emailPattern    String?
   linkedinUrl     String?
   contactType     String?
   confidenceScore Float?

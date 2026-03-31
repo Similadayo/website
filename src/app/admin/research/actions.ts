@@ -6,12 +6,8 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { discoverCompanies } from "@/lib/search"
 import { isValidTransition } from "@/lib/stages"
-import { extractContacts } from "@/lib/contacts/extractor"
-import {
-  getContactTier,
-  getOutreachRecommendation,
-  isGenericInboxEmail,
-} from "@/lib/contacts/priority"
+import { crawlCompanyWebsite, buildWebsiteCorpus } from "@/lib/contacts/crawler"
+import { persistCrawlContacts, enrichExecutiveContacts } from "@/lib/contacts/enrichment"
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { normalizeDomain } from "@/lib/validators"
 import { runAIFitAnalysis } from "@/lib/ai/analyzer"
@@ -170,59 +166,47 @@ export async function startResearchSession(
       }
 
       // 5. Fetch website — keep raw HTML for contact extraction
-      let rawHtml    = ""
+      let crawlResult = {
+        pages: [],
+        emails: [],
+        people: [],
+        contactPages: [],
+        linkedinUrls: [],
+      } as Awaited<ReturnType<typeof crawlCompanyWebsite>>
       let websiteText = ""
       if (newCompany.websiteUrl) {
         try {
-          const res = await fetch(newCompany.websiteUrl, {
-            headers: { "User-Agent": "Mozilla/5.0 (compatible; BrancrBot/1.0)" },
-            signal:  AbortSignal.timeout(10_000),
-          })
-          if (res.ok) {
-            rawHtml = await res.text()
-            websiteText = rawHtml
-              .replace(/<script[\s\S]*?<\/script>/gi, "")
-              .replace(/<style[\s\S]*?<\/style>/gi, "")
-              .replace(/<[^>]*>/g, " ")
-              .replace(/\s+/g, " ")
-              .trim()
-              .slice(0, 12_000)
-          }
+          crawlResult = await crawlCompanyWebsite(newCompany.websiteUrl)
+          websiteText = buildWebsiteCorpus(crawlResult)
         } catch { /* non-fatal */ }
       }
 
       // 6. Extract contacts from website HTML
-      if (rawHtml && newCompany.websiteUrl) {
+      if (crawlResult.pages.length > 0 && newCompany.websiteUrl) {
         try {
-          const contacts = extractContacts(rawHtml, newCompany.websiteUrl)
+          const companyLinkedin =
+            crawlResult.linkedinUrls.find((url) => /linkedin\.com\/company\//i.test(url)) ??
+            crawlResult.linkedinUrls[0] ??
+            null
 
-          if (contacts.linkedinUrl && !newCompany.linkedinUrl) {
-            await db.company.update({
+          if (companyLinkedin && !newCompany.linkedinUrl) {
+            newCompany = await db.company.update({
               where: { id: newCompany.id },
-              data:  { linkedinUrl: contacts.linkedinUrl },
+              data:  { linkedinUrl: companyLinkedin },
             })
           }
 
-          for (const email of contacts.emails.slice(0, 3)) {
-            const isGenericInbox = isGenericInboxEmail(email)
-            await db.contact.create({
-              data: {
-                companyId:   newCompany.id,
-                email,
-                contactType: "extracted",
-                sourceUrl:   newCompany.websiteUrl,
-                sourceEvidence: `Public email extracted from ${newCompany.websiteUrl}`,
-                verified: true,
-                isGenericInbox,
-                isPrimaryDecisionMaker: false,
-                confidenceScore: isGenericInbox ? 0.6 : 0.7,
-                contactTier: getContactTier({ email, isGenericInbox, sourceUrl: newCompany.websiteUrl }),
-                outreachRecommendation: getOutreachRecommendation({ email, isGenericInbox, sourceUrl: newCompany.websiteUrl }),
-              },
-            })
-          }
+          await persistCrawlContacts(newCompany.id, crawlResult)
 
-          for (const phone of contacts.phones.slice(0, 2)) {
+          for (const phone of [...new Set(crawlResult.pages.flatMap((page) => {
+            const matches = page.text.match(/(?:\+?\d[\d\s\-()]{7,}\d)/g) ?? []
+            return matches.map((value) => value.replace(/[^\d+]/g, "").trim()).filter((value) => value.length >= 8)
+          }))].slice(0, 2)) {
+            const existingPhone = await db.contact.findFirst({
+              where: { companyId: newCompany.id, name: `Phone: ${phone}` },
+            })
+            if (existingPhone) continue
+
             await db.contact.create({
               data: {
                 companyId:   newCompany.id,
@@ -237,21 +221,7 @@ export async function startResearchSession(
             })
           }
 
-          if (contacts.contactPage) {
-            await db.contact.create({
-              data: {
-                companyId: newCompany.id,
-                name: "Contact Form",
-                contactType: "contact_page",
-                sourceUrl: contacts.contactPage,
-                sourceEvidence: `Contact page discovered while scanning ${newCompany.websiteUrl}`,
-                verified: true,
-                contactTier: "tier_3",
-                outreachRecommendation: "manual_review",
-                confidenceScore: 0.55,
-              },
-            })
-          }
+          await enrichExecutiveContacts(newCompany.id, newCompany.websiteUrl, newCompany.domain, [])
         } catch { /* contact extraction non-fatal */ }
       }
 

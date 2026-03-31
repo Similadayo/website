@@ -1,19 +1,22 @@
 import OpenAI from "openai"
 import { searchSerperWeb } from "../search/serper"
 import { db } from "../db"
-import {
-  getContactTier,
-  getOutreachRecommendation,
-  isLeadershipRole,
-} from "../contacts/priority"
+import { isLeadershipRole } from "../contacts/priority"
+import { enrichExecutiveContacts, type ReconIdentity } from "../contacts/enrichment"
 
 /**
- * Deep Reconnaissance: Finds operator-level decision makers via LinkedIn and web search.
+ * Deep Reconnaissance: finds operator-level decision makers, then enriches emails from public web evidence.
  */
 export async function runDeepRecon(leadId: string): Promise<any[]> {
   const lead = await db.lead.findUnique({
     where: { id: leadId },
-    include: { company: true }
+    include: {
+      company: {
+        include: {
+          contacts: true,
+        },
+      },
+    },
   })
 
   if (!lead) throw new Error("Lead not found for recon")
@@ -32,9 +35,19 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
       items.findIndex((candidate) => candidate.url === result.url) === index
   )
 
-  if (searchResults.length === 0) return []
+  if (searchResults.length === 0) {
+    const enriched = await enrichExecutiveContacts(
+      lead.companyId,
+      lead.company.websiteUrl,
+      lead.company.domain,
+      []
+    )
+    return enriched.contacts
+  }
 
-  const contextText = searchResults.map(r => `Title: ${r.name}\nSnippet: ${r.description}\nLink: ${r.url}`).join("\n\n---\n\n")
+  const contextText = searchResults
+    .map((r) => `Title: ${r.name}\nSnippet: ${r.description}\nLink: ${r.url}`)
+    .join("\n\n---\n\n")
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -44,101 +57,43 @@ export async function runDeepRecon(leadId: string): Promise<any[]> {
       {
         role: "system",
         content: `You are a corporate intelligence analyst. Given web and LinkedIn search results for "${companyName}", identify founder/operator decision makers.
-        Prioritize founder, co-founder, CEO, COO, managing director, owner, head of operations, and operations manager.
-        Return JSON with a "contacts" key holding an array of objects:
-        [{ "name": "...", "role": "...", "email": null, "linkedinUrl": null, "confidence": 0.0-1.0, "evidence": "..." }]
-        Use email only if clearly visible in the source text. Use linkedinUrl when present. Keep only current employees or current operators. Avoid past employees or similar sounding companies.`
+Prioritize founder, co-founder, CEO, COO, managing director, owner, head of operations, and operations manager.
+Return JSON with a "contacts" key holding an array of objects:
+[{ "name": "...", "role": "...", "email": null, "linkedinUrl": null, "confidence": 0.0-1.0, "evidence": "..." }]
+Use email only if clearly visible in the source text. Use linkedinUrl when present. Keep only current employees or current operators. Avoid past employees or similar sounding companies.`,
       },
-      { role: "user", content: contextText }
+      { role: "user", content: contextText },
     ],
-    response_format: { type: "json_object" }
+    response_format: { type: "json_object" },
   })
 
   const rawJson = response.choices[0]?.message?.content ?? "{}"
   const parsed = JSON.parse(rawJson)
   const contacts = parsed.contacts || parsed.people || Object.values(parsed)[0] || []
+  const reconContacts: ReconIdentity[] = []
 
-  if (!Array.isArray(contacts)) return []
+  if (Array.isArray(contacts)) {
+    for (const c of contacts) {
+      const roleTitle = typeof c.role === "string" ? c.role : null
+      if (!roleTitle || !isLeadershipRole(roleTitle)) continue
 
-  // Clean and save
-  const savedContacts = []
-  for (const c of contacts) {
-    const role = typeof c.role === "string" ? c.role : null
-    const linkedinUrl = typeof c.linkedinUrl === "string" ? c.linkedinUrl : null
-    const email = typeof c.email === "string" ? c.email : null
-
-    if (!role || (!linkedinUrl && !email) || !isLeadershipRole(role)) continue
-
-    const existing = await db.contact.findFirst({
-      where: {
-        companyId: lead.companyId,
-        OR: [
-          ...(linkedinUrl ? [{ linkedinUrl }] : []),
-          ...(email ? [{ email }] : []),
-          ...(c.name ? [{ name: c.name, roleTitle: role }] : []),
-        ],
-      },
-    })
-
-    if (existing) {
-      const updated = await db.contact.update({
-        where: { id: existing.id },
-        data: {
-          roleTitle: existing.roleTitle || role,
-          email: existing.email || email,
-          linkedinUrl: existing.linkedinUrl || linkedinUrl,
-          confidenceScore: Math.max(existing.confidenceScore ?? 0, c.confidence || 0.5),
-          sourceEvidence: existing.sourceEvidence || (typeof c.evidence === "string" ? c.evidence : "Operator discovered via deep recon."),
-          verified: existing.verified || !!email || !!linkedinUrl,
-          isPrimaryDecisionMaker: true,
-          isGenericInbox: false,
-          contactTier: getContactTier({
-            roleTitle: existing.roleTitle || role,
-            email: existing.email || email,
-            linkedinUrl: existing.linkedinUrl || linkedinUrl,
-            isPrimaryDecisionMaker: true,
-          }),
-          outreachRecommendation: getOutreachRecommendation({
-            roleTitle: existing.roleTitle || role,
-            email: existing.email || email,
-            linkedinUrl: existing.linkedinUrl || linkedinUrl,
-            isPrimaryDecisionMaker: true,
-          }),
-        },
-      })
-      savedContacts.push(updated)
-      continue
-    }
-
-    const saved = await db.contact.create({
-      data: {
-        companyId: lead.companyId,
+      reconContacts.push({
         name: typeof c.name === "string" ? c.name : null,
-        roleTitle: role,
-        email,
-        linkedinUrl,
-        confidenceScore: c.confidence || 0.5,
-        contactType: "operator_recon",
+        roleTitle,
+        email: typeof c.email === "string" ? c.email.toLowerCase() : null,
+        linkedinUrl: typeof c.linkedinUrl === "string" ? c.linkedinUrl : null,
+        confidenceScore: typeof c.confidence === "number" ? c.confidence : 0.55,
         sourceEvidence: typeof c.evidence === "string" ? c.evidence : "Operator discovered via deep recon.",
-        verified: true,
-        isGenericInbox: false,
-        isPrimaryDecisionMaker: true,
-        contactTier: getContactTier({
-          roleTitle: role,
-          email,
-          linkedinUrl,
-          isPrimaryDecisionMaker: true,
-        }),
-        outreachRecommendation: getOutreachRecommendation({
-          roleTitle: role,
-          email,
-          linkedinUrl,
-          isPrimaryDecisionMaker: true,
-        }),
-      }
-    })
-    savedContacts.push(saved)
+      })
+    }
   }
 
-  return savedContacts
+  const enriched = await enrichExecutiveContacts(
+    lead.companyId,
+    lead.company.websiteUrl,
+    lead.company.domain,
+    reconContacts
+  )
+
+  return enriched.contacts
 }

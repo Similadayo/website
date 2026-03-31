@@ -9,7 +9,13 @@ import { runAIFitAnalysis } from "@/lib/ai/analyzer"
 import { sendEmail } from "@/lib/email/resend"
 import { generateOutreachSequence as generateDraftFn } from "@/app/admin/outreach/actions"
 import { getScopedLeadWhere } from "@/lib/auth/scope"
-import { getLeadContactStrategy, requiresManualContactReview } from "@/lib/contacts/priority"
+import {
+  getLeadContactStrategy,
+  getContactTier,
+  getOutreachRecommendation,
+  requiresManualContactReview,
+} from "@/lib/contacts/priority"
+import { crawlCompanyWebsite, buildWebsiteCorpus } from "@/lib/contacts/crawler"
 
 // ─── Stage Update ───────────────────────────────────────────────────────────
 
@@ -81,26 +87,11 @@ export async function runLeadAIAnalysis(
   const websiteUrl = lead.company.websiteUrl
   let websiteText = ""
 
-  // Fetch website text if URL available
   if (websiteUrl) {
     try {
-      const res = await fetch(websiteUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; BrancrBot/1.0)" },
-        signal: AbortSignal.timeout(10_000),
-      })
-      if (res.ok) {
-        const html = await res.text()
-        // Strip HTML tags, collapse whitespace, limit tokens (~3000 words)
-        websiteText = html
-          .replace(/<script[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[\s\S]*?<\/style>/gi, "")
-          .replace(/<[^>]*>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-          .slice(0, 12_000)
-      }
+      const crawlResult = await crawlCompanyWebsite(websiteUrl)
+      websiteText = buildWebsiteCorpus(crawlResult)
     } catch (err: any) {
-      // Non-fatal: proceed with company metadata only
       websiteText = `[Website fetch failed: ${err.message}]`
     }
   }
@@ -334,9 +325,9 @@ export async function setPrimaryContact(
     where: { id: contactId },
     data: {
       isPrimaryDecisionMaker: true,
-      verified: true,
-      contactTier: target.email ? "tier_1" : "tier_2",
-      outreachRecommendation: target.email ? "personalized_email" : "linkedin_or_manual_review",
+      verified: target.emailStatus === "public" || target.verified,
+      contactTier: getContactTier({ ...target, isPrimaryDecisionMaker: true }),
+      outreachRecommendation: getOutreachRecommendation({ ...target, isPrimaryDecisionMaker: true }),
     },
   })
 
@@ -381,6 +372,8 @@ export async function approveGenericInboxContact(
     data: {
       verified: true,
       isGenericInbox: true,
+      emailStatus: target.emailStatus || "public",
+      emailEvidenceLevel: target.emailEvidenceLevel || "public_exact",
       contactTier: "tier_3",
       outreachRecommendation: "generic_inbox_fallback",
     },

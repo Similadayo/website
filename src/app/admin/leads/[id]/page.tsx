@@ -1,10 +1,8 @@
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import {
   Building2, CheckCircle2, XCircle, BrainCircuit,
-  ExternalLink, Activity, AlertCircle, Loader2, Mail, Phone, Linkedin,
-  SendHorizontal
+  ExternalLink, Activity, Mail, Linkedin
 } from "lucide-react"
 import {
   updateLeadStage,
@@ -19,7 +17,12 @@ import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
-import { getLeadContactStrategy, getContactTier, requiresManualContactReview } from "@/lib/contacts/priority"
+import {
+  getLeadContactStrategy,
+  getContactTier,
+  isInferredExecutiveEmail,
+  requiresManualContactReview,
+} from "@/lib/contacts/priority"
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -451,10 +454,30 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                               {c.outreachRecommendation.replace(/_/g, " ")}
                             </span>
                           )}
+                          {c.email && (
+                            <span className={`rounded-full px-2 py-1 ${
+                              c.emailStatus === "public"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : c.emailStatus === "inferred"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-slate-200 text-slate-600"
+                            }`}>
+                              {c.emailStatus || "unknown email status"}
+                            </span>
+                          )}
                         </div>
                         {c.sourceEvidence && (
                           <p className="mt-2 text-xs text-gray-500 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 line-clamp-3">
                             {c.sourceEvidence}
+                          </p>
+                        )}
+                        {c.email && (
+                          <p className="mt-2 text-xs text-gray-500 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600">
+                            {isInferredExecutiveEmail(c)
+                              ? "Email was inferred from the company pattern and should be reviewed before sending."
+                              : c.emailEvidenceLevel === "public_same_domain"
+                                ? "Email is public and matched to this executive from nearby website evidence."
+                                : "Email is public and visible on a company source."}
                           </p>
                         )}
                         <div className="mt-3 flex flex-wrap gap-2">

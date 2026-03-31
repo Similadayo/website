@@ -9,6 +9,9 @@ export type ContactCandidate = {
   name?: string | null
   roleTitle?: string | null
   email?: string | null
+  emailStatus?: string | null
+  emailEvidenceLevel?: string | null
+  emailPattern?: string | null
   linkedinUrl?: string | null
   sourceUrl?: string | null
   sourceEvidence?: string | null
@@ -23,6 +26,13 @@ export type ContactCandidate = {
 
 export function isLeadershipRole(role?: string | null) {
   return !!role && LEADERSHIP_ROLE_PATTERN.test(role)
+}
+
+export function isInferredExecutiveEmail(contact: ContactCandidate) {
+  return !!contact.email && (
+    contact.emailStatus === "inferred" ||
+    contact.emailEvidenceLevel === "pattern_inferred"
+  )
 }
 
 export function isGenericInboxEmail(email?: string | null) {
@@ -45,8 +55,9 @@ export function getContactTier(contact: ContactCandidate) {
 
 export function getOutreachRecommendation(contact: ContactCandidate) {
   const tier = getContactTier(contact)
+  const inferredExecutiveEmail = isInferredExecutiveEmail(contact)
 
-  if (tier === "tier_1") return "personalized_email"
+  if (tier === "tier_1") return inferredExecutiveEmail ? "personalized_email_review" : "personalized_email"
   if (tier === "tier_2") return contact.linkedinUrl ? "linkedin_or_manual_review" : "manual_review"
   if (tier === "tier_3") return contact.email ? "generic_inbox_fallback" : "manual_review"
   return "skip"
@@ -78,6 +89,10 @@ function contactScore(contact: ContactCandidate) {
   const hasEmail = !!contact.email
   const genericInbox = !!contact.isGenericInbox || isGenericInboxEmail(contact.email)
   const verified = !!contact.verified
+  const inferredExecutiveEmail = isInferredExecutiveEmail(contact)
+  const publicExecutiveEmail =
+    hasEmail && !genericInbox && !inferredExecutiveEmail &&
+    (contact.emailStatus === "public" || contact.emailEvidenceLevel === "public_exact" || contact.emailEvidenceLevel === "public_same_domain" || verified)
   const confidence = contact.confidenceScore ?? 0
 
   return (
@@ -85,6 +100,8 @@ function contactScore(contact: ContactCandidate) {
     (leadership ? 35 : 0) +
     (hasEmail ? 20 : 0) +
     (verified ? 15 : 0) +
+    (publicExecutiveEmail ? 20 : 0) +
+    (inferredExecutiveEmail ? 8 : 0) +
     (genericInbox ? -15 : 0) +
     confidence * 10
   )
@@ -117,7 +134,7 @@ export function getLeadContactStrategy<T extends ContactCandidate>(contacts: T[]
     bestContact ? getOutreachRecommendation(bestContact) :
     "skip"
 
-  const coverageStatus =
+  const coverageStatus: "high" | "medium" | "low" | "missing" =
     bestContact && getContactTier(bestContact) === "tier_1" ? "high" :
     bestContact && getContactTier(bestContact) === "tier_2" ? "medium" :
     primarySendContact ? "low" :
@@ -125,7 +142,9 @@ export function getLeadContactStrategy<T extends ContactCandidate>(contacts: T[]
 
   const reason =
     bestContact && getContactTier(bestContact) === "tier_1"
-      ? "Named decision-maker with a usable work email."
+      ? isInferredExecutiveEmail(bestContact)
+        ? "Named decision-maker email was inferred from the company pattern and should be reviewed before sending."
+        : "Named decision-maker with a usable work email."
       : bestContact && getContactTier(bestContact) === "tier_2" && fallbackContact?.email
         ? "Named operator found, but no direct email. Use the company inbox as fallback."
         : bestContact && getContactTier(bestContact) === "tier_2"

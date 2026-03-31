@@ -103,6 +103,7 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
       `- Step 3 should stay professional and concise, not passive-aggressive or needy`,
       `- Contact-path rule: "${outreachRecommendation}"`,
       `- If the contact path is personalized email, write directly to the named operator and make the message role-aware`,
+      `- If the contact path is personalized email review, write to the named operator but avoid unsupported claims because the email was inferred from company evidence and still needs review`,
       `- If the contact path is generic inbox fallback, do not pretend you know the recipient. Ask briefly to be pointed to the person who owns the relevant workflow`,
       `- If the contact path is linkedin or manual review, keep the copy adaptable and do not over-personalize unsupported details`,
       `- The sign-off MUST be: "Best regards,\n\n${session.user.name}\nBrancr Labs"`,

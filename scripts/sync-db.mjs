@@ -56,6 +56,21 @@ async function main() {
   )
 
   await addColumn(
+    "ALTER TABLE Contact ADD COLUMN emailStatus TEXT",
+    "Contact.emailStatus already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN emailEvidenceLevel TEXT",
+    "Contact.emailEvidenceLevel already exists"
+  )
+
+  await addColumn(
+    "ALTER TABLE Contact ADD COLUMN emailPattern TEXT",
+    "Contact.emailPattern already exists"
+  )
+
+  await addColumn(
     "ALTER TABLE Contact ADD COLUMN verified INTEGER NOT NULL DEFAULT 0",
     "Contact.verified already exists"
   )

@@ -3,10 +3,10 @@
 import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Trash2, X, XCircle } from "lucide-react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { bulkDeleteLeadIntel, deleteFilteredLeadIntel, deleteLeadIntel } from "@/app/admin/leads/actions"
 import { formatOutreachRecommendation, getLeadContactStrategy } from "@/lib/contacts/priority"
 import { STAGE_LABELS, LeadStage } from "@/lib/stages"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 type LeadRow = any
 type ConfirmState =
@@ -46,16 +46,15 @@ export function LeadPipelineTable({
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
   const [feedback, setFeedback] = useState<FeedbackState | null>(null)
   const [isPending, startTransition] = useTransition()
+
   const visibleLeads = useMemo(
     () => leads.filter((lead) => !hiddenIds.includes(lead.id)),
     [hiddenIds, leads]
   )
-
+  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const allVisibleSelected =
     visibleLeads.length > 0 && visibleLeads.every((lead) => selectedIds.includes(lead.id))
   const toggleOrder = order === "asc" ? "desc" : "asc"
-
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
 
   function queryFor(next: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams?.toString())
@@ -125,6 +124,7 @@ export function LeadPipelineTable({
 
   function handleDeleteConfirm() {
     if (!confirmState) return
+
     startTransition(async () => {
       let res:
         | Awaited<ReturnType<typeof deleteLeadIntel>>
@@ -178,18 +178,20 @@ export function LeadPipelineTable({
   return (
     <>
       {feedback && (
-        <div className={`mx-8 mt-6 rounded-2xl border px-5 py-4 text-sm font-semibold ${
-          feedback.tone === "success"
-            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-            : "border-red-200 bg-red-50 text-red-800"
-        }`}>
+        <div
+          className={`mx-4 mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold sm:mx-6 lg:mx-8 ${
+            feedback.tone === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-red-200 bg-red-50 text-red-800"
+          }`}
+        >
           {feedback.message}
         </div>
       )}
 
       {isSuperAdmin && visibleLeads.length > 0 && (
-        <div className="border-b border-gray-100 bg-gray-50/50 px-8 py-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="border-b border-gray-100 bg-gray-50/50 px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
@@ -202,60 +204,197 @@ export function LeadPipelineTable({
                 {selectedIds.length} selected
               </span>
             </div>
-            <button
-              type="button"
-              onClick={openBulkDelete}
-              disabled={selectedIds.length === 0 || isPending}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-300 hover:text-red-900 disabled:opacity-40"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete Selected
-            </button>
-            <button
-              type="button"
-              onClick={openFilterDelete}
-              disabled={totalFilteredCount === 0 || isPending}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-400 hover:text-red-900 disabled:opacity-40"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete All In Filter
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={openBulkDelete}
+                disabled={selectedIds.length === 0 || isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-300 hover:text-red-900 disabled:opacity-40"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete Selected
+              </button>
+              <button
+                type="button"
+                onClick={openFilterDelete}
+                disabled={totalFilteredCount === 0 || isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-400 hover:text-red-900 disabled:opacity-40"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete All In Filter
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <div className="min-w-full md:min-w-[1100px]">
-          <table className="w-full text-sm text-left">
-            <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 border-b border-gray-100 font-black tracking-[0.2em]">
+      <div className="space-y-4 px-4 py-4 sm:px-6 lg:hidden">
+        {visibleLeads.length === 0 ? (
+          <div className="rounded-[28px] border border-dashed border-gray-200 bg-white px-6 py-16 text-center text-sm text-gray-400">
+            No leads found.
+          </div>
+        ) : (
+          visibleLeads.map((lead: LeadRow) => {
+            const analysis = lead.analyses[0]
+            const contactStrategy = getLeadContactStrategy(lead.company.contacts || [])
+            const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
+            const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
+
+            return (
+              <article
+                key={lead.id}
+                className="rounded-[28px] border border-gray-100 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.05)]"
+              >
+                <div className="flex items-start gap-3">
+                  {isSuperAdmin && (
+                    <input
+                      type="checkbox"
+                      checked={selectedSet.has(lead.id)}
+                      onChange={() => toggleSelected(lead.id)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="truncate text-lg font-black text-gray-900">{lead.company.name}</h3>
+                        <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">
+                          {lead.company.niche || lead.company.domain || "Target"}
+                        </p>
+                      </div>
+                      <FitScoreBadge score={analysis?.fitScore} />
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <StageBadge stage={lead.stage as LeadStage} />
+                      {lead.hasBeenReachedOutTo && (
+                        <span className="inline-flex items-center rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                          Reached Out
+                        </span>
+                      )}
+                      <CoverageBadge coverageStatus={contactStrategy.coverageStatus} />
+                      <span className="inline-flex items-center rounded-lg border border-gray-100 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        {formatOutreachRecommendation(contactStrategy.recommendation)}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 rounded-2xl bg-gray-50/70 p-4">
+                      <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">Best Contact</div>
+                      <div className="mt-1 text-sm font-semibold text-gray-700">
+                        {contactStrategy.bestContact
+                          ? contactStrategy.bestContact.name || contactStrategy.bestContact.email || "Unnamed contact"
+                          : "Manual review needed"}
+                      </div>
+                      {contactStrategy.fallbackContact?.email && (
+                        <div className="mt-1 text-xs text-gray-500">Fallback: {contactStrategy.fallbackContact.email}</div>
+                      )}
+
+                      <div className="mt-4 text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">Analysis Summary</div>
+                      <div className="mt-1 text-sm leading-6 text-gray-600">
+                        {analysis?.companySummary ?? "Waiting for AI qualification..."}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-gray-500">
+                      <span>Added {new Date(lead.createdAt).toLocaleDateString()}</span>
+                      {isSuperAdmin && selectedMemberId !== currentUserId && (
+                        <span className="truncate text-right">Owner: {ownerName}</span>
+                      )}
+                    </div>
+
+                    {isSuperAdmin && selectedMemberId !== currentUserId && (
+                      <div className="mt-2 text-xs font-medium text-gray-400">
+                        Created by: {creatorName}
+                      </div>
+                    )}
+
+                    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                      <Link
+                        href={`/admin/leads/${lead.id}`}
+                        className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3.5 text-[11px] font-black uppercase tracking-[0.22em] text-white transition-colors hover:bg-gray-800"
+                      >
+                        Review Lead
+                      </Link>
+                      {isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => openSingleDelete(lead.id)}
+                          disabled={isPending}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-3.5 text-[11px] font-black uppercase tracking-[0.22em] text-red-700 transition-colors hover:border-red-300 hover:text-red-900 disabled:opacity-40"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            )
+          })
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto lg:block">
+        <div className="min-w-full xl:min-w-[1100px]">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-gray-100 bg-gray-50/50 text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
               <tr>
                 {isSuperAdmin && <th className="px-4 py-5 text-center">Select</th>}
-                <th className="px-8 py-5">
-                  <Link href={queryFor({ sort: "name", order: sort === "name" ? toggleOrder : "asc", page: undefined })} className="flex items-center gap-1 hover:text-black transition-colors">
+                <th className="px-6 py-5 xl:px-8">
+                  <Link
+                    href={queryFor({ sort: "name", order: sort === "name" ? toggleOrder : "asc", page: undefined })}
+                    className="flex items-center gap-1 transition-colors hover:text-black"
+                  >
                     Company
-                    {sort === "name" ? (order === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    {sort === "name"
+                      ? order === "asc"
+                        ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowDown className="h-3 w-3" />
+                      : <ArrowUpDown className="h-3 w-3 opacity-30" />}
                   </Link>
                 </th>
-                <th className="px-8 py-5">
-                  <Link href={queryFor({ sort: "stage", order: sort === "stage" ? toggleOrder : "asc", page: undefined })} className="flex items-center gap-1 hover:text-black transition-colors">
+                <th className="px-6 py-5 xl:px-8">
+                  <Link
+                    href={queryFor({ sort: "stage", order: sort === "stage" ? toggleOrder : "asc", page: undefined })}
+                    className="flex items-center gap-1 transition-colors hover:text-black"
+                  >
                     Stage
-                    {sort === "stage" ? (order === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    {sort === "stage"
+                      ? order === "asc"
+                        ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowDown className="h-3 w-3" />
+                      : <ArrowUpDown className="h-3 w-3 opacity-30" />}
                   </Link>
                 </th>
-                <th className="px-8 py-5">
-                  <Link href={queryFor({ sort: "fit", order: sort === "fit" ? toggleOrder : "desc", page: undefined })} className="flex items-center gap-1 hover:text-black transition-colors">
+                <th className="px-6 py-5 xl:px-8">
+                  <Link
+                    href={queryFor({ sort: "fit", order: sort === "fit" ? toggleOrder : "desc", page: undefined })}
+                    className="flex items-center gap-1 transition-colors hover:text-black"
+                  >
                     Fit Score
-                    {sort === "fit" ? (order === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    {sort === "fit"
+                      ? order === "asc"
+                        ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowDown className="h-3 w-3" />
+                      : <ArrowUpDown className="h-3 w-3 opacity-30" />}
                   </Link>
                 </th>
-                <th className="px-8 py-5 font-black text-gray-400 hidden xl:table-cell">Analysis Summary</th>
-                <th className="px-8 py-5 text-right hidden lg:table-cell">
-                  <Link href={queryFor({ sort: "created", order: sort === "created" ? toggleOrder : "desc", page: undefined })} className="flex items-center gap-1 hover:text-black transition-colors justify-end">
-                    {sort === "created" ? (order === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                <th className="hidden px-6 py-5 font-black text-gray-400 xl:table-cell xl:px-8">Analysis Summary</th>
+                <th className="hidden px-6 py-5 text-right lg:table-cell xl:px-8">
+                  <Link
+                    href={queryFor({ sort: "created", order: sort === "created" ? toggleOrder : "desc", page: undefined })}
+                    className="flex items-center justify-end gap-1 transition-colors hover:text-black"
+                  >
+                    {sort === "created"
+                      ? order === "asc"
+                        ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowDown className="h-3 w-3" />
+                      : <ArrowUpDown className="h-3 w-3 opacity-30" />}
                     Added
                   </Link>
                 </th>
-                <th className="px-8 py-5 text-right">Action</th>
+                <th className="px-6 py-5 text-right xl:px-8">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -266,14 +405,14 @@ export function LeadPipelineTable({
                   </td>
                 </tr>
               ) : (
-                visibleLeads.map((lead: any) => {
+                visibleLeads.map((lead: LeadRow) => {
                   const analysis = lead.analyses[0]
                   const contactStrategy = getLeadContactStrategy(lead.company.contacts || [])
                   const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
                   const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
 
                   return (
-                    <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <tr key={lead.id} className="group transition-colors hover:bg-gray-50/50">
                       {isSuperAdmin && (
                         <td className="px-4 py-6 text-center">
                           <input
@@ -284,26 +423,18 @@ export function LeadPipelineTable({
                           />
                         </td>
                       )}
-                      <td className="px-8 py-6">
-                        <div className="font-black text-gray-900 group-hover:text-black transition-colors">{lead.company.name}</div>
-                        <div className="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-tight">{lead.company.niche || lead.company.domain || "Target"}</div>
+                      <td className="px-6 py-6 xl:px-8">
+                        <div className="font-black text-gray-900 transition-colors group-hover:text-black">{lead.company.name}</div>
+                        <div className="mt-1 text-[10px] font-bold uppercase tracking-tight text-gray-400">
+                          {lead.company.niche || lead.company.domain || "Target"}
+                        </div>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           {lead.hasBeenReachedOutTo && (
                             <span className="inline-flex items-center rounded-lg border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
                               Reached Out
                             </span>
                           )}
-                          <span className={`inline-flex items-center rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
-                            contactStrategy.coverageStatus === "high"
-                              ? "bg-green-50 text-green-700 border border-green-100"
-                              : contactStrategy.coverageStatus === "medium"
-                                ? "bg-blue-50 text-blue-700 border border-blue-100"
-                                : contactStrategy.coverageStatus === "low"
-                                  ? "bg-yellow-50 text-yellow-700 border border-yellow-100"
-                                  : "bg-gray-50 text-gray-500 border border-gray-100"
-                          }`}>
-                            {contactStrategy.coverageStatus} contact coverage
-                          </span>
+                          <CoverageBadge coverageStatus={contactStrategy.coverageStatus} />
                           <span className="inline-flex items-center rounded-lg border border-gray-100 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
                             {formatOutreachRecommendation(contactStrategy.recommendation)}
                           </span>
@@ -316,45 +447,34 @@ export function LeadPipelineTable({
                         </div>
                         {isSuperAdmin && selectedMemberId !== currentUserId && (
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
-                            <span className="inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border border-slate-200 bg-slate-50 text-slate-500">
+                            <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 uppercase tracking-widest text-slate-500">
                               Member View
                             </span>
-                            <span className="text-slate-400 normal-case tracking-normal">Owner: {ownerName}</span>
+                            <span className="normal-case tracking-normal text-slate-400">Owner: {ownerName}</span>
                             <span className="text-slate-300">•</span>
-                            <span className="text-slate-400 normal-case tracking-normal">Created by: {creatorName}</span>
+                            <span className="normal-case tracking-normal text-slate-400">Created by: {creatorName}</span>
                           </div>
                         )}
                       </td>
-                      <td className="px-8 py-6">
+                      <td className="px-6 py-6 xl:px-8">
                         <StageBadge stage={lead.stage as LeadStage} />
                       </td>
-                      <td className="px-8 py-6">
-                        {analysis?.fitScore != null ? (
-                          <div className={`inline-flex w-10 h-10 rounded-xl items-center justify-center font-black text-xs shadow-sm ring-1 ring-inset ${
-                            analysis.fitScore >= 80 ? "bg-green-50 text-green-700 ring-green-100" :
-                            analysis.fitScore >= 60 ? "bg-blue-50 text-blue-700 ring-blue-100" :
-                            analysis.fitScore >= 40 ? "bg-orange-50 text-orange-700 ring-orange-100" :
-                            "bg-red-50 text-red-700 ring-red-100"
-                          }`}>
-                            {analysis.fitScore}%
-                          </div>
-                        ) : (
-                          <span className="text-gray-300 text-[10px] font-black italic tracking-widest">PENDING</span>
-                        )}
+                      <td className="px-6 py-6 xl:px-8">
+                        <FitScoreBadge score={analysis?.fitScore} />
                       </td>
-                      <td className="px-8 py-6 hidden xl:table-cell">
-                        <div className="max-w-xs line-clamp-2 text-gray-500 font-medium text-xs leading-relaxed" title={analysis?.companySummary ?? ""}>
-                          {analysis?.companySummary ?? <span className="text-gray-300 italic">Waiting for AI qualification...</span>}
+                      <td className="hidden px-6 py-6 xl:table-cell xl:px-8">
+                        <div className="max-w-xs line-clamp-2 text-xs font-medium leading-relaxed text-gray-500" title={analysis?.companySummary ?? ""}>
+                          {analysis?.companySummary ?? <span className="italic text-gray-300">Waiting for AI qualification...</span>}
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-right hidden lg:table-cell font-black text-[10px] text-gray-400 uppercase tracking-widest">
+                      <td className="hidden px-6 py-6 text-right text-[10px] font-black uppercase tracking-widest text-gray-400 lg:table-cell xl:px-8">
                         {new Date(lead.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-8 py-6 text-right">
+                      <td className="px-6 py-6 text-right xl:px-8">
                         <div className="flex flex-col items-end gap-3">
                           <Link
                             href={`/admin/leads/${lead.id}`}
-                            className="text-white font-black text-[10px] uppercase tracking-[0.2em] px-6 py-3.5 bg-black rounded-xl hover:bg-gray-800 transition-all active:scale-95 inline-block shadow-lg shadow-gray-200"
+                            className="inline-block rounded-xl bg-black px-6 py-3.5 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-gray-200 transition-all hover:bg-gray-800 active:scale-95"
                           >
                             Review Lead
                           </Link>
@@ -400,9 +520,7 @@ export function LeadPipelineTable({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-gray-600">
-              {confirmState.message}
-            </p>
+            <p className="mt-4 text-sm leading-6 text-gray-600">{confirmState.message}</p>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
@@ -429,10 +547,79 @@ export function LeadPipelineTable({
   )
 }
 
+function CoverageBadge({ coverageStatus }: { coverageStatus: "high" | "medium" | "low" | "missing" }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
+        coverageStatus === "high"
+          ? "border-green-100 bg-green-50 text-green-700"
+          : coverageStatus === "medium"
+            ? "border-blue-100 bg-blue-50 text-blue-700"
+            : coverageStatus === "low"
+              ? "border-yellow-100 bg-yellow-50 text-yellow-700"
+              : "border-gray-100 bg-gray-50 text-gray-500"
+      }`}
+    >
+      {coverageStatus} contact coverage
+    </span>
+  )
+}
+
+function FitScoreBadge({ score }: { score?: number | null }) {
+  if (score == null) {
+    return <span className="text-[10px] font-black italic tracking-widest text-gray-300">PENDING</span>
+  }
+
+  return (
+    <div
+      className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xs font-black shadow-sm ring-1 ring-inset ${
+        score >= 80
+          ? "bg-green-50 text-green-700 ring-green-100"
+          : score >= 60
+            ? "bg-blue-50 text-blue-700 ring-blue-100"
+            : score >= 40
+              ? "bg-orange-50 text-orange-700 ring-orange-100"
+              : "bg-red-50 text-red-700 ring-red-100"
+      }`}
+    >
+      {score}%
+    </div>
+  )
+}
+
 function StageBadge({ stage }: { stage: LeadStage }) {
   const label = STAGE_LABELS[stage] ?? stage
-  if (stage === "approved") return <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-green-100"><CheckCircle2 className="w-3.5 h-3.5" />{label}</span>
-  if (stage === "rejected") return <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100"><XCircle className="w-3.5 h-3.5" />{label}</span>
-  if (stage === "pending_review") return <span className="inline-flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-100"><Clock className="w-3.5 h-3.5" />{label}</span>
-  return <span className="inline-flex items-center bg-gray-50 text-gray-500 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-gray-100">{label}</span>
+
+  if (stage === "approved") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-xl border border-green-100 bg-green-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-green-700">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        {label}
+      </span>
+    )
+  }
+
+  if (stage === "rejected") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-red-700">
+        <XCircle className="h-3.5 w-3.5" />
+        {label}
+      </span>
+    )
+  }
+
+  if (stage === "pending_review") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-xl border border-orange-100 bg-orange-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-orange-700">
+        <Clock className="h-3.5 w-3.5" />
+        {label}
+      </span>
+    )
+  }
+
+  return (
+    <span className="inline-flex items-center rounded-xl border border-gray-100 bg-gray-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500">
+      {label}
+    </span>
+  )
 }
