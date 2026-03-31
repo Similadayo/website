@@ -177,6 +177,7 @@ export default async function LeadsPage({
         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none lg:hidden z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
         <LeadPipelineTable
           leads={paginatedLeads as any[]}
+          allFilteredLeadIds={leadsWithOutreachStatus.map((lead: any) => lead.id)}
           sort={sort}
           order={order}
           isSuperAdmin={scope.isSuperAdmin}

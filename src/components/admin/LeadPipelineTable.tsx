@@ -10,9 +10,9 @@ import { STAGE_LABELS, LeadStage } from "@/lib/stages"
 
 type LeadRow = any
 type ConfirmState =
-  | { kind: "single"; leadId: string; title: string; message: string; confirmLabel: string }
-  | { kind: "selected"; leadIds: string[]; title: string; message: string; confirmLabel: string }
-  | { kind: "filter"; title: string; message: string; confirmLabel: string }
+  | { kind: "single"; leadId: string; title: string; message: string; confirmLabel: string; scopeLabel: string; affectedCount: number }
+  | { kind: "selected"; leadIds: string[]; title: string; message: string; confirmLabel: string; scopeLabel: string; affectedCount: number }
+  | { kind: "filter"; title: string; message: string; confirmLabel: string; scopeLabel: string; affectedCount: number }
 
 type FeedbackState = {
   tone: "success" | "error"
@@ -21,6 +21,7 @@ type FeedbackState = {
 
 export function LeadPipelineTable({
   leads,
+  allFilteredLeadIds,
   sort,
   order,
   isSuperAdmin,
@@ -30,6 +31,7 @@ export function LeadPipelineTable({
   currentFilterLabel,
 }: {
   leads: LeadRow[]
+  allFilteredLeadIds: string[]
   sort: string
   order: string
   isSuperAdmin: boolean
@@ -51,9 +53,13 @@ export function LeadPipelineTable({
     () => leads.filter((lead) => !hiddenIds.includes(lead.id)),
     [hiddenIds, leads]
   )
+  const selectableLeadIds = useMemo(
+    () => allFilteredLeadIds.filter((leadId) => !hiddenIds.includes(leadId)),
+    [allFilteredLeadIds, hiddenIds]
+  )
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
-  const allVisibleSelected =
-    visibleLeads.length > 0 && visibleLeads.every((lead) => selectedIds.includes(lead.id))
+  const allFilteredSelected =
+    selectableLeadIds.length > 0 && selectableLeadIds.every((leadId) => selectedIds.includes(leadId))
   const toggleOrder = order === "asc" ? "desc" : "asc"
 
   function queryFor(next: Record<string, string | undefined>) {
@@ -85,7 +91,7 @@ export function LeadPipelineTable({
 
   function toggleSelectAll() {
     setFeedback(null)
-    setSelectedIds(allVisibleSelected ? [] : visibleLeads.map((lead) => lead.id))
+    setSelectedIds(allFilteredSelected ? [] : selectableLeadIds)
   }
 
   function openSingleDelete(leadId: string) {
@@ -96,18 +102,25 @@ export function LeadPipelineTable({
       title: "Delete lead intel",
       message: "Delete this lead and any orphaned company intel tied only to it? This cannot be undone.",
       confirmLabel: "Delete lead",
+      scopeLabel: "Single lead record",
+      affectedCount: 1,
     })
   }
 
   function openBulkDelete() {
     if (selectedIds.length === 0) return
+    const deletingWholeFilter = selectedIds.length === selectableLeadIds.length && selectableLeadIds.length > 0
     setFeedback(null)
     setConfirmState({
       kind: "selected",
       leadIds: selectedIds,
-      title: "Delete selected lead intel",
-      message: `Delete ${selectedIds.length} selected lead records from this page? This cannot be undone.`,
-      confirmLabel: `Delete ${selectedIds.length} leads`,
+      title: deletingWholeFilter ? "Delete all selected lead intel" : "Delete selected lead intel",
+      message: deletingWholeFilter
+        ? `Delete all ${selectedIds.length} leads in "${currentFilterLabel}"? Any company intel that becomes orphaned will also be removed. This cannot be undone.`
+        : `Delete ${selectedIds.length} selected lead record${selectedIds.length === 1 ? "" : "s"} from "${currentFilterLabel}"? Any company intel that becomes orphaned will also be removed. This cannot be undone.`,
+      confirmLabel: deletingWholeFilter ? `Delete all ${selectedIds.length}` : `Delete ${selectedIds.length} selected`,
+      scopeLabel: deletingWholeFilter ? currentFilterLabel : `${selectedIds.length} manually selected lead${selectedIds.length === 1 ? "" : "s"}`,
+      affectedCount: selectedIds.length,
     })
   }
 
@@ -119,6 +132,8 @@ export function LeadPipelineTable({
       title: "Delete all lead intel in this filter",
       message: `Delete all ${totalFilteredCount} leads in "${currentFilterLabel}"? This clears the full filtered lead set, not just this page.`,
       confirmLabel: `Delete all ${totalFilteredCount}`,
+      scopeLabel: currentFilterLabel,
+      affectedCount: totalFilteredCount,
     })
   }
 
@@ -198,10 +213,11 @@ export function LeadPipelineTable({
                 onClick={toggleSelectAll}
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-black hover:text-black"
               >
-                {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+                {allFilteredSelected ? "Clear Selection" : "Select All In Filter"}
               </button>
               <span className="text-xs font-semibold text-gray-500">
                 {selectedIds.length} selected
+                {totalFilteredCount > visibleLeads.length ? ` of ${totalFilteredCount} in ${currentFilterLabel}` : ""}
               </span>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -521,6 +537,13 @@ export function LeadPipelineTable({
               </button>
             </div>
             <p className="mt-4 text-sm leading-6 text-gray-600">{confirmState.message}</p>
+            <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">Delete Scope</div>
+              <div className="mt-2 text-sm font-semibold text-gray-900">{confirmState.scopeLabel}</div>
+              <div className="mt-1 text-xs text-gray-500">
+                {confirmState.affectedCount} lead record{confirmState.affectedCount === 1 ? "" : "s"} will be removed.
+              </div>
+            </div>
             <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
