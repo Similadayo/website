@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Dialog } from "@base-ui/react/dialog"
 import { useMemo, useState, useTransition } from "react"
 import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Trash2, X, XCircle } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -517,54 +518,87 @@ export function LeadPipelineTable({
       </div>
 
       {confirmState && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4">
-          <div className="w-full max-w-md rounded-[28px] border border-gray-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-red-600">
-                  Destructive Action
-                </div>
-                <h3 className="mt-2 text-2xl font-black text-gray-900">{confirmState.title}</h3>
+        <Dialog.Root
+          open
+          onOpenChange={(open) => {
+            if (!open && !isPending) setConfirmState(null)
+          }}
+        >
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-[70] bg-black/55 backdrop-blur-sm transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+            <div className="fixed inset-0 z-[71] overflow-y-auto px-4 py-8">
+              <div className="flex min-h-full items-center justify-center">
+                <Dialog.Popup className="w-full max-w-lg rounded-[32px] border border-black/10 bg-white p-6 shadow-[0_32px_120px_rgba(15,23,42,0.32)] transition duration-200 data-ending-style:translate-y-3 data-ending-style:opacity-0 data-starting-style:translate-y-3 data-starting-style:opacity-0 sm:p-7">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-700">
+                        Delete Confirmation
+                      </div>
+                      <Dialog.Title className="mt-3 text-2xl font-black tracking-tight text-gray-900">
+                        {confirmState.title}
+                      </Dialog.Title>
+                    </div>
+                    <Dialog.Close
+                      render={
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          className="rounded-xl border border-gray-200 p-2 text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-900 disabled:opacity-40"
+                          aria-label="Close delete confirmation"
+                        />
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Dialog.Close>
+                  </div>
+
+                  <Dialog.Description className="mt-4 text-sm leading-6 text-gray-600">
+                    {confirmState.message}
+                  </Dialog.Description>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+                      <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">Delete Scope</div>
+                      <div className="mt-2 text-sm font-semibold text-gray-900">{confirmState.scopeLabel}</div>
+                    </div>
+                    <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3">
+                      <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-500">Impact</div>
+                      <div className="mt-2 text-sm font-semibold text-red-900">
+                        {confirmState.affectedCount} lead record{confirmState.affectedCount === 1 ? "" : "s"}
+                      </div>
+                      <div className="mt-1 text-xs text-red-700/80">
+                        Orphaned company intel tied only to those leads will also be removed.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <Dialog.Close
+                      render={
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          className="rounded-xl border border-gray-200 px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-gray-600 transition-colors hover:border-gray-300 hover:text-black disabled:opacity-40"
+                        />
+                      }
+                    >
+                      Cancel
+                    </Dialog.Close>
+                    <button
+                      type="button"
+                      onClick={handleDeleteConfirm}
+                      disabled={isPending}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-red-700 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {isPending ? "Deleting..." : confirmState.confirmLabel}
+                    </button>
+                  </div>
+                </Dialog.Popup>
               </div>
-              <button
-                type="button"
-                onClick={() => setConfirmState(null)}
-                disabled={isPending}
-                className="rounded-xl border border-gray-200 p-2 text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-900 disabled:opacity-40"
-                aria-label="Close delete confirmation"
-              >
-                <X className="h-4 w-4" />
-              </button>
             </div>
-            <p className="mt-4 text-sm leading-6 text-gray-600">{confirmState.message}</p>
-            <div className="mt-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-gray-400">Delete Scope</div>
-              <div className="mt-2 text-sm font-semibold text-gray-900">{confirmState.scopeLabel}</div>
-              <div className="mt-1 text-xs text-gray-500">
-                {confirmState.affectedCount} lead record{confirmState.affectedCount === 1 ? "" : "s"} will be removed.
-              </div>
-            </div>
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setConfirmState(null)}
-                disabled={isPending}
-                className="rounded-xl border border-gray-200 px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-gray-600 transition-colors hover:border-gray-300 hover:text-black disabled:opacity-40"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm}
-                disabled={isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-red-700 disabled:opacity-40"
-              >
-                <Trash2 className="h-4 w-4" />
-                {isPending ? "Deleting..." : confirmState.confirmLabel}
-              </button>
-            </div>
-          </div>
-        </div>
+          </Dialog.Portal>
+        </Dialog.Root>
       )}
     </>
   )
