@@ -79,6 +79,8 @@ export async function deleteLeadIntel(leadId: string): Promise<{ success: boolea
     await deleteLeadRecord(leadId, actorId)
     revalidatePath("/admin/leads")
     revalidatePath("/admin/outreach")
+    revalidatePath("/admin/companies")
+    revalidatePath("/admin/research")
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to delete lead intel" }
@@ -96,6 +98,8 @@ export async function bulkDeleteLeadIntel(leadIds: string[]): Promise<{ success:
 
     revalidatePath("/admin/leads")
     revalidatePath("/admin/outreach")
+    revalidatePath("/admin/companies")
+    revalidatePath("/admin/research")
     return { success: true, count: uniqueIds.length }
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to bulk delete lead intel" }
@@ -121,6 +125,8 @@ export async function deleteFilteredLeadIntel(memberId: string): Promise<{ succe
 
     revalidatePath("/admin/leads")
     revalidatePath("/admin/outreach")
+    revalidatePath("/admin/companies")
+    revalidatePath("/admin/research")
     return { success: true, count: leads.length }
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to delete current filter intel" }

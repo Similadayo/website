@@ -2,13 +2,22 @@
 
 import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
-import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Trash2, XCircle } from "lucide-react"
+import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Trash2, X, XCircle } from "lucide-react"
 import { bulkDeleteLeadIntel, deleteFilteredLeadIntel, deleteLeadIntel } from "@/app/admin/leads/actions"
 import { formatOutreachRecommendation, getLeadContactStrategy } from "@/lib/contacts/priority"
 import { STAGE_LABELS, LeadStage } from "@/lib/stages"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 type LeadRow = any
+type ConfirmState =
+  | { kind: "single"; leadId: string; title: string; message: string; confirmLabel: string }
+  | { kind: "selected"; leadIds: string[]; title: string; message: string; confirmLabel: string }
+  | { kind: "filter"; title: string; message: string; confirmLabel: string }
+
+type FeedbackState = {
+  tone: "success" | "error"
+  message: string
+}
 
 export function LeadPipelineTable({
   leads,
@@ -33,9 +42,17 @@ export function LeadPipelineTable({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [hiddenIds, setHiddenIds] = useState<string[]>([])
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null)
   const [isPending, startTransition] = useTransition()
+  const visibleLeads = useMemo(
+    () => leads.filter((lead) => !hiddenIds.includes(lead.id)),
+    [hiddenIds, leads]
+  )
 
-  const allVisibleSelected = leads.length > 0 && selectedIds.length === leads.length
+  const allVisibleSelected =
+    visibleLeads.length > 0 && visibleLeads.every((lead) => selectedIds.includes(lead.id))
   const toggleOrder = order === "asc" ? "desc" : "asc"
 
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
@@ -59,6 +76,7 @@ export function LeadPipelineTable({
   }
 
   function toggleSelected(leadId: string) {
+    setFeedback(null)
     setSelectedIds((current) =>
       current.includes(leadId)
         ? current.filter((id) => id !== leadId)
@@ -67,52 +85,109 @@ export function LeadPipelineTable({
   }
 
   function toggleSelectAll() {
-    setSelectedIds(allVisibleSelected ? [] : leads.map((lead) => lead.id))
+    setFeedback(null)
+    setSelectedIds(allVisibleSelected ? [] : visibleLeads.map((lead) => lead.id))
   }
 
-  function handleSingleDelete(leadId: string) {
-    if (!window.confirm("Delete this lead and any orphaned company intel tied only to it? This cannot be undone.")) {
-      return
-    }
-
-    startTransition(async () => {
-      const res = await deleteLeadIntel(leadId)
-      if (!res.success) return
-      setSelectedIds((current) => current.filter((id) => id !== leadId))
-      router.refresh()
+  function openSingleDelete(leadId: string) {
+    setFeedback(null)
+    setConfirmState({
+      kind: "single",
+      leadId,
+      title: "Delete lead intel",
+      message: "Delete this lead and any orphaned company intel tied only to it? This cannot be undone.",
+      confirmLabel: "Delete lead",
     })
   }
 
-  function handleBulkDelete() {
+  function openBulkDelete() {
     if (selectedIds.length === 0) return
-    if (!window.confirm(`Delete ${selectedIds.length} selected lead records from this page? This cannot be undone.`)) {
-      return
-    }
-
-    startTransition(async () => {
-      const res = await bulkDeleteLeadIntel(selectedIds)
-      if (!res.success) return
-      setSelectedIds([])
-      router.refresh()
+    setFeedback(null)
+    setConfirmState({
+      kind: "selected",
+      leadIds: selectedIds,
+      title: "Delete selected lead intel",
+      message: `Delete ${selectedIds.length} selected lead records from this page? This cannot be undone.`,
+      confirmLabel: `Delete ${selectedIds.length} leads`,
     })
   }
 
-  function handleDeleteCurrentFilter() {
-    if (!window.confirm(`Delete all ${totalFilteredCount} leads in "${currentFilterLabel}"? This clears the full filtered lead set, not just this page.`)) {
-      return
-    }
+  function openFilterDelete() {
+    if (totalFilteredCount === 0) return
+    setFeedback(null)
+    setConfirmState({
+      kind: "filter",
+      title: "Delete all lead intel in this filter",
+      message: `Delete all ${totalFilteredCount} leads in "${currentFilterLabel}"? This clears the full filtered lead set, not just this page.`,
+      confirmLabel: `Delete all ${totalFilteredCount}`,
+    })
+  }
 
+  function handleDeleteConfirm() {
+    if (!confirmState) return
     startTransition(async () => {
-      const res = await deleteFilteredLeadIntel(selectedMemberId)
-      if (!res.success) return
-      setSelectedIds([])
+      let res:
+        | Awaited<ReturnType<typeof deleteLeadIntel>>
+        | Awaited<ReturnType<typeof bulkDeleteLeadIntel>>
+        | Awaited<ReturnType<typeof deleteFilteredLeadIntel>>
+
+      if (confirmState.kind === "single") {
+        res = await deleteLeadIntel(confirmState.leadId)
+      } else if (confirmState.kind === "selected") {
+        res = await bulkDeleteLeadIntel(confirmState.leadIds)
+      } else {
+        res = await deleteFilteredLeadIntel(selectedMemberId)
+      }
+
+      if (!res.success) {
+        setFeedback({
+          tone: "error",
+          message: res.error || "Delete failed. Check related records and try again.",
+        })
+        return
+      }
+
+      if (confirmState.kind === "single") {
+        setHiddenIds((current) => [...new Set([...current, confirmState.leadId])])
+        setSelectedIds((current) => current.filter((id) => id !== confirmState.leadId))
+        setFeedback({ tone: "success", message: "Lead intel deleted." })
+      } else if (confirmState.kind === "selected") {
+        setHiddenIds((current) => [...new Set([...current, ...confirmState.leadIds])])
+        setSelectedIds([])
+        setFeedback({
+          tone: "success",
+          message: `${confirmState.leadIds.length} lead record${confirmState.leadIds.length === 1 ? "" : "s"} deleted.`,
+        })
+      } else {
+        const deletedCount = "count" in res ? res.count : undefined
+        setHiddenIds((current) => [...new Set([...current, ...visibleLeads.map((lead) => lead.id)])])
+        setSelectedIds([])
+        setFeedback({
+          tone: "success",
+          message: deletedCount
+            ? `${deletedCount} lead record${deletedCount === 1 ? "" : "s"} deleted from ${currentFilterLabel}.`
+            : `Lead intel deleted from ${currentFilterLabel}.`,
+        })
+      }
+
+      setConfirmState(null)
       router.refresh()
     })
   }
 
   return (
     <>
-      {isSuperAdmin && leads.length > 0 && (
+      {feedback && (
+        <div className={`mx-8 mt-6 rounded-2xl border px-5 py-4 text-sm font-semibold ${
+          feedback.tone === "success"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+            : "border-red-200 bg-red-50 text-red-800"
+        }`}>
+          {feedback.message}
+        </div>
+      )}
+
+      {isSuperAdmin && visibleLeads.length > 0 && (
         <div className="border-b border-gray-100 bg-gray-50/50 px-8 py-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap items-center gap-3">
@@ -129,7 +204,7 @@ export function LeadPipelineTable({
             </div>
             <button
               type="button"
-              onClick={handleBulkDelete}
+              onClick={openBulkDelete}
               disabled={selectedIds.length === 0 || isPending}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-300 hover:text-red-900 disabled:opacity-40"
             >
@@ -138,7 +213,7 @@ export function LeadPipelineTable({
             </button>
             <button
               type="button"
-              onClick={handleDeleteCurrentFilter}
+              onClick={openFilterDelete}
               disabled={totalFilteredCount === 0 || isPending}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-400 hover:text-red-900 disabled:opacity-40"
             >
@@ -184,14 +259,14 @@ export function LeadPipelineTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {leads.length === 0 ? (
+              {visibleLeads.length === 0 ? (
                 <tr>
                   <td colSpan={isSuperAdmin ? 7 : 6} className="px-8 py-20 text-center text-gray-400">
                     No leads found.
                   </td>
                 </tr>
               ) : (
-                leads.map((lead: any) => {
+                visibleLeads.map((lead: any) => {
                   const analysis = lead.analyses[0]
                   const contactStrategy = getLeadContactStrategy(lead.company.contacts || [])
                   const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
@@ -286,7 +361,7 @@ export function LeadPipelineTable({
                           {isSuperAdmin && (
                             <button
                               type="button"
-                              onClick={() => handleSingleDelete(lead.id)}
+                              onClick={() => openSingleDelete(lead.id)}
                               disabled={isPending}
                               className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-red-700 transition-colors hover:border-red-300 hover:text-red-900 disabled:opacity-40"
                             >
@@ -304,6 +379,52 @@ export function LeadPipelineTable({
           </table>
         </div>
       </div>
+
+      {confirmState && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4">
+          <div className="w-full max-w-md rounded-[28px] border border-gray-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-red-600">
+                  Destructive Action
+                </div>
+                <h3 className="mt-2 text-2xl font-black text-gray-900">{confirmState.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmState(null)}
+                disabled={isPending}
+                className="rounded-xl border border-gray-200 p-2 text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-900 disabled:opacity-40"
+                aria-label="Close delete confirmation"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-gray-600">
+              {confirmState.message}
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmState(null)}
+                disabled={isPending}
+                className="rounded-xl border border-gray-200 px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-gray-600 transition-colors hover:border-gray-300 hover:text-black disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isPending}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-[11px] font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-red-700 disabled:opacity-40"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isPending ? "Deleting..." : confirmState.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
