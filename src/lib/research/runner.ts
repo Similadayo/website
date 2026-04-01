@@ -54,6 +54,59 @@ async function saveTaskPayload(taskId: string, payload: ResearchTaskPayload) {
   })
 }
 
+async function collectFreshDiscoveryCandidates(payload: ResearchTaskPayload, targetCount: number) {
+  const collected: DiscoveredCompany[] = []
+  const seenDomains = new Set<string>()
+  const seenNames = new Set<string>()
+
+  const existingCompanies = await db.company.findMany({
+    select: { domain: true, name: true },
+  })
+
+  for (const company of existingCompanies) {
+    if (company.domain) seenDomains.add(company.domain.toLowerCase())
+    if (company.name) seenNames.add(company.name.trim().toLowerCase())
+  }
+
+  const existingResults = await db.researchResult.findMany({
+    where: { sessionId: payload.sessionId },
+    select: { domain: true, name: true },
+  })
+
+  for (const result of existingResults) {
+    if (result.domain) seenDomains.add(result.domain.toLowerCase())
+    if (result.name) seenNames.add(result.name.trim().toLowerCase())
+  }
+
+  const batchSizes = [60, 100, 140]
+
+  for (const batchSize of batchSizes) {
+    if (collected.length >= targetCount) break
+
+    const discoveredRaw = await discoverCompanies(payload.niche, payload.region, batchSize, {
+      excludeDomains: seenDomains,
+      excludeNames: seenNames,
+    })
+
+    for (const entry of discoveredRaw) {
+      const normalizedDomain = entry.domain?.toLowerCase() ?? null
+      const normalizedName = entry.name.trim().toLowerCase()
+
+      if ((normalizedDomain && seenDomains.has(normalizedDomain)) || seenNames.has(normalizedName)) {
+        continue
+      }
+
+      seenNames.add(normalizedName)
+      if (normalizedDomain) seenDomains.add(normalizedDomain)
+      collected.push(entry)
+
+      if (collected.length >= targetCount) break
+    }
+  }
+
+  return collected
+}
+
 async function processResearchCompany(
   payload: ResearchTaskPayload,
   company: DiscoveredCompany
@@ -318,19 +371,7 @@ export async function runResearchTask(taskId: string) {
     })
 
     if (!payload.discovered) {
-      const discoveredRaw = await discoverCompanies(payload.niche, payload.region, 60)
-      const candidateDomains = discoveredRaw.map((entry: DiscoveredCompany) => entry.domain).filter(Boolean) as string[]
-      const existingDomains = candidateDomains.length
-        ? await db.company.findMany({
-            where: { domain: { in: candidateDomains } },
-            select: { domain: true },
-          })
-        : []
-      const existingSet = new Set(existingDomains.map((entry) => entry.domain))
-
-      payload.discovered = discoveredRaw
-        .filter((entry: DiscoveredCompany) => !entry.domain || !existingSet.has(entry.domain))
-        .slice(0, 40)
+      payload.discovered = await collectFreshDiscoveryCandidates(payload, 40)
       payload.cursor = 0
 
       await saveTaskPayload(taskId, payload)
