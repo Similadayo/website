@@ -81,6 +81,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     })
   ],
+  events: {
+    async signIn({ user }) {
+      if (!user?.id) return
+
+      await db.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      })
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
@@ -101,11 +111,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token && session.user) {
         session.user.id = token.id as string
         ;(session.user as any).role = token.role as string
-        
-        // Fetch fresh assignments for the session
-        const assignment = await db.assignment.findFirst({
-          where: { userId: token.id as string, status: "active" }
-        })
+
+        const userId = token.id as string
+
+        const [assignment, userRecord] = await Promise.all([
+          db.assignment.findFirst({
+            where: { userId, status: "active" }
+          }),
+          db.user.findUnique({
+            where: { id: userId },
+            select: { lastLoginAt: true },
+          }),
+        ])
+
+        if (!userRecord?.lastLoginAt) {
+          await db.user.update({
+            where: { id: userId },
+            data: { lastLoginAt: new Date() },
+          })
+        }
         
         if (assignment) {
           ;(session.user as any).assignment = {
