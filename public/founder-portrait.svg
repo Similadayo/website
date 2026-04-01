@@ -1,0 +1,22 @@
+<svg width="720" height="900" viewBox="0 0 720 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="900" rx="48" fill="#111111"/>
+  <rect x="32" y="32" width="656" height="836" rx="36" fill="url(#paint0_linear_1_2)"/>
+  <circle cx="360" cy="292" r="120" fill="#2A2A2A"/>
+  <path d="M232 640C232 559.366 297.366 494 378 494H342C422.634 494 488 559.366 488 640V758H232V640Z" fill="#1A1A1A"/>
+  <circle cx="360" cy="290" r="92" fill="#1D1D1D"/>
+  <path d="M322 326C338 344 382 346 402 327" stroke="#C9C2B5" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="326" cy="286" r="10" fill="#C9C2B5"/>
+  <circle cx="394" cy="286" r="10" fill="#C9C2B5"/>
+  <path d="M298 250C316 232 344 224 360 224C380 224 410 232 424 250" stroke="#111111" stroke-width="18" stroke-linecap="round"/>
+  <path d="M294 138C336 94 406 94 448 138" stroke="#D9D0C3" stroke-opacity="0.28" stroke-width="2"/>
+  <path d="M103 742H617" stroke="#D9D0C3" stroke-opacity="0.24" stroke-width="2"/>
+  <text x="88" y="776" fill="#E8E0D4" font-family="Arial, sans-serif" font-size="18" letter-spacing="3">FOUNDER PORTRAIT PLACEHOLDER</text>
+  <text x="88" y="812" fill="#F6F0E7" font-family="Arial, sans-serif" font-size="40" font-weight="700">Similoluwa</text>
+  <text x="88" y="846" fill="#C9C2B5" font-family="Arial, sans-serif" font-size="20">Replace this SVG with the real portrait in public/founder-portrait.jpg</text>
+  <defs>
+    <linearGradient id="paint0_linear_1_2" x1="80" y1="72" x2="640" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2B2B2B"/>
+      <stop offset="1" stop-color="#171717"/>
+    </linearGradient>
+  </defs>
+</svg>
