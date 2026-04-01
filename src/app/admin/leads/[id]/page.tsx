@@ -1,26 +1,36 @@
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import {
-  Building2, CheckCircle2, XCircle, BrainCircuit,
-  ExternalLink, Activity, Mail, Linkedin
+  Activity,
+  ArrowUpRight,
+  BrainCircuit,
+  Building2,
+  CheckCircle2,
+  ExternalLink,
+  Linkedin,
+  Mail,
+  Sparkles,
+  Target,
+  XCircle,
 } from "lucide-react"
 import {
-  updateLeadStage,
-  runLeadAIAnalysis,
-  sendLeadEmail,
-  startDeepRecon,
-  setPrimaryContact,
   approveGenericInboxContact,
   markContactForManualReview,
+  runLeadAIAnalysis,
+  sendLeadEmail,
+  setPrimaryContact,
+  startDeepRecon,
   transferLeadToAdminReview,
+  updateLeadStage,
 } from "./actions"
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
 import {
-  getLeadContactStrategy,
   getContactTier,
+  getLeadContactStrategy,
   isInferredExecutiveEmail,
   requiresManualContactReview,
 } from "@/lib/contacts/priority"
@@ -42,11 +52,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
       owner: {
         select: { id: true, name: true, email: true },
       },
-      analyses:    { orderBy: { createdAt: "desc" }, take: 1 },
+      analyses: { orderBy: { createdAt: "desc" }, take: 1 },
       threads: {
         include: {
-          messages: { orderBy: { createdAt: "asc" } }
-        }
+          messages: { orderBy: { createdAt: "asc" } },
+        },
       },
       activityLogs: {
         orderBy: { createdAt: "desc" },
@@ -58,13 +68,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   if (!lead) return notFound()
 
-  const analysis   = lead.analyses[0]
-  const thread     = lead.threads[0]
-  const messages   = thread?.messages || []
+  const analysis = lead.analyses[0]
+  const thread = lead.threads[0]
+  const messages = thread?.messages || []
   const contactStrategy = getLeadContactStrategy(lead.company.contacts as any[])
-  const contact    = contactStrategy.primarySendContact
+  const contact = contactStrategy.primarySendContact
   const analysisJson = analysis?.rawResponse
-    ? JSON.parse(analysis.rawResponse as string) as {
+    ? (JSON.parse(analysis.rawResponse as string) as {
         recommended_owners?: string[]
         operator_contacts?: Array<{
           role: string
@@ -73,17 +83,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           linkedin_url: string | null
           evidence: string
         }>
-      }
+      })
     : null
   const recommendedOwners = analysisJson?.recommended_owners ?? []
   const operatorContacts = analysisJson?.operator_contacts ?? []
 
   const stageLabel = STAGE_LABELS[lead.stage as keyof typeof STAGE_LABELS] ?? lead.stage
   const canApprove = lead.stage === "pending_review"
-  const canReject  = !["rejected", "closed_won", "closed_lost"].includes(lead.stage)
+  const canReject = !["rejected", "closed_won", "closed_lost"].includes(lead.stage)
   const canAnalyze = ["new", "researching", "analyzed"].includes(lead.stage)
-  const canDraft   = ["analyzed", "approved", "outreach_ready"].includes(lead.stage)
-  const canSend    = messages.some((m: any) => m.direction !== "inbound" && !m.sentAt) && ["outreach_ready", "approved", "analyzed", "replied"].includes(lead.stage)
+  const canDraft = ["analyzed", "approved", "outreach_ready"].includes(lead.stage)
+  const canSend =
+    messages.some((message: any) => message.direction !== "inbound" && !message.sentAt) &&
+    ["outreach_ready", "approved", "analyzed", "replied"].includes(lead.stage)
   const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
   const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
   const isMine = lead.ownerId === scope.userId || lead.company.createdById === scope.userId
@@ -93,273 +105,179 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     contactStrategy.recommendation === "linkedin_or_manual_review"
 
   return (
-    <div className="space-y-6 animate-fadein pb-12">
-
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 sm:gap-6 bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 w-full">
-          <div className="w-full lg:w-auto min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tighter text-gray-900 dark:text-white uppercase break-words w-full sm:w-auto leading-tight">{lead.company.name}</h1>
-              <span className="w-fit shrink-0 bg-black dark:bg-white text-white dark:text-black px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-black dark:border-white">
-                {stageLabel}
+    <div className="space-y-6 pb-28 lg:pb-8">
+      <section className="admin-card overflow-hidden p-6 sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="admin-pill admin-pill-accent">
+                <Sparkles className="h-3.5 w-3.5" />
+                Lead detail
               </span>
+              <span className="admin-pill admin-pill-neutral">{stageLabel}</span>
+              {scope.isSuperAdmin && (
+                <span className={`admin-pill ${isMine ? "admin-pill-success" : "admin-pill-neutral"}`}>{isMine ? "My lead" : "Member lead"}</span>
+              )}
             </div>
-            {scope.isSuperAdmin && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-bold">
-                <span className={`inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border ${
-                  isMine
-                    ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
-                }`}>
-                  {isMine ? "My Lead" : "Other Member"}
-                </span>
-                <span className="text-slate-400">Owner: {ownerName}</span>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-400">Created by: {creatorName}</span>
-              </div>
-            )}
+
+            <h1 className="admin-section-title mt-5 max-w-4xl">{lead.company.name}</h1>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="admin-pill admin-pill-neutral">Owner: {ownerName}</span>
+              <span className="admin-pill admin-pill-neutral">Created by: {creatorName}</span>
+              {lead.company.niche && <span className="admin-pill admin-pill-neutral">{lead.company.niche}</span>}
+            </div>
+
             {lead.company.websiteUrl && (
-            <a href={lead.company.websiteUrl} target="_blank" rel="noopener noreferrer"
-               className="text-xs text-gray-400 hover:text-black dark:hover:text-white flex items-center gap-2 mt-4 font-bold transition-all group">
-              {lead.company.websiteUrl} <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </a>
-          )}
+              <a
+                href={lead.company.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--admin-accent)]"
+              >
+                {lead.company.websiteUrl}
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {canReject && (
+              <form
+                action={async () => {
+                  "use server"
+                  await updateLeadStage(lead.id, "rejected", "Manual review rejection")
+                }}
+              >
+                <button type="submit" className="admin-pill admin-pill-danger">
+                  <XCircle className="h-3.5 w-3.5" />
+                  Reject
+                </button>
+              </form>
+            )}
+
+            {canApprove && (
+              <form
+                action={async () => {
+                  "use server"
+                  await updateLeadStage(lead.id, "approved")
+                }}
+              >
+                <button type="submit" className="admin-pill admin-pill-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Approve
+                </button>
+              </form>
+            )}
+          </div>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
-          {canReject && (
-            <form action={async () => {
-              "use server"
-              await updateLeadStage(lead.id, "rejected", "Manual review rejection")
-            }}>
-              <button type="submit"
-                className="bg-white dark:bg-white/5 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-sm">
-                <XCircle className="w-4 h-4 inline mr-1.5" /> Reject Lead
-              </button>
-            </form>
-          )}
-          
-          {canApprove && (
-            <form action={async () => {
-              "use server"
-              await updateLeadStage(lead.id, "approved")
-            }}>
-              <button type="submit"
-                className="bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-gray-200 dark:shadow-none transition-all active:scale-95">
-                <CheckCircle2 className="w-4 h-4 inline mr-1.5" /> Approve Intel
-              </button>
-            </form>
-          )}
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <StatCard
+            label="Fit Score"
+            value={analysis?.fitScore != null ? `${analysis.fitScore}` : "--"}
+            tone={analysis?.fitScore != null && analysis.fitScore >= 70 ? "success" : analysis?.fitScore != null && analysis.fitScore >= 50 ? "warning" : "neutral"}
+          />
+          <StatCard
+            label="Confidence"
+            value={analysis?.confidenceScore != null ? `${Math.round(analysis.confidenceScore * 100)}%` : "--"}
+            tone="accent"
+          />
+          <StatCard label="Contact Coverage" value={contactStrategy.coverageStatus} tone="neutral" />
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* AI Qualification */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2 mb-6">
-              <BrainCircuit className="w-5 h-5 text-indigo-600" /> AI Qualification
-            </h2>
-
-            {!analysis ? (
-              <div className="text-center py-8 border-2 border-dashed border-gray-100 rounded-xl bg-gray-50/50">
-                <BrainCircuit className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-500 mb-4 max-w-sm mx-auto">This lead has not been evaluated by the AI yet.</p>
-                {canAnalyze ? (
-                  <form action={async () => {
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="space-y-6">
+          <section className="admin-card p-6 sm:p-8">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="admin-eyebrow">AI Qualification</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Why this account matters and where it breaks.</h2>
+              </div>
+              {canAnalyze && (
+                <form
+                  action={async () => {
                     "use server"
                     await runLeadAIAnalysis(lead.id)
-                  }}>
-                    <button type="submit"
-                      className="bg-indigo-600 text-white font-medium px-5 py-2.5 rounded-lg text-sm hover:bg-indigo-700 transition-colors flex items-center gap-2 mx-auto shadow-sm">
-                      <BrainCircuit className="w-4 h-4" /> Run AI Analysis
-                    </button>
-                  </form>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">AI analysis not available at this stage.</p>
-                )}
+                  }}
+                >
+                  <button type="submit" className="admin-pill admin-pill-accent">
+                    <BrainCircuit className="h-3.5 w-3.5" />
+                    {analysis ? "Re-run AI" : "Run AI"}
+                  </button>
+                </form>
+              )}
+            </div>
+
+            {!analysis ? (
+              <div className="mt-5 rounded-[24px] border border-dashed border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-6">
+                <p className="text-base font-semibold text-[color:var(--admin-ink)]">No AI analysis yet.</p>
+                <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">Run qualification to score fit, surface use cases, and generate the outreach angle.</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Scores */}
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                  <div className="flex-1 bg-gray-50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-500 mb-1">Fit Score</p>
-                    <div className={`text-2xl sm:text-3xl font-bold ${
-                      (analysis.fitScore ?? 0) >= 70 ? "text-green-600" :
-                      (analysis.fitScore ?? 0) >= 50 ? "text-yellow-600" : "text-red-500"
-                    }`}>
-                      {analysis.fitScore ?? "—"} <span className="text-xs sm:text-sm font-medium text-gray-400">/ 100</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 bg-gray-50 sm:bg-transparent p-4 sm:p-0 rounded-xl sm:rounded-none">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-500 mb-1">Confidence</p>
-                    <div className="text-xl font-bold text-gray-800">
-                      {((analysis.confidenceScore ?? 0) * 100).toFixed(0)}%
-                    </div>
-                  </div>
+              <div className="mt-5 space-y-5">
+                <InfoBlock title="Company Summary" body={analysis.companySummary || "No summary available."} />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <InfoBlock title="Why It Fits" body={analysis.fitReasons || "No fit reasons identified."} tone="success" />
+                  <InfoBlock title="Gaps / Risks" body={analysis.gapReasons || "No major gaps identified."} tone="danger" />
                 </div>
 
-                {/* Summary */}
-                <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-2">Company Summary</p>
-                  <p className="text-gray-700 bg-gray-50 p-4 rounded-lg text-sm leading-relaxed border border-gray-100">
-                    {analysis.companySummary}
-                  </p>
-                </div>
-
-                {/* Fit / Gap analysis */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <p className="text-[10px] font-bold text-green-700 uppercase tracking-widest mb-2 flex items-center gap-1">
-                       <CheckCircle2 className="w-3 h-3" /> Why it&apos;s a fit
-                    </p>
-                    <div className="text-sm text-green-900 whitespace-pre-wrap leading-relaxed">
-                      {analysis.fitReasons || "No specific fit reasons identified."}
-                    </div>
-                  </div>
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <p className="text-[10px] font-bold text-red-700 uppercase tracking-widest mb-2 flex items-center gap-1">
-                       <XCircle className="w-3 h-3" /> Why it&apos;s NOT a fit (Gaps)
-                    </p>
-                    <div className="text-sm text-red-900 whitespace-pre-wrap leading-relaxed">
-                      {analysis.gapReasons || "No major gaps identified."}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Pain Points */}
                 {analysis.painPoints && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 mb-2">Likely Pain Points</p>
-                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                      {(JSON.parse(analysis.painPoints as string) as string[]).map((p, i) => (
-                        <li key={i}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  <ListBlock title="Likely Pain Points" items={JSON.parse(analysis.painPoints as string) as string[]} />
                 )}
 
-                {/* AI Use Cases */}
                 {analysis.useCases && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 mb-2">AI Use Cases</p>
-                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                      {(JSON.parse(analysis.useCases as string) as string[]).map((u, i) => (
-                        <li key={i}>{u}</li>
-                      ))}
-                    </ul>
-                  </div>
+                  <ListBlock title="Relevant Use Cases" items={JSON.parse(analysis.useCases as string) as string[]} />
                 )}
 
-                {recommendedOwners.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 mb-2">Who Inside The Company Should Do What</p>
-                    <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                      {recommendedOwners.map((owner, i) => (
-                        <li key={i}>{owner}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {recommendedOwners.length > 0 && <ListBlock title="Suggested Internal Owners" items={recommendedOwners} />}
 
                 {operatorContacts.length > 0 && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 mb-2">Operator Contacts Found</p>
-                    <div className="space-y-3">
+                  <div className="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-5">
+                    <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Operator Contacts Found</p>
+                    <div className="mt-4 space-y-3">
                       {operatorContacts.map((operator, index) => (
-                        <div key={`${operator.role}-${operator.name ?? index}`} className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-gray-900">{operator.role}</span>
-                            {operator.name && <span className="text-gray-600">• {operator.name}</span>}
-                          </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                            {operator.email && <span>Email: {operator.email}</span>}
-                            {operator.linkedin_url && (
-                              <a
-                                href={operator.linkedin_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                LinkedIn
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
-                          </div>
-                          <p className="mt-2 text-xs text-gray-400">{operator.evidence}</p>
+                        <div key={`${operator.role}-${operator.name ?? index}`} className="rounded-[18px] bg-white p-4">
+                          <p className="text-sm font-semibold text-[color:var(--admin-ink)]">
+                            {operator.role}
+                            {operator.name ? ` • ${operator.name}` : ""}
+                          </p>
+                          <p className="mt-2 text-xs text-[color:var(--admin-soft-text)]">
+                            {[operator.email, operator.linkedin_url].filter(Boolean).join(" • ")}
+                          </p>
+                          <p className="mt-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">{operator.evidence}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-2">Recommended Contact Strategy</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Best Contact</p>
-                      {contactStrategy.bestContact ? (
-                        <div className="space-y-1 text-sm text-gray-700">
-                          <p className="font-semibold text-gray-900">
-                            {contactStrategy.bestContact.name || contactStrategy.bestContact.email || "Unnamed contact"}
-                          </p>
-                          <p>{contactStrategy.bestContact.roleTitle || "No role title captured"}</p>
-                          {contactStrategy.bestContact.email && <p>Email: {contactStrategy.bestContact.email}</p>}
-                          {contactStrategy.bestContact.linkedinUrl && (
-                            <a
-                              href={contactStrategy.bestContact.linkedinUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
-                            >
-                              LinkedIn Profile
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">No credible contact identified yet.</p>
-                      )}
-                    </div>
-                    <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Fallback Route</p>
-                      {contactStrategy.fallbackContact ? (
-                        <div className="space-y-1 text-sm text-gray-700">
-                          <p className="font-semibold text-gray-900">
-                            {contactStrategy.fallbackContact.name || contactStrategy.fallbackContact.email || "Fallback contact"}
-                          </p>
-                          <p>{contactStrategy.fallbackContact.roleTitle || "Public company route"}</p>
-                          {contactStrategy.fallbackContact.email && <p>Email: {contactStrategy.fallbackContact.email}</p>}
-                          {contactStrategy.fallbackContact.sourceUrl && <p>Source: {contactStrategy.fallbackContact.sourceUrl}</p>}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">No fallback route stored.</p>
-                      )}
-                    </div>
+                <div className="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-5">
+                  <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Contact Strategy</p>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <ContactSummaryCard
+                      title="Best Contact"
+                      contact={contactStrategy.bestContact}
+                      emptyCopy="No credible contact identified yet."
+                    />
+                    <ContactSummaryCard
+                      title="Fallback Route"
+                      contact={contactStrategy.fallbackContact}
+                      emptyCopy="No fallback route stored."
+                    />
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                    <span className={`rounded-full px-3 py-1 font-semibold uppercase tracking-widest ${
-                      contactStrategy.coverageStatus === "high"
-                        ? "bg-green-100 text-green-700"
-                        : contactStrategy.coverageStatus === "medium"
-                          ? "bg-blue-100 text-blue-700"
-                          : contactStrategy.coverageStatus === "low"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {contactStrategy.coverageStatus} coverage
-                    </span>
-                    <span className="rounded-full bg-black px-3 py-1 font-semibold uppercase tracking-widest text-white">
-                      {contactStrategy.recommendation.replace(/_/g, " ")}
-                    </span>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="admin-pill admin-pill-neutral">{contactStrategy.coverageStatus} coverage</span>
+                    <span className="admin-pill admin-pill-accent">{contactStrategy.recommendation.replace(/_/g, " ")}</span>
                   </div>
-                  <p className="mt-3 text-sm text-gray-600">{contactStrategy.reason}</p>
+                  <p className="mt-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">{contactStrategy.reason}</p>
+
                   {shouldTransferToAdmin && (
-                    <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
-                      <p className="text-sm font-semibold text-blue-900">Admin handoff required</p>
-                      <p className="mt-1 text-sm text-blue-800">
+                    <div className="mt-4 rounded-[18px] border border-[color:var(--admin-accent)]/20 bg-[color:var(--admin-accent-soft)] p-4">
+                      <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Admin handoff recommended</p>
+                      <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">
                         The strongest route here is LinkedIn, so this lead should move to admin review instead of staying with researcher outreach.
                       </p>
                       <form
@@ -367,46 +285,24 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                           "use server"
                           await transferLeadToAdminReview(lead.id)
                         }}
-                        className="mt-3"
+                        className="mt-4"
                       >
-                        <button
-                          type="submit"
-                          className="rounded-xl bg-black px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-gray-800"
-                        >
-                          Transfer To Admin Pipeline
+                        <button type="submit" className="admin-pill admin-pill-accent">
+                          <Target className="h-3.5 w-3.5" />
+                          Transfer To Admin
                         </button>
                       </form>
                     </div>
                   )}
                 </div>
 
-                {/* Outreach Angle */}
                 {analysis.outreachAngle && (
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 mb-2">Recommended Outreach Angle</p>
-                    <div className="bg-blue-50/50 p-4 rounded-lg border-l-4 border-blue-500 text-sm italic text-gray-700">
-                      &quot;{analysis.outreachAngle}&quot;
-                    </div>
-                  </div>
-                )}
-
-                {/* Re-run */}
-                {canAnalyze && (
-                  <form action={async () => {
-                    "use server"
-                    await runLeadAIAnalysis(lead.id)
-                  }}>
-                    <button type="submit"
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1 mt-2">
-                      <BrainCircuit className="w-3.5 h-3.5" /> Re-run Analysis
-                    </button>
-                  </form>
+                  <InfoBlock title="Recommended Outreach Angle" body={analysis.outreachAngle} tone="accent" />
                 )}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Email Outreach */}
           <OutreachSection
             leadId={lead.id}
             messages={messages as any}
@@ -421,229 +317,354 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           />
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Company Details */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl sm:rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-sm sm:text-base">
-              <Building2 className="w-4 h-4 text-gray-400" /> Company Details
-            </h3>
-            <div className="space-y-3 text-sm">
-              {[
-                { label: "Niche",     value: lead.company.niche },
-                { label: "Location",  value: lead.company.location },
-                { label: "Domain",    value: lead.company.domain },
-                { label: "LinkedIn",  value: lead.company.linkedinUrl },
-                { label: "Added",     value: lead.company.createdAt.toLocaleDateString() },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between border-b border-gray-50 pb-2 last:border-0">
-                  <span className="text-gray-500">{label}</span>
-                  {label === "LinkedIn" && value ? (
+          <section className="admin-card p-6 sm:p-8">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-[color:var(--admin-accent)]" />
+              <h2 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Company Profile</h2>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <DetailRow label="Niche" value={lead.company.niche} />
+              <DetailRow label="Location" value={lead.company.location} />
+              <DetailRow label="Domain" value={lead.company.domain} />
+              <DetailRow label="Added" value={lead.company.createdAt.toLocaleDateString()} />
+              <DetailRow
+                label="LinkedIn"
+                value={
+                  lead.company.linkedinUrl ? (
                     <a
-                      href={value}
+                      href={lead.company.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-4 inline-flex items-center gap-1 truncate text-right font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      className="inline-flex items-center gap-1 font-semibold text-[color:var(--admin-accent)]"
                     >
-                      Company LinkedIn
-                      <ExternalLink className="w-3 h-3 shrink-0" />
+                      Open company page
+                      <ExternalLink className="h-3.5 w-3.5" />
                     </a>
-                  ) : (
-                    <span className="font-medium text-gray-900 truncate ml-4 text-right">{value || "—"}</span>
-                  )}
-                </div>
-              ))}
+                  ) : undefined
+                }
+              />
             </div>
+
             {lead.company.summary && (
-              <div className="mt-4 bg-gray-50 p-3 rounded-lg text-xs text-gray-600 border border-gray-100">
-                <p className="font-semibold text-gray-500 mb-1">Summary</p>
-                {lead.company.summary}
+              <div className="mt-5 rounded-[20px] bg-[color:var(--admin-card-strong)] p-4">
+                <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Summary</p>
+                <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">{lead.company.summary}</p>
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Contacts & Decision Makers */}
-          <div className="bg-white dark:bg-gray-900 p-5 sm:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300 overflow-hidden">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
-              <h3 className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2 sm:gap-3">
-                <Linkedin className="w-4 h-4 text-blue-500 shrink-0" /> Decision Makers
-              </h3>
-              <form action={async () => {
-                "use server"
-                await startDeepRecon(lead.id)
-              }}>
-                <button type="submit"
-                  className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline flex items-center gap-1.5 transition-all">
-                  <Activity className="w-3.5 h-3.5" /> Start Deep Recon
+          <section className="admin-card p-6 sm:p-8">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Linkedin className="h-5 w-5 text-[color:var(--admin-accent)]" />
+                <h2 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Contacts</h2>
+              </div>
+              <form
+                action={async () => {
+                  "use server"
+                  await startDeepRecon(lead.id)
+                }}
+              >
+                <button type="submit" className="admin-pill admin-pill-accent">
+                  <Activity className="h-3.5 w-3.5" />
+                  Deep Recon
                 </button>
               </form>
             </div>
-            
-            <div className="space-y-4">
+
+            <div className="mt-5 space-y-4">
               {lead.company.contacts.length === 0 ? (
-                <div className="py-12 text-center border-2 border-dashed border-gray-50 dark:border-white/5 rounded-3xl">
-                  <Linkedin className="w-10 h-10 text-gray-100 dark:text-white/5 mx-auto mb-3" />
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Awaiting Intelligence</p>
+                <div className="rounded-[24px] border border-dashed border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-5">
+                  <p className="text-sm font-semibold text-[color:var(--admin-ink)]">No contacts yet.</p>
+                  <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">Run deeper recon to enrich the company with decision-maker data.</p>
                 </div>
               ) : (
-                contactStrategy.ranked.map((c: any) => (
-                  <div key={c.id} className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 group/item hover:bg-black dark:hover:bg-white transition-all cursor-default overflow-hidden">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
-                      <div className="min-w-0 pr-4 w-full">
-                        <p className="text-sm font-black text-gray-900 dark:text-white group-hover/item:text-white dark:group-hover/item:text-black transition-colors break-words leading-tight">{c.name || c.email || "Unnamed contact"}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 transition-colors truncate">
-                          {c.roleTitle || "Executive"}
+                contactStrategy.ranked.map((contactItem: any) => (
+                  <div key={contactItem.id} className="rounded-[24px] bg-[color:var(--admin-card-strong)] p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold text-[color:var(--admin-ink)]">{contactItem.name || contactItem.email || "Unnamed contact"}</p>
+                        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--admin-muted)]">
+                          {contactItem.roleTitle || "Executive"}
                         </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
-                          {contactStrategy.bestContact?.id === c.id && (
-                            <span className="rounded-full bg-black px-2 py-1 text-white">
-                              Primary
-                            </span>
-                          )}
-                          {contactStrategy.fallbackContact?.id === c.id && (
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
-                              Fallback
-                            </span>
-                          )}
-                          <span className="rounded-full bg-white px-2 py-1 text-gray-500">
-                            {getContactTier(c)}
-                          </span>
-                          {c.outreachRecommendation && (
-                            <span className="rounded-full bg-gray-200 px-2 py-1 text-gray-600">
-                              {c.outreachRecommendation.replace(/_/g, " ")}
-                            </span>
-                          )}
-                          {c.email && (
-                            <span className={`rounded-full px-2 py-1 ${
-                              c.emailStatus === "public"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : c.emailStatus === "inferred"
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-slate-200 text-slate-600"
-                            }`}>
-                              {c.emailStatus || "unknown email status"}
-                            </span>
-                          )}
-                        </div>
-                        {c.sourceEvidence && (
-                          <p className="mt-2 text-xs text-gray-500 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600 line-clamp-3">
-                            {c.sourceEvidence}
-                          </p>
-                        )}
-                        {c.email && (
-                          <p className="mt-2 text-xs text-gray-500 group-hover/item:text-gray-300 dark:group-hover/item:text-gray-600">
-                            {isInferredExecutiveEmail(c)
-                              ? "Email was inferred from the company pattern and should be reviewed before sending."
-                              : c.emailEvidenceLevel === "public_same_domain"
-                                ? "Email is public and matched to this executive from nearby website evidence."
-                                : "Email is public and visible on a company source."}
-                          </p>
-                        )}
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <form action={async () => {
-                            "use server"
-                            await setPrimaryContact(lead.id, c.id)
-                          }}>
-                            <button
-                              type="submit"
-                              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-black hover:text-black"
-                            >
-                              Promote Primary
-                            </button>
-                          </form>
-                          {c.email && (
-                            <form action={async () => {
-                              "use server"
-                              await approveGenericInboxContact(lead.id, c.id)
-                            }}>
-                              <button
-                                type="submit"
-                                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-black hover:text-black"
-                              >
-                                Approve Inbox
-                              </button>
-                            </form>
+                          {contactStrategy.bestContact?.id === contactItem.id && <span className="admin-pill admin-pill-success">Primary</span>}
+                          {contactStrategy.fallbackContact?.id === contactItem.id && <span className="admin-pill admin-pill-accent">Fallback</span>}
+                          <span className="admin-pill admin-pill-neutral">{getContactTier(contactItem)}</span>
+                          {contactItem.outreachRecommendation && (
+                            <span className="admin-pill admin-pill-neutral">{contactItem.outreachRecommendation.replace(/_/g, " ")}</span>
                           )}
-                          <form action={async () => {
-                            "use server"
-                            await markContactForManualReview(lead.id, c.id)
-                          }}>
-                            <button
-                              type="submit"
-                              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-amber-700 transition-colors hover:border-amber-300 hover:text-amber-900"
-                            >
-                              Needs Review
-                            </button>
-                          </form>
+                          {contactItem.email && (
+                            <span className="admin-pill admin-pill-neutral">{contactItem.emailStatus || "unknown email status"}</span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex gap-2 self-end sm:self-auto shrink-0">
-                        {c.linkedinUrl && (
-                          <a href={c.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                             className="w-8 h-8 rounded-lg bg-white dark:bg-black/20 flex items-center justify-center text-blue-600 dark:text-blue-400 hover:scale-110 transition-transform shadow-sm">
-                            <Linkedin className="w-4 h-4" />
+
+                      <div className="flex gap-2">
+                        {contactItem.linkedinUrl && (
+                          <a
+                            href={contactItem.linkedinUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="admin-pill admin-pill-neutral"
+                          >
+                            <Linkedin className="h-3.5 w-3.5" />
+                            LinkedIn
                           </a>
                         )}
-                        {c.email && (
-                          <a href={`mailto:${c.email}`}
-                             className="w-8 h-8 rounded-lg bg-white dark:bg-black/20 flex items-center justify-center text-gray-400 group-hover/item:text-white dark:group-hover/item:text-black hover:scale-110 transition-all shadow-sm">
-                            <Mail className="w-4 h-4" />
+                        {contactItem.email && (
+                          <a href={`mailto:${contactItem.email}`} className="admin-pill admin-pill-neutral">
+                            <Mail className="h-3.5 w-3.5" />
+                            Email
                           </a>
                         )}
                       </div>
+                    </div>
+
+                    {contactItem.sourceEvidence && (
+                      <p className="mt-4 text-sm leading-6 text-[color:var(--admin-soft-text)]">{contactItem.sourceEvidence}</p>
+                    )}
+
+                    {contactItem.email && (
+                      <p className="mt-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+                        {isInferredExecutiveEmail(contactItem)
+                          ? "Email was inferred from the company pattern and should be reviewed before sending."
+                          : contactItem.emailEvidenceLevel === "public_same_domain"
+                            ? "Email is public and matched to this executive from nearby website evidence."
+                            : "Email is public and visible on a company source."}
+                      </p>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <form
+                        action={async () => {
+                          "use server"
+                          await setPrimaryContact(lead.id, contactItem.id)
+                        }}
+                      >
+                        <button type="submit" className="admin-pill admin-pill-neutral">
+                          Promote Primary
+                        </button>
+                      </form>
+
+                      {contactItem.email && (
+                        <form
+                          action={async () => {
+                            "use server"
+                            await approveGenericInboxContact(lead.id, contactItem.id)
+                          }}
+                        >
+                          <button type="submit" className="admin-pill admin-pill-neutral">
+                            Approve Inbox
+                          </button>
+                        </form>
+                      )}
+
+                      <form
+                        action={async () => {
+                          "use server"
+                          await markContactForManualReview(lead.id, contactItem.id)
+                        }}
+                      >
+                        <button type="submit" className="admin-pill admin-pill-warning">
+                          Needs Review
+                        </button>
+                      </form>
                     </div>
                   </div>
                 ))
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Activity Log */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-gray-400" /> Activity Log
-            </h3>
-            <div className="space-y-4">
+          <section className="admin-card p-6 sm:p-8">
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-[color:var(--admin-accent)]" />
+              <h2 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Activity Log</h2>
+            </div>
+
+            <div className="mt-5 space-y-4">
               {lead.activityLogs.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">No activity recorded.</p>
+                <p className="text-sm text-[color:var(--admin-soft-text)]">No activity recorded.</p>
               ) : (
                 lead.activityLogs.map((log: any) => (
-                  <div key={log.id} className="text-sm flex gap-3">
-                    <div className="w-2 relative mt-1.5 flex-shrink-0 flex justify-center">
-                      <div className="w-2 h-2 rounded-full bg-blue-400 z-10" />
-                    </div>
+                  <div key={log.id} className="flex gap-3">
+                    <div className="mt-1.5 h-2.5 w-2.5 rounded-full bg-[color:var(--admin-accent)]" />
                     <div>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-sm font-semibold text-[color:var(--admin-ink)]">
                         {log.actionType.replace(/_/g, " ")}
-                        {log.actor?.name && (
-                          <span className="text-gray-500 font-normal"> by {log.actor.name}</span>
-                        )}
+                        {log.actor?.name ? ` by ${log.actor.name}` : ""}
                       </p>
-                      {log.newValue && (() => {
-                        let parsed: any = null
-                        try {
-                          parsed = JSON.parse(log.newValue)
-                        } catch {
-                          parsed = null
-                        }
-
-                        if (parsed?.summary) {
-                          return <p className="text-xs text-gray-500 mt-0.5">{parsed.summary}</p>
-                        }
-
-                        return <p className="text-xs text-gray-500 mt-0.5 font-mono">{log.newValue}</p>
-                      })()}
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </p>
+                      {log.newValue && <p className="mt-1 text-sm leading-6 text-[color:var(--admin-soft-text)]">{summarizeLogValue(log.newValue)}</p>}
+                      <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{new Date(log.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
                 ))
               )}
             </div>
-          </div>
+          </section>
         </div>
       </div>
+
+      {(canApprove || canReject) && (
+        <div className="fixed inset-x-0 bottom-[76px] z-30 border-t border-[color:var(--admin-border)] bg-[color:var(--admin-panel)]/95 px-4 py-3 backdrop-blur-xl lg:hidden">
+          <div className="flex gap-3">
+            {canReject && (
+              <form
+                action={async () => {
+                  "use server"
+                  await updateLeadStage(lead.id, "rejected", "Manual review rejection")
+                }}
+                className="flex-1"
+              >
+                <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--admin-danger)] px-4 py-3 text-sm font-bold text-white">
+                  <XCircle className="h-4 w-4" />
+                  Reject
+                </button>
+              </form>
+            )}
+            {canApprove && (
+              <form
+                action={async () => {
+                  "use server"
+                  await updateLeadStage(lead.id, "approved")
+                }}
+                className="flex-1"
+              >
+                <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--admin-success)] px-4 py-3 text-sm font-bold text-white">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Approve
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+function StatCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone: "accent" | "success" | "warning" | "neutral"
+}) {
+  const toneClass =
+    tone === "accent"
+      ? "bg-[color:var(--admin-accent-soft)]"
+      : tone === "success"
+        ? "bg-[color:var(--admin-success-soft)]"
+        : tone === "warning"
+          ? "bg-[color:var(--admin-warning-soft)]"
+          : "bg-white"
+
+  return (
+    <div className={`rounded-[24px] border border-[color:var(--admin-border)] p-4 ${toneClass}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--admin-ink)]">{value}</p>
+    </div>
+  )
+}
+
+function InfoBlock({
+  title,
+  body,
+  tone,
+}: {
+  title: string
+  body: string
+  tone?: "success" | "danger" | "accent"
+}) {
+  const toneClass =
+    tone === "success"
+      ? "bg-[color:var(--admin-success-soft)]"
+      : tone === "danger"
+        ? "bg-[color:var(--admin-danger-soft)]"
+        : tone === "accent"
+          ? "bg-[color:var(--admin-accent-soft)]"
+          : "bg-[color:var(--admin-card-strong)]"
+
+  return (
+    <div className={`rounded-[24px] p-5 ${toneClass}`}>
+      <p className="text-sm font-semibold text-[color:var(--admin-ink)]">{title}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[color:var(--admin-soft-text)]">{body}</p>
+    </div>
+  )
+}
+
+function ListBlock({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div className="rounded-[24px] bg-[color:var(--admin-card-strong)] p-5">
+      <p className="text-sm font-semibold text-[color:var(--admin-ink)]">{title}</p>
+      <ul className="mt-3 space-y-2">
+        {items.map((item, index) => (
+          <li key={`${title}-${index}`} className="flex gap-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+            <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[color:var(--admin-accent)]" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function ContactSummaryCard({
+  title,
+  contact,
+  emptyCopy,
+}: {
+  title: string
+  contact: any
+  emptyCopy: string
+}) {
+  return (
+    <div className="rounded-[20px] bg-white p-4">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">{title}</p>
+      {contact ? (
+        <div className="mt-3 space-y-1 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+          <p className="font-semibold text-[color:var(--admin-ink)]">{contact.name || contact.email || "Unnamed contact"}</p>
+          <p>{contact.roleTitle || "No role title captured"}</p>
+          {contact.email && <p>{contact.email}</p>}
+          {contact.linkedinUrl && (
+            <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-semibold text-[color:var(--admin-accent)]">
+              LinkedIn
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+      ) : (
+        <p className="mt-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">{emptyCopy}</p>
+      )}
+    </div>
+  )
+}
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string
+  value?: React.ReactNode
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-[18px] bg-[color:var(--admin-card-strong)] px-4 py-3">
+      <span className="text-sm font-semibold text-[color:var(--admin-soft-text)]">{label}</span>
+      <div className="text-right text-sm text-[color:var(--admin-ink)]">{value || "--"}</div>
+    </div>
+  )
+}
+
+function summarizeLogValue(value: string) {
+  try {
+    const parsed = JSON.parse(value)
+    if (parsed?.summary) return parsed.summary
+  } catch {}
+
+  return value
 }

@@ -13,8 +13,8 @@ interface PaginationProps {
 export function Pagination({ totalItems, pageSize, currentPage }: PaginationProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  
   const totalPages = Math.ceil(totalItems / pageSize)
+
   if (totalPages <= 1) return null
 
   const createPageUrl = (page: number) => {
@@ -23,73 +23,65 @@ export function Pagination({ totalItems, pageSize, currentPage }: PaginationProp
     return `${pathname}?${params.toString()}`
   }
 
+  const visiblePages = [...Array(totalPages)].map((_, index) => index + 1).filter((page) => {
+    if (totalPages <= 7) return true
+    return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
+  })
+
   return (
-    <div className="flex items-center justify-between px-4 py-6 border-t border-gray-100 bg-white rounded-b-xl shadow-sm mt-1">
-      <div className="flex-1 flex justify-between sm:hidden">
-        <Link
-          href={createPageUrl(currentPage - 1)}
-          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${currentPage <= 1 ? "pointer-events-none opacity-50" : ""}`}
-        >
-          Previous
-        </Link>
-        <Link
-          href={createPageUrl(currentPage + 1)}
-          className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 ${currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}`}
-        >
-          Next
-        </Link>
-      </div>
-      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-gray-500">
-            Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to <span className="font-medium">{Math.min(currentPage * pageSize, totalItems)}</span> of <span className="font-medium">{totalItems}</span> results
-          </p>
-        </div>
-        <div>
-          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-            <Link
-              href={createPageUrl(currentPage - 1)}
-              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${currentPage <= 1 ? "pointer-events-none opacity-50" : ""}`}
-            >
-              <span className="sr-only">Previous</span>
-              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </Link>
-            
-            {[...Array(totalPages)].map((_, i) => {
-              const pageNum = i + 1
-              const isActive = pageNum === currentPage
-              
-              // Only show first 3, last 3, and current +- 1
-              if (totalPages > 10 && pageNum > 3 && pageNum < totalPages - 2 && (pageNum < currentPage - 1 || pageNum > currentPage + 1)) {
-                 if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                   return <span key={i} className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
-                 }
-                 return null
-              }
+    <div className="admin-card p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-[color:var(--admin-soft-text)]">
+          Showing <span className="font-semibold text-[color:var(--admin-ink)]">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+          <span className="font-semibold text-[color:var(--admin-ink)]">{Math.min(currentPage * pageSize, totalItems)}</span> of{" "}
+          <span className="font-semibold text-[color:var(--admin-ink)]">{totalItems}</span>
+        </p>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href={createPageUrl(currentPage - 1)}
+            className={`inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold ${
+              currentPage <= 1
+                ? "pointer-events-none border-[color:var(--admin-border)] text-[color:var(--admin-muted)] opacity-50"
+                : "border-[color:var(--admin-border)] bg-white text-[color:var(--admin-ink)]"
+            }`}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+
+          <div className="hidden items-center gap-2 sm:flex">
+            {visiblePages.map((page, index) => {
+              const previous = visiblePages[index - 1]
+              const showGap = previous && page - previous > 1
 
               return (
-                <Link
-                  key={i}
-                  href={createPageUrl(pageNum)}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-bold transition-all ${
-                    isActive 
-                      ? "z-10 bg-black border-black text-white" 
-                      : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                  }`}
-                >
-                  {pageNum}
-                </Link>
+                <span key={page} className="flex items-center gap-2">
+                  {showGap && <span className="px-1 text-[color:var(--admin-muted)]">…</span>}
+                  <Link
+                    href={createPageUrl(page)}
+                    className={`inline-flex h-10 min-w-[2.5rem] items-center justify-center rounded-full px-3 text-sm font-bold ${
+                      page === currentPage
+                        ? "bg-[color:var(--admin-accent)] text-white"
+                        : "border border-[color:var(--admin-border)] bg-white text-[color:var(--admin-soft-text)]"
+                    }`}
+                  >
+                    {page}
+                  </Link>
+                </span>
               )
             })}
+          </div>
 
-            <Link
-              href={createPageUrl(currentPage + 1)}
-              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}`}
-            >
-              <span className="sr-only">Next</span>
-              <ChevronRight className="h-5 w-5" aria-hidden="true" />
-            </Link>
-          </nav>
+          <Link
+            href={createPageUrl(currentPage + 1)}
+            className={`inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-semibold ${
+              currentPage >= totalPages
+                ? "pointer-events-none border-[color:var(--admin-border)] text-[color:var(--admin-muted)] opacity-50"
+                : "border-[color:var(--admin-border)] bg-white text-[color:var(--admin-ink)]"
+            }`}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </div>

@@ -1,27 +1,25 @@
 "use client";
-import styles from "@/components/contact/Contact.module.css";
-import { ArrowRight, Calendar, Mail, Clock, CheckCircle, User, Zap, XCircle } from "lucide-react";
+
 import { useState } from "react";
+import { ArrowRight, CheckCircle, Clock, Mail, User, XCircle } from "lucide-react";
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
     setError(false);
 
-    const formData = new FormData(e.currentTarget);
-    
+    const formData = new FormData(event.currentTarget);
+
     try {
       const response = await fetch("https://formspree.io/f/mpqybpyl", {
         method: "POST",
         body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
+        headers: { Accept: "application/json" },
       });
 
       if (response.ok) {
@@ -29,7 +27,7 @@ export default function Contact() {
       } else {
         setError(true);
       }
-    } catch (err: any) {
+    } catch {
       setError(true);
     } finally {
       setLoading(false);
@@ -37,53 +35,44 @@ export default function Contact() {
   };
 
   return (
-    <>{" "}
-      {/* ── HERO ── */}
-      <section className={styles.heroWrap}>
+    <>
+      <section className="site-section">
         <div className="container">
-          <div className={styles.heroCentred}>
-            <span className="label-tag">Get in touch</span>
-            <h1 className={styles.h1}>Have a workflow slowing your team down?</h1>
-            <p className={styles.sub}>Let's identify one practical AI use case first. No commitment, no sales pitch.</p>
+          <div className="site-card p-8 sm:p-12">
+            <span className="site-eyebrow">Contact</span>
+            <h1 className="site-title mt-5">Have a workflow slowing your team down?</h1>
+            <p className="site-subtitle mt-6 max-w-2xl">
+              Start with one practical use case. No oversized transformation pitch, just a focused conversation about the repetitive work that is worth fixing.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ── FORM + CALENDAR ── */}
-      <section className="section" style={{ paddingTop: "2rem" }}>
+      <section className="site-section pt-0">
         <div className="container">
-          <div className={styles.twoCol}>
-
-            {/* ── Contact form → sends to contact@brancr.com via Formspree ── */}
-            <div className={styles.formSide}>
-              <h2 className={styles.colH}>Send a message</h2>
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <div className="site-card p-6 sm:p-8">
+              <h2 className="text-3xl font-semibold tracking-tight text-[color:var(--site-ink)]">Send a message</h2>
               {!submitted ? (
-                <form
-                  onSubmit={handleSubmit}
-                  className={styles.form}
-                >
-                  {/* Formspree destination note: the ID is in the fetch call above */}
+                <form onSubmit={handleSubmit} className="mt-6 space-y-5">
                   <input type="hidden" name="_replyto" value="contact@brancr.com" />
-                  <input type="hidden" name="_subject" value="New inquiry — Brancr Labs" />
+                  <input type="hidden" name="_subject" value="New inquiry - Brancr Labs" />
 
-                  <div className={styles.row}>
-                    <div className={styles.field}>
-                      <label htmlFor="name"  className={styles.label}>Name</label>
-                      <input type="text"  id="name"  name="name"  className={styles.input} required placeholder="Your name" />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="email" className={styles.label}>Email</label>
-                      <input type="email" id="email" name="email" className={styles.input} required placeholder="you@company.com" />
-                    </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Name">
+                      <input type="text" name="name" required placeholder="Your name" className="w-full rounded-[18px] border border-[color:var(--site-border)] bg-white px-4 py-3 text-sm text-[color:var(--site-ink)] outline-none" />
+                    </Field>
+                    <Field label="Email">
+                      <input type="email" name="email" required placeholder="you@company.com" className="w-full rounded-[18px] border border-[color:var(--site-border)] bg-white px-4 py-3 text-sm text-[color:var(--site-ink)] outline-none" />
+                    </Field>
                   </div>
-                  <div className={styles.row}>
-                    <div className={styles.field}>
-                      <label htmlFor="company" className={styles.label}>Company</label>
-                      <input type="text" id="company" name="company" className={styles.input} required placeholder="Company name" />
-                    </div>
-                    <div className={styles.field}>
-                      <label htmlFor="type" className={styles.label}>Company type</label>
-                      <select id="type" name="type" className={styles.select}>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Company">
+                      <input type="text" name="company" required placeholder="Company name" className="w-full rounded-[18px] border border-[color:var(--site-border)] bg-white px-4 py-3 text-sm text-[color:var(--site-ink)] outline-none" />
+                    </Field>
+                    <Field label="Company type">
+                      <select name="type" className="w-full rounded-[18px] border border-[color:var(--site-border)] bg-white px-4 py-3 text-sm text-[color:var(--site-ink)] outline-none">
                         <option value="">Select...</option>
                         <option value="agency">Agency</option>
                         <option value="recruiting">Recruiting firm</option>
@@ -91,127 +80,100 @@ export default function Contact() {
                         <option value="consulting">Consulting</option>
                         <option value="other">Other</option>
                       </select>
-                    </div>
+                    </Field>
                   </div>
-                  <div className={styles.field}>
-                    <label htmlFor="problem" className={styles.label}>Workflow problem</label>
-                    <textarea id="problem" name="message" className={styles.textarea} required placeholder="Describe the repetitive task you want to solve..." />
-                  </div>
-                  <div className={styles.field}>
-                    <label htmlFor="website" className={styles.label}>Website <span className={styles.optional}>(optional)</span></label>
-                    <input type="url" id="website" name="website" className={styles.input} placeholder="https://..." />
-                  </div>
+
+                  <Field label="Workflow problem">
+                    <textarea name="message" required rows={6} placeholder="Describe the repetitive task you want to solve..." className="w-full rounded-[18px] border border-[color:var(--site-border)] bg-white px-4 py-4 text-sm leading-7 text-[color:var(--site-ink)] outline-none resize-none" />
+                  </Field>
+
+                  <Field label="Website (optional)">
+                    <input type="url" name="website" placeholder="https://..." className="w-full rounded-[18px] border border-[color:var(--site-border)] bg-white px-4 py-3 text-sm text-[color:var(--site-ink)] outline-none" />
+                  </Field>
 
                   {error && (
-                    <p style={{ color: "#ef4444", fontSize: "0.85rem", marginBottom: "1rem" }}>
-                      Something went wrong. Please try again or email us directly at contact@brancr.com.
-                    </p>
+                    <div className="rounded-[20px] border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                      Something went wrong. Try again or email us directly at contact@brancr.com.
+                    </div>
                   )}
 
-                  <button 
-                    type="submit" 
-                    className="btn-primary" 
-                    disabled={loading}
-                    style={{ width: "100%", justifyContent: "center", opacity: loading ? 0.7 : 1 }}
-                  >
-                    {loading ? "Sending..." : "Submit"} <ArrowRight size={16} />
+                  <button type="submit" disabled={loading} className="site-button">
+                    {loading ? "Sending..." : "Submit"}
+                    <ArrowRight size={16} />
                   </button>
                 </form>
               ) : (
-                <div className={`card ${styles.successCard}`}>
-                  <div className={styles.successIcon}>✓</div>
-                  <h3>Got it — we'll be in touch soon.</h3>
-                  <p className="text-muted">Alternatively, book a time directly to the right.</p>
+                <div className="mt-6 site-soft-card p-6">
+                  <p className="text-xl font-semibold tracking-tight text-[color:var(--site-ink)]">Got it. We&apos;ll be in touch soon.</p>
+                  <p className="mt-3 text-sm leading-7 text-[color:var(--site-muted)]">You can also email directly or book a conversation using the details on the right.</p>
                 </div>
               )}
             </div>
 
-            {/* ── Book a call card ── */}
-            <div className={styles.calSide}>
-              <h2 className={styles.colH}>Book a time directly</h2>
-              <p className="text-muted" style={{ marginBottom: "1.5rem" }}>
-                Skip the form and reach out directly.
-              </p>
-
-              {/* Email + response time */}
-              <div className={`card ${styles.emailCard}`}>
-                <div className={styles.emailRow}>
-                  <div className={styles.emailIconWrap}><Mail size={18} /></div>
-                  <div>
-                    <div className={styles.emailLabel}>Business email</div>
-                    <a href="mailto:contact@brancr.com" className={styles.emailAddr}>contact@brancr.com</a>
+            <div className="space-y-6">
+              <div className="site-card p-6 sm:p-8">
+                <h2 className="text-3xl font-semibold tracking-tight text-[color:var(--site-ink)]">Talk directly</h2>
+                <div className="mt-6 space-y-4">
+                  <div className="site-soft-card p-5">
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-5 w-5 text-[color:var(--site-accent)]" />
+                      <a href="mailto:contact@brancr.com" className="text-sm font-semibold text-[color:var(--site-ink)]">
+                        contact@brancr.com
+                      </a>
+                    </div>
+                  </div>
+                  <div className="site-soft-card p-5">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-[color:var(--site-accent)]" />
+                      <p className="text-sm text-[color:var(--site-muted)]">Usually within 1 business day</p>
+                    </div>
+                  </div>
+                  <div className="site-soft-card p-5">
+                    <div className="flex items-center gap-3">
+                      <User className="h-5 w-5 text-[color:var(--site-accent)]" />
+                      <p className="text-sm text-[color:var(--site-muted)]">You&apos;ll talk to Similoluwa</p>
+                    </div>
                   </div>
                 </div>
-                <div className={styles.emailMeta}>
-                  <span className={styles.bookChip}><Clock size={12} /> Usually within 1 business day</span>
-                  <span className={styles.bookChip}><User size={12} /> You'll talk to Similoluwa</span>
-                </div>
               </div>
 
-              {/* Discovery call block */}
-              <div className={`card ${styles.bookCard}`}>
-                <div className={styles.bookIcon}><Calendar size={28} /></div>
-                <h3 className={styles.bookTitle}>Discovery call</h3>
-                <p className={styles.bookDesc}>
-                  A focused 20–30 minute conversation to understand your workflow and whether a prototype-first approach is a fit.
-                </p>
-                <div className={styles.bookMeta}>
-                  <span className={styles.bookChip}><Clock size={12} /> 20–30 min</span>
-                  <span className={styles.bookChip}><Mail size={12} /> Video or phone</span>
-                </div>
-                <a
-                  href="mailto:contact@brancr.com?subject=Discovery call request&body=Hi, I'd like to book a discovery call."
-                  className="btn-primary"
-                  style={{ width: "100%", justifyContent: "center", marginTop: "1.5rem" }}
-                >
-                  Email to book <ArrowRight size={16} />
-                </a>
-              </div>
-
-              {/* What happens next */}
-              <div className={styles.nextSteps}>
-                <div className={styles.nextStepsLabel}>What happens after you submit</div>
-                {[
-                  { icon: <CheckCircle size={13} />, text: "We review your workflow problem (within 1 business day)" },
-                  { icon: <Mail size={13} />, text: "You get a short reply with questions or a proposed call time" },
-                  { icon: <Zap size={13} />, text: "If there's a fit, we outline a lightweight prototype scope" },
-                ].map((step, i) => (
-                  <div key={i} className={styles.nextStep}>
-                    <span className={styles.nextStepIcon}>{step.icon}</span>
-                    <span className={styles.nextStepText}>{step.text}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Best for / Not for */}
-              <div className={styles.qualifier}>
-                <div className={styles.qualRow}>
-                  <div className={styles.qualTitle}>Best for</div>
+              <div className="site-card p-6 sm:p-8">
+                <h2 className="text-3xl font-semibold tracking-tight text-[color:var(--site-ink)]">Who this is for</h2>
+                <div className="mt-6 space-y-3">
                   {[
-                    "Teams with 2–30 people doing repetitive ops work",
-                    "Agencies, recruiting firms, small SaaS, consulting",
-                    "Leaders open to testing before committing",
-                  ].map((t) => (
-                    <div key={t} className={styles.qualItem}><CheckCircle size={12} className={styles.qualGreen} />{t}</div>
+                    "Teams with 2-30 people doing repetitive ops work",
+                    "Recruiting firms, agencies, small SaaS, and consulting teams",
+                    "Leaders who want to test a workflow before committing further",
+                  ].map((item) => (
+                    <div key={item} className="site-soft-card flex items-start gap-3 p-4">
+                      <CheckCircle size={16} className="mt-1 text-[color:var(--site-olive)]" />
+                      <span className="text-sm leading-7 text-[color:var(--site-muted)]">{item}</span>
+                    </div>
                   ))}
-                </div>
-                <div className={styles.qualDivider} />
-                <div className={styles.qualRow}>
-                  <div className={styles.qualTitle}>Not for</div>
                   {[
                     "Enterprise procurement with long vendor cycles",
-                    "Teams wanting a fully-built, deployed SaaS product",
-                  ].map((t) => (
-                    <div key={t} className={styles.qualItem}><XCircle size={12} className={styles.qualRed} />{t}</div>
+                    "Teams expecting a full SaaS product immediately",
+                  ].map((item) => (
+                    <div key={item} className="site-soft-card flex items-start gap-3 p-4">
+                      <XCircle size={16} className="mt-1 text-red-500" />
+                      <span className="text-sm leading-7 text-[color:var(--site-muted)]">{item}</span>
+                    </div>
                   ))}
                 </div>
               </div>
-
             </div>
-
           </div>
         </div>
       </section>
     </>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--site-soft)]">{label}</label>
+      <div className="mt-2">{children}</div>
+    </div>
   );
 }

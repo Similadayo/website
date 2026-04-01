@@ -79,85 +79,85 @@ export function SettingsForm({ user }: SettingsFormProps) {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       {status && (
-        <div className={`p-6 rounded-[2rem] flex items-center gap-4 text-sm font-black uppercase tracking-widest animate-fadein ${
-          status.success ? "bg-black dark:bg-white text-white dark:text-black border border-black shadow-2xl shadow-gray-200" : "bg-red-50 text-red-700 border border-red-100"
+        <div className={`rounded-[24px] border p-5 text-sm font-black uppercase tracking-widest animate-fadein ${
+          status.success ? "border-[color:var(--admin-success)]/20 bg-[color:var(--admin-success-soft)] text-[color:var(--admin-success)]" : "border-[color:var(--admin-danger)]/20 bg-[color:var(--admin-danger-soft)] text-[color:var(--admin-danger)]"
         }`}>
+          <div className="flex items-center gap-4">
           {status.success ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
           {status.message}
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-12">
-        {/* Profile Section */}
-        <section className="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300">
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <section className="admin-card p-6 sm:p-8">
           <div className="flex items-center gap-6 mb-12">
-            <div className="w-14 h-14 bg-black dark:bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-gray-200 dark:shadow-none">
-               <User className="w-7 h-7 text-white dark:text-black" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[color:var(--admin-accent)] text-white">
+               <User className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-widest">Executive Profile</h3>
-              <p className="text-xs text-gray-400 font-medium mt-1 italic">Administrative identity and system credentials.</p>
+              <h3 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Profile</h3>
+              <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">Administrative identity and account presentation.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Account Display Name</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">Account Display Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-5 py-4 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
               />
             </div>
             <div className="space-y-3 opacity-60">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Authentication Email</label>
-              <div className="w-full px-6 py-4 rounded-2xl border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-400 text-sm font-bold flex items-center gap-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">Authentication Email</label>
+              <div className="flex w-full items-center gap-3 rounded-[18px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] px-5 py-4 text-sm font-semibold text-[color:var(--admin-soft-text)]">
                 <Mail className="w-4 h-4 opacity-40" /> {user.email}
               </div>
             </div>
           </div>
         </section>
 
-        {/* Outreach & Integrations Section */}
-        <section className="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300">
+        <section className="admin-card p-6 sm:p-8">
           <div className="flex items-center gap-6 mb-12">
-            <div className="w-14 h-14 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-center border border-gray-100 dark:border-white/10">
-               <Shield className="w-7 h-7 text-black dark:text-white" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[color:var(--admin-card-strong)] text-[color:var(--admin-ink)]">
+               <Shield className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-widest">Tactical Integrations</h3>
-              <p className="text-xs text-gray-400 font-medium mt-1 italic">Configure automated dispatch and external synchronization protocols.</p>
+              <h3 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Delivery & Integrations</h3>
+              <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">Configure sender identity and outbound delivery tooling.</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div className="space-y-8">
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Professional Sender Identity</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">Professional Sender Identity</label>
                 <input
                   type="email"
                   value={senderEmail}
                   onChange={(e) => setSenderEmail(e.target.value)}
                   placeholder="name@brancr.com"
-                  className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-5 py-4 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
                 />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Resend API Key (Dispatch Protocol)</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">Resend API Key</label>
                 <input
                   type="password"
                   value={resendApiKey}
                   onChange={(e) => setResendApiKey(e.target.value)}
                   placeholder="re_xxxxxxxxxxxxxxxxxxxx"
-                  className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-5 py-4 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
                 />
               </div>
-              <div className="bg-black/5 dark:bg-white/5 p-8 rounded-[2rem] border border-gray-100 dark:border-white/5 italic">
-                <p className="text-[10px] text-gray-400 leading-relaxed font-black uppercase tracking-widest">
+              <div className="rounded-[24px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-6">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">
                   Dispatch Node: Configure your sender identity and Resend key to test live outbound email delivery from Brancr Labs.
                 </p>
               </div>
@@ -169,64 +169,65 @@ export function SettingsForm({ user }: SettingsFormProps) {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-12 py-5 rounded-3xl text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-gray-200 dark:shadow-none hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-3">
+            className="flex w-full items-center justify-center gap-3 rounded-full bg-[color:var(--admin-accent)] px-10 py-4 text-[10px] font-black uppercase tracking-[0.3em] text-white transition-all disabled:opacity-40 sm:w-auto">
             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-            {isSaving ? "Syncing Protocols..." : "Save Operational Settings"}
+            {isSaving ? "Syncing..." : "Save Settings"}
           </button>
         </div>
       </form>
 
-      {/* Security Section */}
-      <section className="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 group hover:shadow-xl hover:shadow-gray-100 dark:hover:shadow-none transition-all duration-300">
+      <section className="admin-card p-6 sm:p-8">
         <div className="flex items-center gap-6 mb-12">
-          <div className="w-14 h-14 bg-red-50 dark:bg-red-950/30 rounded-2xl flex items-center justify-center border border-red-100 dark:border-red-900/40">
-             <KeyRound className="w-7 h-7 text-red-600 dark:text-red-400" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[color:var(--admin-danger-soft)] text-[color:var(--admin-danger)]">
+             <KeyRound className="w-7 h-7" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-widest">Security Protocols</h3>
-            <p className="text-xs text-gray-400 font-medium mt-1 italic">Rotate mission-critical credentials to ensure operational integrity.</p>
+            <h3 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Security</h3>
+            <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">Rotate credentials and keep the workspace secure.</p>
           </div>
         </div>
 
         {pwdStatus && (
-          <div className={`mb-10 p-6 rounded-2xl flex items-center gap-4 text-[10px] font-black uppercase tracking-widest border ${
-            pwdStatus.success ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/50" : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-900/50"
+          <div className={`mb-10 rounded-[24px] border p-5 text-[10px] font-black uppercase tracking-widest ${
+            pwdStatus.success ? "border-[color:var(--admin-success)]/20 bg-[color:var(--admin-success-soft)] text-[color:var(--admin-success)]" : "border-[color:var(--admin-danger)]/20 bg-[color:var(--admin-danger-soft)] text-[color:var(--admin-danger)]"
           }`}>
+            <div className="flex items-center gap-4">
             {pwdStatus.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
             {pwdStatus.message}
+            </div>
           </div>
         )}
 
         <form onSubmit={handlePasswordSubmit} className="space-y-8 max-w-2xl">
           <div className="space-y-3">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Current clearance Password</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">Current Password</label>
             <input
               type="password"
               required
               value={pwdCurrent}
               onChange={(e) => setPwdCurrent(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-red-500 outline-none transition-all text-sm font-bold text-gray-900 dark:text-white"
+              className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-5 py-4 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">New Operational Clearance</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">New Password</label>
               <input
                 type="password"
                 required
                 value={pwdNew}
                 onChange={(e) => setPwdNew(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white"
+                className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-5 py-4 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
               />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Confirm New Clearance</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] ml-1 text-[color:var(--admin-muted)]">Confirm New Password</label>
               <input
                 type="password"
                 required
                 value={pwdConfirm}
                 onChange={(e) => setPwdConfirm(e.target.value)}
-                className="w-full px-6 py-4 rounded-2xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/10 focus:bg-white dark:focus:bg-white/10 focus:ring-2 focus:ring-black dark:focus:ring-white outline-none transition-all text-sm font-bold text-gray-900 dark:text-white"
+                className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-5 py-4 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
               />
             </div>
           </div>
@@ -234,9 +235,9 @@ export function SettingsForm({ user }: SettingsFormProps) {
             <button
               type="submit"
               disabled={isPwdSaving}
-              className="w-full sm:w-auto bg-gray-900 dark:bg-white text-white dark:text-black px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-black dark:hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-3">
+              className="flex w-full items-center justify-center gap-3 rounded-full bg-[color:var(--admin-ink)] px-10 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white disabled:opacity-40 sm:w-auto">
               {isPwdSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-              {isPwdSaving ? "Synchronizing..." : "Rotate Clearance Password"}
+              {isPwdSaving ? "Updating..." : "Update Password"}
             </button>
           </div>
         </form>

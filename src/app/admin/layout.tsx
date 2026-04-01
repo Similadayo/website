@@ -1,5 +1,5 @@
 import { DashboardContainer } from "@/components/admin/DashboardContainer"
-import { auth } from "@/auth"
+import { getCachedAuth } from "@/auth"
 import { redirect } from "next/navigation"
 
 export default async function AdminLayout({
@@ -7,7 +7,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await auth()
+  const session = await getCachedAuth()
   
   if (!session?.user) {
     redirect("/login")

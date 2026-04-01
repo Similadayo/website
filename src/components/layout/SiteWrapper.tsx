@@ -13,9 +13,9 @@ export function SiteWrapper({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="site-shell flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1 pt-[68px]">
+      <main className="flex-1 pt-[78px]">
         {children}
       </main>
       <Footer />

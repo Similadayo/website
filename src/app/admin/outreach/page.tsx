@@ -1,33 +1,30 @@
-import { db } from "@/lib/db"
-import { SendHorizontal, CheckCircle2, BrainCircuit } from "lucide-react"
 import Link from "next/link"
-import { generateOutreachSequence, markOutreachSent } from "./actions"
-import { OutreachDraftCard } from "@/components/admin/OutreachDraftCard"
+import { db } from "@/lib/db"
 import { getAccessScope } from "@/lib/auth/scope"
-import { formatOutreachRecommendation, getLeadContactStrategy, requiresManualContactReview } from "@/lib/contacts/priority"
+import { OutreachDraftCard } from "@/components/admin/OutreachDraftCard"
+import { generateOutreachSequence } from "./actions"
+import {
+  formatOutreachRecommendation,
+  getLeadContactStrategy,
+  requiresManualContactReview,
+} from "@/lib/contacts/priority"
+import { ArrowRight, CheckCircle2, MessageSquareReply, SendHorizontal, Sparkles } from "lucide-react"
 
 export default async function OutreachPage() {
   const scope = await getAccessScope()
   const outreachLeads = await db.lead.findMany({
     where: {
-      AND: [
-        scope.leadsFilter,
-        { stage: { in: ["approved", "outreach_ready", "contacted", "replied"] } },
-      ],
+      AND: [scope.leadsFilter, { stage: { in: ["approved", "outreach_ready", "contacted", "replied"] } }],
     },
     orderBy: { createdAt: "desc" },
     include: {
       company: {
         include: {
           contacts: true,
-          createdBy: {
-            select: { id: true, name: true, email: true },
-          },
+          createdBy: { select: { id: true, name: true, email: true } },
         },
       },
-      owner: {
-        select: { id: true, name: true, email: true },
-      },
+      owner: { select: { id: true, name: true, email: true } },
       analyses: { orderBy: { createdAt: "desc" }, take: 1 },
       threads: {
         include: { messages: { orderBy: { createdAt: "desc" }, take: 3 } },
@@ -37,130 +34,73 @@ export default async function OutreachPage() {
     },
   })
 
-  const noDraftLeads   = outreachLeads.filter((l: any) => l.threads.length === 0 && l.stage === "approved")
-  const draftReady     = outreachLeads.filter((l: any) => l.threads.length > 0 && !["contacted", "replied"].includes(l.stage))
-  const sendReadyDrafts = draftReady.filter((lead: any) => !requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
-  const reviewRequiredDrafts = draftReady.filter((lead: any) => requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
-  const contacted      = outreachLeads.filter((l: any) => l.stage === "contacted")
-  const replied        = outreachLeads.filter((l: any) => l.stage === "replied")
+  const waitingForDraft = outreachLeads.filter((lead: any) => lead.threads.length === 0 && lead.stage === "approved")
+  const withDrafts = outreachLeads.filter((lead: any) => lead.threads.length > 0 && !["contacted", "replied"].includes(lead.stage))
+  const readyToSend = withDrafts.filter((lead: any) => !requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
+  const needsReview = withDrafts.filter((lead: any) => requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
+  const replied = outreachLeads.filter((lead: any) => lead.stage === "replied")
 
   return (
-    <div className="space-y-12 animate-fadein pb-12">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
-          <SendHorizontal className="w-8 h-8 text-black" /> 
-          Outreach Queue
-        </h1>
-        <p className="text-gray-500 text-sm mt-1 font-medium">Generate, review, and track outreach for approved leads.</p>
-      </div>
-
-      {/* Awaiting draft */}
-      {noDraftLeads.length > 0 && (
-        <section>
-          <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-black shadow-sm" />
-             Awaiting AI Drafting ({noDraftLeads.length})
-          </h2>
-          <div className="grid grid-cols-1 gap-4">
-            {noDraftLeads.map((lead: any) => (
-              <div key={lead.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 group hover:shadow-xl hover:shadow-gray-100 transition-all duration-300">
-                <div className="flex-1">
-                  <h3 className="font-extrabold text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-1.5">{lead.company.niche ?? "Target Account"}</p>
-                  <ContactStrategyLine lead={lead} />
-                  {scope.isSuperAdmin && (
-                    <OwnershipBadge lead={lead} currentUserId={scope.userId} />
-                  )}
-                </div>
-                <form action={async () => {
-                  "use server"
-                  await generateOutreachSequence(lead.id)
-                }} className="w-full sm:w-auto">
-                  <button type="submit"
-                    className="w-full sm:w-auto bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-8 py-4 rounded-2xl hover:bg-gray-800 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-gray-200">
-                    <BrainCircuit className="w-4 h-4" /> Initialize Draft
-                  </button>
-                </form>
-              </div>
-            ))}
+    <div className="space-y-6">
+      <section className="admin-card p-6 sm:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="admin-eyebrow">Outreach</p>
+            <h1 className="admin-section-title mt-3 max-w-3xl">Ship the right message from the right queue.</h1>
+            <p className="admin-section-copy mt-4 max-w-2xl">
+              This view is optimized for rapid mobile execution: draft generation, fast review, send readiness, and reply handling.
+            </p>
           </div>
-        </section>
-      )}
+          <Link href="/admin/outreach/history" className="inline-flex items-center gap-2 rounded-full bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white">
+            Open activity
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
 
-      {/* Draft ready */}
-      {sendReadyDrafts.length > 0 && (
-        <section>
-          <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-black shadow-sm" />
-             Send-Ready Drafts ({sendReadyDrafts.length})
-          </h2>
-          <div className="space-y-8">
-            {sendReadyDrafts.map((lead: any) => (
-              <OutreachDraftCard 
-                key={lead.id} 
-                lead={lead} 
-                message={lead.threads[0]?.messages[0]} 
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard label="Awaiting draft" value={waitingForDraft.length} tone="neutral" />
+          <SummaryCard label="Ready to send" value={readyToSend.length} tone="success" />
+          <SummaryCard label="Needs review" value={needsReview.length} tone="warning" />
+          <SummaryCard label="Replies live" value={replied.length} tone="accent" />
+        </div>
+      </section>
 
-      {reviewRequiredDrafts.length > 0 && (
-        <section>
-          <h2 className="text-[11px] font-black text-amber-700 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-amber-500 shadow-sm" />
-             Needs Contact Review ({reviewRequiredDrafts.length})
-          </h2>
-          <p className="mb-6 text-sm text-gray-500">
-            These drafts exist, but the contact path is still weak or indirect. Review the lead, improve the contact route, or use a deliberate test-send override from the lead detail page.
-          </p>
-          <div className="space-y-8">
-            {reviewRequiredDrafts.map((lead: any) => (
-              <OutreachDraftCard 
-                key={lead.id} 
-                lead={lead} 
-                message={lead.threads[0]?.messages[0]} 
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {replied.length > 0 && (
-        <section>
-          <h2 className="text-[11px] font-black text-blue-700 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
-             Replies Received ({replied.length})
-          </h2>
-          <div className="space-y-6">
-            {replied.map((lead: any) => {
-              const latestInbound = lead.threads[0]?.messages.find((message: any) => message.direction === "inbound")
+      {waitingForDraft.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Awaiting AI draft" body="Approved leads with no sequence yet. Generate the first draft and keep momentum." />
+          <div className="grid gap-4 xl:grid-cols-2">
+            {waitingForDraft.map((lead: any) => {
+              const contactStrategy = getLeadContactStrategy(lead.company.contacts || [])
 
               return (
-                <div key={lead.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                <div key={lead.id} className="admin-card p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h3 className="font-black text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">
-                        {latestInbound?.fromEmail || "Reply received"}
+                      <p className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">{lead.company.name}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--admin-muted)]">
+                        {lead.company.niche || "Target account"}
                       </p>
-                      <ContactStrategyLine lead={lead} />
                     </div>
-                    <Link
-                      href={`/admin/leads/${lead.id}`}
-                      className="rounded-2xl bg-black px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-gray-800 transition-colors"
-                    >
-                      Open Thread
-                    </Link>
+                    <span className="admin-pill admin-pill-neutral">{formatOutreachRecommendation(contactStrategy.recommendation)}</span>
                   </div>
-                  {latestInbound && (
-                    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Latest Reply</p>
-                      <p className="mt-2 text-sm font-semibold text-gray-900">{latestInbound.subject || "(No Subject)"}</p>
-                      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{latestInbound.body}</p>
-                    </div>
-                  )}
+
+                  <p className="mt-4 text-sm leading-6 text-[color:var(--admin-soft-text)]">{contactStrategy.reason}</p>
+
+                  <form
+                    action={async () => {
+                      "use server"
+                      await generateOutreachSequence(lead.id)
+                    }}
+                    className="mt-5"
+                  >
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-2 rounded-full bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      Generate draft
+                    </button>
+                  </form>
                 </div>
               )
             })}
@@ -168,106 +108,111 @@ export default async function OutreachPage() {
         </section>
       )}
 
-      {/* Contacted */}
-      {contacted.length > 0 && (
-        <section>
-          <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-             <div className="w-2 h-2 rounded-full bg-green-400 shadow-sm" />
-             Mission Completed ({contacted.length})
-          </h2>
-          <div className="grid grid-cols-1 gap-4 opacity-70 hover:opacity-100 transition-opacity">
-            {contacted.map((lead: any) => (
-              <div key={lead.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 transition-all hover:bg-gray-50/30">
-                <div className="flex-1">
-                  <h3 className="font-extrabold text-xl text-gray-900 tracking-tight">{lead.company.name}</h3>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mt-1.5">{lead.company.niche ?? "Target Account"}</p>
-                  <ContactStrategyLine lead={lead} />
-                  {scope.isSuperAdmin && (
-                    <OwnershipBadge lead={lead} currentUserId={scope.userId} />
-                  )}
-                </div>
-                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                  <span className="text-[10px] bg-green-50 text-green-700 font-black px-4 py-2 rounded-xl border border-green-100 uppercase tracking-widest flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Transmitted
-                  </span>
-                  <Link href={`/admin/leads/${lead.id}`}
-                    className="text-[10px] font-black text-gray-400 hover:text-black uppercase tracking-[0.2em] transition-all transform hover:translate-x-1">
-                    History →
-                  </Link>
-                </div>
-              </div>
+      {readyToSend.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Ready to send" body="Drafts with a usable contact path. Edit lightly, then dispatch." />
+          <div className="space-y-5">
+            {readyToSend.map((lead: any) => (
+              <OutreachDraftCard key={lead.id} lead={lead} message={lead.threads[0]?.messages[0]} />
             ))}
           </div>
         </section>
       )}
 
+      {needsReview.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Needs contact review" body="Draft exists, but the contact route is still weak, generic, or manual." />
+          <div className="grid gap-4 xl:grid-cols-2">
+            {needsReview.map((lead: any) => {
+              const strategy = getLeadContactStrategy(lead.company.contacts || [])
+
+              return (
+                <Link key={lead.id} href={`/admin/leads/${lead.id}`} className="admin-card block p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold tracking-tight text-[color:var(--admin-ink)]">{lead.company.name}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--admin-muted)]">
+                        {formatOutreachRecommendation(strategy.recommendation)}
+                      </p>
+                    </div>
+                    <span className="admin-pill admin-pill-warning">Review</span>
+                  </div>
+                  <p className="mt-4 text-sm leading-6 text-[color:var(--admin-soft-text)]">{strategy.reason}</p>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {replied.length > 0 && (
+        <section className="space-y-4">
+          <SectionHeader title="Reply handling" body="Threads with inbound responses that need a next step." />
+          <div className="grid gap-4 xl:grid-cols-2">
+            {replied.map((lead: any) => {
+              const latestInbound = lead.threads[0]?.messages.find((message: any) => message.direction === "inbound")
+
+              return (
+                <Link key={lead.id} href={`/admin/leads/${lead.id}`} className="admin-card block p-5 sm:p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold tracking-tight text-[color:var(--admin-ink)]">{lead.company.name}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--admin-muted)]">
+                        {latestInbound?.fromEmail || "Reply received"}
+                      </p>
+                    </div>
+                    <span className="admin-pill admin-pill-accent">
+                      <MessageSquareReply className="h-3.5 w-3.5" />
+                      Replied
+                    </span>
+                  </div>
+                  {latestInbound && (
+                    <p className="mt-4 line-clamp-4 text-sm leading-6 text-[color:var(--admin-soft-text)]">{latestInbound.body}</p>
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {outreachLeads.length === 0 && (
-        <div className="text-center py-24 border-2 border-dashed border-gray-100 rounded-[3rem] bg-white shadow-sm">
-          <CheckCircle2 className="w-16 h-16 mx-auto mb-6 text-gray-100" />
-          <h3 className="font-black text-gray-900 uppercase tracking-[0.2em] text-lg">System Standby</h3>
-          <p className="text-xs text-gray-400 mt-2 font-medium italic">Approve target accounts from the pipeline to initialize the Outreach Engine.</p>
-          <Link href="/admin/leads"
-            className="mt-10 inline-block text-[10px] font-black text-white bg-black px-10 py-5 rounded-3xl uppercase tracking-[0.2em] shadow-2xl shadow-gray-200 hover:bg-gray-800 transition-all active:scale-95">
-            Open Pipeline →
-          </Link>
+        <div className="admin-card p-6">
+          <p className="text-xl font-semibold text-[color:var(--admin-ink)]">No outreach work is queued yet.</p>
+          <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+            Approve leads from the pipeline and they will appear here with AI-generated draft support.
+          </p>
         </div>
       )}
     </div>
   )
 }
 
-function ContactStrategyLine({ lead }: { lead: any }) {
-  const strategy = getLeadContactStrategy(lead.company.contacts || [])
-
+function SectionHeader({ title, body }: { title: string; body: string }) {
   return (
-    <div className="mt-3 space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={`inline-flex items-center rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
-          strategy.coverageStatus === "high"
-            ? "bg-green-50 text-green-700 border border-green-100"
-            : strategy.coverageStatus === "medium"
-              ? "bg-blue-50 text-blue-700 border border-blue-100"
-              : strategy.coverageStatus === "low"
-                ? "bg-yellow-50 text-yellow-700 border border-yellow-100"
-                : "bg-gray-50 text-gray-500 border border-gray-100"
-        }`}>
-          {strategy.coverageStatus} contact coverage
-        </span>
-        <span className="inline-flex items-center rounded-lg border border-gray-100 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
-          {formatOutreachRecommendation(strategy.recommendation)}
-        </span>
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p className="admin-eyebrow">{title}</p>
+        <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">{body}</p>
       </div>
-      <p className="text-xs text-gray-500">
-        {strategy.bestContact
-          ? `Best contact: ${strategy.bestContact.name || strategy.bestContact.email || "Unnamed contact"}`
-          : "Best contact: manual review needed"}
-        {strategy.fallbackContact?.email ? ` • Fallback: ${strategy.fallbackContact.email}` : ""}
-      </p>
     </div>
   )
 }
 
-function OwnershipBadge({ lead, currentUserId }: { lead: any; currentUserId: string }) {
-  const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
-  const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
-  const isMine = lead.ownerId === currentUserId || lead.company.createdById === currentUserId
+function SummaryCard({ label, value, tone }: { label: string; value: number; tone: "neutral" | "success" | "warning" | "accent" }) {
+  const toneClass =
+    tone === "success"
+      ? "bg-[color:var(--admin-success-soft)]"
+      : tone === "warning"
+        ? "bg-[color:var(--admin-warning-soft)]"
+        : tone === "accent"
+          ? "bg-[color:var(--admin-accent-soft)]"
+          : "bg-white"
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-bold">
-      <span className={`inline-flex items-center rounded-lg px-2 py-1 uppercase tracking-widest border ${
-        isMine
-          ? "border-black bg-black text-white"
-          : "border-slate-200 bg-slate-50 text-slate-500"
-      }`}>
-        {isMine ? "My Lead" : "Other Member"}
-      </span>
-      <span className="text-slate-400 normal-case tracking-normal">
-        Owner: {ownerName}
-      </span>
-      <span className="text-slate-300">•</span>
-      <span className="text-slate-400 normal-case tracking-normal">
-        Created by: {creatorName}
-      </span>
+    <div className={`rounded-[24px] border border-[color:var(--admin-border)] p-4 ${toneClass}`}>
+      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">{label}</p>
+      <p className="admin-metric-value mt-3">{value}</p>
     </div>
   )
 }

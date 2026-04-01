@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { CheckCircle2, Edit3, Save, X, RefreshCw } from "lucide-react"
-import { updateOutreachMessage, markOutreachSent } from "@/app/admin/outreach/actions"
-import { reAnalyzeAndRegenerateOutreach } from "@/app/admin/leads/[id]/actions"
 import Link from "next/link"
+import { useState } from "react"
+import { CheckCircle2, Edit3, RefreshCw, Save } from "lucide-react"
+import { markOutreachSent, updateOutreachMessage } from "@/app/admin/outreach/actions"
+import { reAnalyzeAndRegenerateOutreach } from "@/app/admin/leads/[id]/actions"
 import { formatOutreachRecommendation, getLeadContactStrategy, requiresManualContactReview } from "@/lib/contacts/priority"
 
 interface OutreachDraftCardProps {
@@ -51,132 +51,104 @@ export function OutreachDraftCard({ lead, message }: OutreachDraftCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 space-y-6 transition-all hover:shadow-xl hover:shadow-gray-100 group">
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+    <div className="admin-card p-6 sm:p-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h3 className="font-black text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">{lead.company.niche ?? "Target Account"}</p>
-          <div className="mt-3 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${
-                contactStrategy.coverageStatus === "high"
-                  ? "bg-green-50 text-green-700 border border-green-100"
-                  : contactStrategy.coverageStatus === "medium"
-                    ? "bg-blue-50 text-blue-700 border border-blue-100"
-                    : contactStrategy.coverageStatus === "low"
-                      ? "bg-yellow-50 text-yellow-700 border border-yellow-100"
-                      : "bg-gray-50 text-gray-500 border border-gray-100"
-              }`}>
-                {contactStrategy.coverageStatus} contact coverage
-              </span>
-              <span className="inline-flex items-center rounded-lg border border-gray-100 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-gray-500">
-                {formatOutreachRecommendation(contactStrategy.recommendation)}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500">
-              {contactStrategy.bestContact
-                ? `Best contact: ${contactStrategy.bestContact.name || contactStrategy.bestContact.email || "Unnamed contact"}`
-                : "Best contact: manual review needed"}
-              {contactStrategy.fallbackContact?.email ? ` • Fallback: ${contactStrategy.fallbackContact.email}` : ""}
-            </p>
+          <p className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">{lead.company.name}</p>
+          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--admin-muted)]">
+            {lead.company.niche ?? "Target account"}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className={`admin-pill ${contactStrategy.coverageStatus === "high" ? "admin-pill-success" : contactStrategy.coverageStatus === "medium" ? "admin-pill-accent" : "admin-pill-warning"}`}>
+              {contactStrategy.coverageStatus} contact coverage
+            </span>
+            <span className="admin-pill admin-pill-neutral">{formatOutreachRecommendation(contactStrategy.recommendation)}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-           <span className="text-[10px] bg-black text-white font-black px-4 py-2 rounded-xl border border-black uppercase tracking-widest shadow-lg shadow-gray-200">
-            Final Draft Ready
-          </span>
-        </div>
+
+        <span className="admin-pill admin-pill-success">Final draft ready</span>
       </div>
 
-      <div className="bg-gray-50/50 rounded-3xl p-8 border border-gray-100 space-y-6 relative">
+      <div className="mt-5 rounded-[24px] bg-[color:var(--admin-card-strong)] p-5">
+        <p className="text-sm text-[color:var(--admin-soft-text)]">
+          {contactStrategy.bestContact
+            ? `Best contact: ${contactStrategy.bestContact.name || contactStrategy.bestContact.email || "Unnamed contact"}`
+            : "Best contact: manual review needed"}
+          {contactStrategy.fallbackContact?.email ? ` • Fallback: ${contactStrategy.fallbackContact.email}` : ""}
+        </p>
+
         {requiresReview && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Manual contact review required</p>
-            <p className="mt-2">{contactStrategy.reason}</p>
+          <div className="mt-4 rounded-[18px] border border-[color:var(--admin-warning)]/20 bg-[color:var(--admin-warning-soft)] p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-warning)]">Manual contact review required</p>
+            <p className="mt-2 text-sm leading-6 text-[color:var(--admin-ink)]">{contactStrategy.reason}</p>
           </div>
         )}
+
         {isEditing ? (
-          <div className="space-y-6 animate-fadein transition-all">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Subject Line</label>
-              <input 
+          <div className="mt-5 space-y-4">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">Subject</label>
+              <input
                 value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="w-full bg-white border border-gray-100 rounded-2xl px-6 py-4 text-sm font-black text-gray-900 focus:ring-2 focus:ring-black outline-none transition-all shadow-sm"
+                onChange={(event) => setSubject(event.target.value)}
+                className="mt-2 w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Body</label>
-              <textarea 
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">Body</label>
+              <textarea
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
+                onChange={(event) => setBody(event.target.value)}
                 rows={10}
-                className="w-full bg-white border border-gray-100 rounded-2xl px-6 py-5 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-black outline-none transition-all leading-relaxed shadow-sm"
+                className="mt-2 w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-4 text-sm leading-6 text-[color:var(--admin-soft-text)] outline-none"
               />
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button 
-                onClick={() => setIsEditing(false)}
-                className="px-6 py-3 text-[10px] font-black text-gray-400 hover:text-black uppercase tracking-widest transition-colors"
-              >
-                Discard Changes
+            <div className="flex flex-wrap justify-end gap-3">
+              <button onClick={() => setIsEditing(false)} className="admin-pill admin-pill-neutral">
+                Cancel
               </button>
-              <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="bg-black text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-gray-200 active:scale-95 disabled:opacity-40"
-              >
-                {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                Commit Draft
+              <button onClick={handleSave} disabled={isSaving} className="admin-pill admin-pill-accent">
+                {isSaving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Save Draft
               </button>
             </div>
           </div>
         ) : (
-          <div className="animate-fadein transition-all">
-            <div className="flex justify-between items-start mb-6">
-               <div className="flex-1 pr-12">
-                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Subject</p>
-                 <p className="font-black text-gray-900 text-base tracking-tight">{subject}</p>
-               </div>
-               <button 
-                 onClick={() => setIsEditing(true)}
-                 className="p-3 text-gray-300 hover:text-black hover:bg-white rounded-xl transition-all border border-transparent hover:border-gray-100"
-                 title="Edit Draft"
-               >
-                 <Edit3 className="w-5 h-5" />
-               </button>
+          <div className="mt-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">Subject</p>
+                <p className="mt-2 text-base font-semibold text-[color:var(--admin-ink)]">{subject}</p>
+              </div>
+              <button onClick={() => setIsEditing(true)} className="admin-pill admin-pill-neutral">
+                <Edit3 className="h-3.5 w-3.5" />
+                Edit
+              </button>
             </div>
-            <div className="prose prose-sm max-w-none">
-              <p className="text-gray-600 whitespace-pre-wrap leading-relaxed text-sm font-medium">
-                {body}
-              </p>
-            </div>
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[color:var(--admin-soft-text)]">{body}</p>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        <button 
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <button
           onClick={handleSend}
           disabled={isSending || isEditing || requiresReview}
-          className="flex-1 sm:flex-none bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] px-10 py-5 rounded-3xl hover:bg-gray-800 transition-all flex items-center justify-center gap-3 shadow-2xl shadow-gray-200 active:scale-95 disabled:opacity-30"
+          className="flex items-center justify-center gap-2 rounded-full bg-[color:var(--admin-accent)] px-6 py-3 text-sm font-bold text-white disabled:opacity-40"
         >
-          {isSending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-          {requiresReview ? "Manual Review Needed" : "Transmit Now"}
+          {isSending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          {requiresReview ? "Manual review needed" : "Send now"}
         </button>
-        <button 
+        <button
           onClick={handleRegenerate}
           disabled={isRegenerating || isEditing}
-          className="flex-1 sm:flex-none bg-white border border-gray-100 text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] px-10 py-5 rounded-3xl hover:text-black hover:bg-gray-50 transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-30"
+          className="flex items-center justify-center gap-2 rounded-full border border-[color:var(--admin-border)] bg-white px-6 py-3 text-sm font-bold text-[color:var(--admin-ink)] disabled:opacity-40"
         >
-          {isRegenerating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-          Re-Analyze + Rewrite
+          <RefreshCw className={`h-4 w-4 ${isRegenerating ? "animate-spin" : ""}`} />
+          Re-analyze + rewrite
         </button>
-        <Link 
-          href={`/admin/leads/${lead.id}`}
-          className="flex-1 sm:flex-none text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] px-10 py-5 hover:text-black transition-colors flex items-center justify-center gap-3 group/link"
-        >
-          View Full Lead <span className="transition-transform group-hover/link:translate-x-1">→</span>
+        <Link href={`/admin/leads/${lead.id}`} className="flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-[color:var(--admin-accent)]">
+          View full lead
         </Link>
       </div>
     </div>

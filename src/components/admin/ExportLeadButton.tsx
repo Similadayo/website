@@ -49,7 +49,7 @@ export function ExportLeadButton({ leads }: ExportLeadButtonProps) {
     <button
       onClick={handleExport}
       disabled={isExporting || leads.length === 0}
-      className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 text-gray-900 dark:text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 dark:hover:bg-white/10 transition-all active:scale-95 disabled:opacity-40 shadow-sm"
+      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-gray-900 shadow-sm transition-all hover:bg-gray-50 active:scale-95 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 sm:w-auto"
     >
       <Download className={`w-3.5 h-3.5 ${isExporting ? "animate-bounce" : ""}`} />
       {isExporting ? "Compiling..." : "Export Intel (CSV)"}

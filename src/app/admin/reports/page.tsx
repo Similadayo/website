@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
-import { BarChart3, TrendingUp, Users, Building2, BrainCircuit, SendHorizontal, XCircle } from "lucide-react"
 import { STAGE_LABELS, LeadStage } from "@/lib/stages"
+import { BarChart3, BrainCircuit, Building2, SendHorizontal, TrendingUp, Users, XCircle } from "lucide-react"
 
 export default async function ReportsPage() {
   const [totalCompanies, totalLeads, totalAnalyses, totalSent] = await Promise.all([
@@ -10,37 +10,31 @@ export default async function ReportsPage() {
     db.outreachMessage.count({ where: { sentAt: { not: null } } }),
   ])
 
-  // Stage funnel (group by stage)
-  const stageCounts = await db.lead.groupBy({
-    by: ["stage"],
-    _count: { _all: true },
-  })
-  const stageMap = Object.fromEntries(stageCounts.map((s: any) => [s.stage, s._count._all]))
+  const stageCounts = await db.lead.groupBy({ by: ["stage"], _count: { _all: true } })
+  const stageMap = Object.fromEntries(stageCounts.map((item: any) => [item.stage, item._count._all]))
 
-  const approvedCount  = stageMap["approved"]    ?? 0
-  const contactedCount = stageMap["contacted"]   ?? 0
-  const repliedCount   = stageMap["replied"]     ?? 0
-  const bookedCount    = stageMap["booked_call"] ?? 0
-  const rejectedCount  = stageMap["rejected"]    ?? 0
+  const approvedCount = stageMap["approved"] ?? 0
+  const contactedCount = stageMap["contacted"] ?? 0
+  const repliedCount = stageMap["replied"] ?? 0
+  const bookedCount = stageMap["booked_call"] ?? 0
+  const rejectedCount = stageMap["rejected"] ?? 0
 
-  const approvalRate = totalLeads   ? Math.round((approvedCount  / totalLeads)   * 100) : 0
-  const outreachRate = approvedCount? Math.round((contactedCount / approvedCount) * 100) : 0
-  const replyRate    = contactedCount? Math.round((repliedCount  / contactedCount)* 100) : 0
-  const bookedRate   = repliedCount ? Math.round((bookedCount    / repliedCount)  * 100) : 0
+  const approvalRate = totalLeads ? Math.round((approvedCount / totalLeads) * 100) : 0
+  const outreachRate = approvedCount ? Math.round((contactedCount / approvedCount) * 100) : 0
+  const replyRate = contactedCount ? Math.round((repliedCount / contactedCount) * 100) : 0
+  const bookedRate = repliedCount ? Math.round((bookedCount / repliedCount) * 100) : 0
 
-  // Per-researcher
   const researcherStats = await db.lead.groupBy({
     by: ["ownerId"],
     _count: { _all: true },
     where: { ownerId: { not: null } },
   })
-  const researcherIds = researcherStats.map((r: any) => r.ownerId!).filter(Boolean)
-  const researchers   = researcherIds.length
+  const researcherIds = researcherStats.map((item: any) => item.ownerId!).filter(Boolean)
+  const researchers = researcherIds.length
     ? await db.user.findMany({ where: { id: { in: researcherIds } }, select: { id: true, name: true } })
     : []
-  const researcherMap = Object.fromEntries(researchers.map((r: any) => [r.id, r.name ?? r.id]))
+  const researcherMap = Object.fromEntries(researchers.map((item: any) => [item.id, item.name ?? item.id]))
 
-  // Niche breakdown — sort in JS to avoid groupBy orderBy syntax issues
   const nicheRaw = await db.company.groupBy({
     by: ["niche"],
     _count: { _all: true },
@@ -49,120 +43,125 @@ export default async function ReportsPage() {
   const nicheStats = [...nicheRaw].sort((a: any, b: any) => b._count._all - a._count._all).slice(0, 10)
 
   return (
-    <div className="space-y-8 animate-fadein">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-indigo-600" /> Performance Reports
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Live pipeline metrics and team performance.</p>
-      </div>
+    <div className="space-y-6">
+      <section className="admin-card p-6 sm:p-8">
+        <p className="admin-eyebrow">Reports</p>
+        <h1 className="admin-section-title mt-3 max-w-3xl">Read the funnel without losing the product feel.</h1>
+        <p className="admin-section-copy mt-4 max-w-2xl">
+          Reporting is intentionally compact here: enough to see conversion quality, operator distribution, and where the pipeline is leaking.
+        </p>
 
-      {/* Top metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Companies",   value: totalCompanies, icon: <Building2 className="w-5 h-5 text-indigo-500" /> },
-          { label: "Total Leads", value: totalLeads,     icon: <Users className="w-5 h-5 text-blue-500" /> },
-          { label: "AI Analyses", value: totalAnalyses,  icon: <BrainCircuit className="w-5 h-5 text-violet-500" /> },
-          { label: "Emails Sent", value: totalSent,      icon: <SendHorizontal className="w-5 h-5 text-green-500" /> },
-        ].map((m: any) => (
-          <div key={m.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1.5 bg-gray-50 rounded-lg">{m.icon}</div>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{m.label}</span>
-            </div>
-            <div className="text-3xl font-bold text-gray-900">{m.value}</div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Companies" value={totalCompanies} icon={<Building2 className="h-4 w-4" />} />
+          <Metric label="Leads" value={totalLeads} icon={<Users className="h-4 w-4" />} />
+          <Metric label="AI analyses" value={totalAnalyses} icon={<BrainCircuit className="h-4 w-4" />} />
+          <Metric label="Emails sent" value={totalSent} icon={<SendHorizontal className="h-4 w-4" />} />
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="admin-card p-5 sm:p-6">
+          <div className="flex items-center gap-2 text-[color:var(--admin-ink)]">
+            <TrendingUp className="h-5 w-5 text-[color:var(--admin-accent)]" />
+            <h2 className="text-xl font-semibold tracking-tight">Pipeline conversion</h2>
           </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Conversion rates */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="font-semibold text-gray-900 mb-5 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-indigo-500" /> Pipeline Conversion
-          </h2>
-          <div className="space-y-4">
+          <div className="mt-5 space-y-5">
             {[
-              { label: "Approval Rate",  value: approvalRate,  sub: `${approvedCount} of ${totalLeads} leads` },
-              { label: "Outreach Rate",  value: outreachRate,  sub: `${contactedCount} of ${approvedCount} approved` },
-              { label: "Reply Rate",     value: replyRate,     sub: `${repliedCount} of ${contactedCount} contacted` },
-              { label: "Booked Rate",    value: bookedRate,    sub: `${bookedCount} of ${repliedCount} replied` },
-            ].map((item: any) => (
+              { label: "Approval rate", value: approvalRate, sub: `${approvedCount} of ${totalLeads}` },
+              { label: "Outreach rate", value: outreachRate, sub: `${contactedCount} of ${approvedCount}` },
+              { label: "Reply rate", value: replyRate, sub: `${repliedCount} of ${contactedCount}` },
+              { label: "Booked rate", value: bookedRate, sub: `${bookedCount} of ${repliedCount}` },
+            ].map((item) => (
               <div key={item.label}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-700">{item.label}</span>
-                  <span className="font-bold text-gray-900">{item.value}%</span>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[color:var(--admin-ink)]">{item.label}</p>
+                  <p className="text-sm font-bold text-[color:var(--admin-accent)]">{item.value}%</p>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5">
-                  <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${item.value}%` }} />
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[color:var(--admin-card-strong)]">
+                  <div className="h-full rounded-full bg-[color:var(--admin-accent)]" style={{ width: `${item.value}%` }} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{item.sub}</p>
+                <p className="mt-2 text-xs text-[color:var(--admin-muted)]">{item.sub}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Stage funnel */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="font-semibold text-gray-900 mb-5 flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-500" /> Leads by Stage
-          </h2>
-          <div className="space-y-2">
-            {(Object.entries(stageMap) as [string, number][]).sort((a: any, b: any) => b[1] - a[1]).map(([stage, count]) => (
-              <div key={stage} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                <span className="text-gray-600">{STAGE_LABELS[stage as LeadStage] ?? stage}</span>
-                <span className="font-bold text-gray-900 tabular-nums">{count}</span>
-              </div>
-            ))}
-            {Object.keys(stageMap).length === 0 && <p className="text-gray-400 text-sm italic">No leads yet.</p>}
+        <div className="admin-card p-5 sm:p-6">
+          <div className="flex items-center gap-2 text-[color:var(--admin-ink)]">
+            <BarChart3 className="h-5 w-5 text-[color:var(--admin-accent)]" />
+            <h2 className="text-xl font-semibold tracking-tight">Leads by stage</h2>
+          </div>
+          <div className="mt-5 space-y-3">
+            {(Object.entries(stageMap) as [string, number][])
+              .sort((a, b) => b[1] - a[1])
+              .map(([stage, count]) => (
+                <div key={stage} className="flex items-center justify-between rounded-[18px] bg-[color:var(--admin-card-strong)] px-4 py-3">
+                  <span className="text-sm font-semibold text-[color:var(--admin-ink)]">{STAGE_LABELS[stage as LeadStage] ?? stage}</span>
+                  <span className="text-sm font-black text-[color:var(--admin-accent)]">{count}</span>
+                </div>
+              ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Per-researcher */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="font-semibold text-gray-900 mb-5">Leads per Researcher</h2>
-          <div className="space-y-2">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="admin-card p-5 sm:p-6">
+          <h2 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Leads per researcher</h2>
+          <div className="mt-5 space-y-3">
             {researcherStats.length === 0 ? (
-              <p className="text-gray-400 text-sm italic">No assignments yet.</p>
+              <p className="text-sm text-[color:var(--admin-soft-text)]">No assignments yet.</p>
             ) : (
               researcherStats
                 .sort((a: any, b: any) => b._count._all - a._count._all)
-                .map((r: any) => (
-                  <div key={r.ownerId} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                    <span className="text-gray-700">{researcherMap[r.ownerId!] ?? "Unknown"}</span>
-                    <span className="font-bold text-gray-900 tabular-nums">{r._count._all}</span>
+                .map((item: any) => (
+                  <div key={item.ownerId} className="flex items-center justify-between rounded-[18px] bg-[color:var(--admin-card-strong)] px-4 py-3">
+                    <span className="text-sm font-semibold text-[color:var(--admin-ink)]">{researcherMap[item.ownerId!] ?? "Unknown"}</span>
+                    <span className="text-sm font-black text-[color:var(--admin-accent)]">{item._count._all}</span>
                   </div>
                 ))
             )}
           </div>
         </div>
 
-        {/* Niche breakdown */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-          <h2 className="font-semibold text-gray-900 mb-5">Companies by Niche</h2>
-          <div className="space-y-2">
+        <div className="admin-card p-5 sm:p-6">
+          <h2 className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Companies by niche</h2>
+          <div className="mt-5 space-y-3">
             {nicheStats.length === 0 ? (
-              <p className="text-gray-400 text-sm italic">No niche data yet.</p>
+              <p className="text-sm text-[color:var(--admin-soft-text)]">No niche data yet.</p>
             ) : (
-              nicheStats.map((n: any) => (
-                <div key={n.niche} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                  <span className="text-gray-700">{n.niche}</span>
-                  <span className="font-bold text-gray-900 tabular-nums">{n._count._all}</span>
+              nicheStats.map((item: any) => (
+                <div key={item.niche} className="flex items-center justify-between rounded-[18px] bg-[color:var(--admin-card-strong)] px-4 py-3">
+                  <span className="text-sm font-semibold text-[color:var(--admin-ink)]">{item.niche}</span>
+                  <span className="text-sm font-black text-[color:var(--admin-accent)]">{item._count._all}</span>
                 </div>
               ))
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       {rejectedCount > 0 && (
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-center gap-3 text-sm">
-          <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-          <span className="text-red-700"><strong>{rejectedCount}</strong> leads rejected — review rejection reasons to improve research quality.</span>
+        <div className="admin-card p-5 sm:p-6">
+          <div className="flex items-start gap-3 text-[color:var(--admin-danger)]">
+            <XCircle className="mt-0.5 h-5 w-5" />
+            <p className="text-sm leading-6">
+              <strong>{rejectedCount}</strong> leads were rejected. Review rejection reasons to improve research quality and contact precision.
+            </p>
+          </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function Metric({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+  return (
+    <div className="rounded-[24px] border border-[color:var(--admin-border)] bg-white p-4">
+      <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--admin-accent-soft)] text-[color:var(--admin-accent)]">{icon}</span>
+        {label}
+      </div>
+      <p className="admin-metric-value mt-4">{value}</p>
     </div>
   )
 }

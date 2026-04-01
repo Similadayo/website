@@ -1,73 +1,74 @@
 import Link from "next/link";
-import { CheckCircle2, PhoneCall, Search, Map, Cpu, Play, ArrowRight, X } from "lucide-react";
-import styles from "@/components/offer/Offer.module.css";
+import { ArrowRight, CheckCircle2, Cpu, Map, PhoneCall, Play, Search, X } from "lucide-react";
 
 export default function Offer() {
   return (
     <>
-      {/* Hero */}
-      <section className={styles.heroWrap}>
-        <div className={`orb ${styles.orb1}`} />
+      <section className="site-section">
         <div className="container">
-          <div className={styles.heroCentred}>
-            <span className="label-tag">The offer</span>
-            <h1 className={styles.h1}>AI Workflow Audit <span className="gradient-text">+ Mini Prototype</span></h1>
-            <p className={styles.sub}>
-              We don't guess. We inspect one of your real workflows, find the friction, and build a focused
-              AI prototype — so you can evaluate the value before committing to anything larger.
+          <div className="site-card p-8 sm:p-12">
+            <span className="site-eyebrow">The Offer</span>
+            <h1 className="site-title mt-5">AI workflow audit plus a focused prototype.</h1>
+            <p className="site-subtitle mt-6 max-w-2xl">
+              We inspect one real workflow, identify the operational drag, and build a small prototype so you can judge the value before committing to a larger build.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Deliverables */}
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="site-section pt-0">
         <div className="container">
-          <div className={styles.sectionHdr}>
-            <h2 className={styles.h2}>What you receive</h2>
-            <p className="text-muted text-lg">Six clear outputs from every engagement.</p>
-          </div>
-          <div className={styles.delivGrid}>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {[
-              { icon: <PhoneCall size={20}/>, label: "Discovery Call", desc: "We map your workflow landscape and surface priorities." },
-              { icon: <Search size={20}/>,    label: "Workflow Analysis", desc: "Deep inspection of the tasks, friction points, and source data." },
-              { icon: <Map size={20}/>,       label: "Opportunity Map", desc: "A clear view of what's worth automating and why." },
-              { icon: <Cpu size={20}/>,       label: "Focused Prototype", desc: "A working lightweight demo of the AI workflow." },
-              { icon: <Play size={20}/>,      label: "Walkthrough / Demo", desc: "We walk your team through the output, live." },
-              { icon: <ArrowRight size={20}/>,label: "Next-Step Recommendation", desc: "Three honest paths: stop, refine, or implement." },
-            ].map(d => (
-              <div key={d.label} className={`card ${styles.delivCard}`}>
-                <div className={styles.delivIcon}>{d.icon}</div>
-                <div className={styles.delivLabel}>{d.label}</div>
-                <div className={styles.delivDesc}>{d.desc}</div>
+              { icon: <PhoneCall size={18} />, label: "Discovery Call", desc: "Map the workflow, the owner, and the friction clearly." },
+              { icon: <Search size={18} />, label: "Workflow Analysis", desc: "Inspect repeated tasks, data quality, and decision bottlenecks." },
+              { icon: <Map size={18} />, label: "Opportunity Map", desc: "Identify what is worth automating and what should remain human-led." },
+              { icon: <Cpu size={18} />, label: "Focused Prototype", desc: "Build a lightweight working model around one use case." },
+              { icon: <Play size={18} />, label: "Walkthrough", desc: "Review the prototype together and pressure-test the assumptions." },
+              { icon: <ArrowRight size={18} />, label: "Recommendation", desc: "Choose whether to stop, refine, or implement further." },
+            ].map((item) => (
+              <div key={item.label} className="site-card p-6">
+                <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[color:var(--site-accent-soft)] text-[color:var(--site-accent)]">{item.icon}</div>
+                <h3 className="mt-5 text-2xl font-semibold tracking-tight text-[color:var(--site-ink)]">{item.label}</h3>
+                <p className="mt-3 text-sm leading-7 text-[color:var(--site-muted)]">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Fit vs Not */}
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="site-section pt-0">
         <div className="container">
-          <div className={styles.fitRow}>
-            <div>
-              <span className="label-tag" style={{ marginBottom: "1.5rem", display: "inline-flex" }}>Where this thrives</span>
-              <div className={styles.fitList}>
-                {["Repeated tier-1 support questions", "Scattered internal SOPs and knowledge", "Repetitive recruiter admin duties", "Recurring proposal and update drafting"].map(t => (
-                  <div key={t} className={`card ${styles.fitItem}`}>
-                    <CheckCircle2 size={18} style={{ color: "#22c55e", flexShrink: 0 }} />
-                    <span>{t}</span>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="site-card p-8">
+              <span className="site-eyebrow">Best Fit</span>
+              <div className="mt-6 space-y-3">
+                {[
+                  "Repeated tier-1 support or recruiting outreach work",
+                  "Scattered internal SOPs and knowledge",
+                  "Manual recruiter or operations admin work",
+                  "Recurring proposal and update drafting",
+                ].map((item) => (
+                  <div key={item} className="site-soft-card flex items-start gap-3 p-4">
+                    <CheckCircle2 size={16} className="mt-1 text-[color:var(--site-olive)]" />
+                    <span className="text-sm leading-7 text-[color:var(--site-muted)]">{item}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div>
-              <span className="label-tag" style={{ marginBottom: "1.5rem", display: "inline-flex", color: "#ef4444", background: "#fef2f2", borderColor: "#fecaca" }}>Not a fit</span>
-              <div className={styles.fitList}>
-                {["Giant enterprise transformation projects", "High-risk compliance or legal workflows", "'Replace our whole team' automation requests", "Vague or undefined problem statements"].map(t => (
-                  <div key={t} className={`card ${styles.notFitItem}`}>
-                    <X size={18} style={{ color: "#ef4444", flexShrink: 0 }} />
-                    <span>{t}</span>
+
+            <div className="site-card p-8">
+              <span className="site-eyebrow">Not A Fit</span>
+              <div className="mt-6 space-y-3">
+                {[
+                  "Massive enterprise transformation projects",
+                  "High-risk legal or compliance workflows",
+                  "Requests to replace entire teams",
+                  "Vague problem statements with no workflow owner",
+                ].map((item) => (
+                  <div key={item} className="site-soft-card flex items-start gap-3 p-4">
+                    <X size={16} className="mt-1 text-red-500" />
+                    <span className="text-sm leading-7 text-[color:var(--site-muted)]">{item}</span>
                   </div>
                 ))}
               </div>
@@ -76,35 +77,18 @@ export default function Offer() {
         </div>
       </section>
 
-      {/* After */}
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="site-section pt-0">
         <div className="container">
-          <div className={styles.sectionHdr}>
-            <h2 className={styles.h2}>Three honest paths forward</h2>
-            <p className="text-muted text-lg">The next step is always your call.</p>
-          </div>
-          <div className="grid grid-3">
-            {[
-              { title: "Stop",     desc: "Walk away. It was a low-risk validation — no harm done." },
-              { title: "Refine",   desc: "Iterate on the prototype with new constraints or new data." },
-              { title: "Implement",desc: "Move into full implementation planning with a clear specification." },
-            ].map(p => (
-              <div key={p.title} className={`card ${styles.pathCard}`}>
-                <h3 className={styles.pathTitle}>{p.title}</h3>
-                <p className="text-muted text-sm">{p.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          <div className={styles.ctaBanner}>
-            <h2 className={styles.ctaH}>Let's map your first workflow.</h2>
-            <p className="text-muted text-lg" style={{ marginBottom: "2.5rem" }}>One call is enough to know if this is worth pursuing.</p>
-            <Link href="/contact" className="btn-primary">Book a call <ArrowRight size={16}/></Link>
+          <div className="site-card p-8 text-center sm:p-12">
+            <span className="site-eyebrow">Next Step</span>
+            <h2 className="mt-4 text-4xl font-semibold tracking-tight text-[color:var(--site-ink)]">Map one workflow and see if the value is real.</h2>
+            <p className="site-subtitle mx-auto mt-5 max-w-2xl">One call is enough to know whether this should stop, get refined, or move into implementation.</p>
+            <div className="mt-8">
+              <Link href="/contact" className="site-button">
+                Book a call
+                <ArrowRight size={16} />
+              </Link>
+            </div>
           </div>
         </div>
       </section>

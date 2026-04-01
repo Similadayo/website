@@ -330,3 +330,260 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-inter), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   }
 }
+
+:root {
+  --admin-shell: #f6f3ee;
+  --admin-panel: rgba(255, 253, 250, 0.92);
+  --admin-card: #fffdf9;
+  --admin-card-strong: #efe8dd;
+  --admin-border: #ddd6cc;
+  --admin-ink: #171717;
+  --admin-soft-text: #59534d;
+  --admin-muted: #8b8277;
+  --admin-accent: #2457f5;
+  --admin-accent-soft: rgba(36, 87, 245, 0.12);
+  --admin-success: #1f7a4c;
+  --admin-success-soft: rgba(31, 122, 76, 0.12);
+  --admin-warning: #b7791f;
+  --admin-warning-soft: rgba(183, 121, 31, 0.14);
+  --admin-danger: #b64b3b;
+  --admin-danger-soft: rgba(182, 75, 59, 0.14);
+  --admin-shadow-soft: 0 24px 60px rgba(57, 48, 37, 0.08);
+  --admin-shadow-card: 0 16px 40px rgba(57, 48, 37, 0.08);
+}
+
+.admin-shell {
+  background:
+    radial-gradient(circle at top left, rgba(36, 87, 245, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(124, 139, 90, 0.12), transparent 22%),
+    linear-gradient(180deg, #f8f5f0 0%, #f4efe8 100%);
+  color: var(--admin-ink);
+}
+
+.admin-card {
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  border-radius: 28px;
+  box-shadow: var(--admin-shadow-card);
+}
+
+.admin-card-muted {
+  border: 1px solid var(--admin-border);
+  background: rgba(255, 253, 249, 0.72);
+  border-radius: 28px;
+}
+
+.admin-section-title {
+  color: var(--admin-ink);
+  font-family: var(--font-outfit), var(--font-inter), sans-serif;
+  font-size: clamp(1.85rem, 5vw, 3.35rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  overflow-wrap: anywhere;
+}
+
+.admin-section-copy {
+  color: var(--admin-soft-text);
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.admin-eyebrow {
+  color: var(--admin-muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 999px;
+  color: var(--admin-soft-text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.95rem 1.1rem;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-nav-link:hover {
+  background: rgba(255, 255, 255, 0.54);
+  color: var(--admin-ink);
+}
+
+.admin-nav-link-active {
+  background: var(--admin-card);
+  box-shadow: var(--admin-shadow-card);
+  color: var(--admin-ink);
+}
+
+.admin-secondary-link {
+  display: flex;
+  align-items: center;
+  border-radius: 18px;
+  color: var(--admin-soft-text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.85rem 1rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-secondary-link:hover {
+  background: rgba(36, 87, 245, 0.08);
+  color: var(--admin-accent);
+}
+
+.admin-secondary-link-active {
+  background: rgba(36, 87, 245, 0.1);
+  color: var(--admin-accent);
+}
+
+.admin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  padding: 0.55rem 0.8rem;
+  text-transform: uppercase;
+}
+
+.admin-pill-neutral {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-soft-text);
+}
+
+.admin-pill-accent {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+}
+
+.admin-pill-success {
+  background: var(--admin-success-soft);
+  color: var(--admin-success);
+}
+
+.admin-pill-warning {
+  background: var(--admin-warning-soft);
+  color: var(--admin-warning);
+}
+
+.admin-pill-danger {
+  background: var(--admin-danger-soft);
+  color: var(--admin-danger);
+}
+
+.admin-metric-value {
+  color: var(--admin-ink);
+  font-family: var(--font-outfit), var(--font-inter), sans-serif;
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+@media (max-width: 640px) {
+  .admin-section-title {
+    font-size: 2.35rem;
+    line-height: 1;
+  }
+
+  .admin-pill {
+    letter-spacing: 0.12em;
+  }
+}
+
+:root {
+  --site-bg: #f7f2ea;
+  --site-surface: rgba(255, 252, 246, 0.78);
+  --site-panel: #fffdfa;
+  --site-border: #ddd3c4;
+  --site-ink: #181512;
+  --site-muted: #635b52;
+  --site-soft: #8a8177;
+  --site-accent: #2457f5;
+  --site-accent-soft: rgba(36, 87, 245, 0.12);
+  --site-olive: #6d7f49;
+  --site-shadow: 0 24px 60px rgba(50, 40, 28, 0.08);
+}
+
+.site-shell {
+  background:
+    radial-gradient(circle at top left, rgba(36, 87, 245, 0.1), transparent 30%),
+    radial-gradient(circle at top right, rgba(109, 127, 73, 0.12), transparent 24%),
+    linear-gradient(180deg, #fbf7f1 0%, #f6efe5 100%);
+  color: var(--site-ink);
+}
+
+.site-section {
+  padding: 5rem 0;
+}
+
+.site-card {
+  background: var(--site-panel);
+  border: 1px solid var(--site-border);
+  border-radius: 32px;
+  box-shadow: var(--site-shadow);
+}
+
+.site-soft-card {
+  background: var(--site-surface);
+  border: 1px solid var(--site-border);
+  border-radius: 28px;
+}
+
+.site-eyebrow {
+  color: var(--site-soft);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.site-title {
+  color: var(--site-ink);
+  font-family: var(--font-outfit), var(--font-inter), sans-serif;
+  font-size: clamp(2.5rem, 7vw, 5.2rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.site-subtitle {
+  color: var(--site-muted);
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  line-height: 1.75;
+}
+
+.site-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  background: var(--site-accent);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.95rem 1.35rem;
+  box-shadow: 0 18px 36px rgba(36, 87, 245, 0.22);
+}
+
+.site-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--site-border);
+  background: var(--site-panel);
+  color: var(--site-ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.95rem 1.35rem;
+}

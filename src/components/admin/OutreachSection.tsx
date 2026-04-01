@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, SendHorizontal, BrainCircuit, CheckCircle2, AlertCircle, Loader2, Edit3, Save, X } from "lucide-react"
+import { AlertCircle, BrainCircuit, CheckCircle2, Edit3, Loader2, Mail, Save, SendHorizontal, X } from "lucide-react"
 import { updateOutreachMessage } from "@/app/admin/outreach/actions"
 
 interface OutreachSectionProps {
@@ -39,15 +39,12 @@ export function OutreachSection({
   canDraft,
   canSend,
   onSend,
-  onGenerateSequence
+  onGenerateSequence,
 }: OutreachSectionProps) {
   const [isSendingId, setIsSendingId] = useState<string | null>(null)
   const [isDrafting, setIsDrafting] = useState(false)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
-  const defaultRecipient =
-    contactEmail ||
-    messages.find((message) => message.messageType === "reply_draft" && message.toEmail)?.toEmail ||
-    ""
+  const defaultRecipient = contactEmail || messages.find((message) => message.messageType === "reply_draft" && message.toEmail)?.toEmail || ""
   const [recipientEmail, setRecipientEmail] = useState(defaultRecipient)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftSubject, setDraftSubject] = useState("")
@@ -55,20 +52,16 @@ export function OutreachSection({
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [allowOverrideSend, setAllowOverrideSend] = useState(false)
 
-  const handleSend = async (msg: any) => {
+  const handleSend = async (message: any) => {
     const targetEmail = recipientEmail.trim()
-    if (!targetEmail || !msg.subject) return
-    setIsSendingId(msg.id)
+    if (!targetEmail || !message.subject) return
+    setIsSendingId(message.id)
     setResult(null)
     try {
-      const res = await onSend(leadId, targetEmail, msg.subject!, msg.body, msg.id, allowOverrideSend)
-      if (res.success) {
-        setResult({ success: true, message: "Step transmission successful!" })
-      } else {
-        setResult({ success: false, message: res.error || "Transmission failure" })
-      }
-    } catch (err: any) {
-      setResult({ success: false, message: err.message })
+      const response = await onSend(leadId, targetEmail, message.subject!, message.body, message.id, allowOverrideSend)
+      setResult({ success: response.success, message: response.success ? "Message sent successfully." : response.error || "Transmission failure." })
+    } catch (error: any) {
+      setResult({ success: false, message: error.message })
     } finally {
       setIsSendingId(null)
     }
@@ -78,23 +71,19 @@ export function OutreachSection({
     setIsDrafting(true)
     setResult(null)
     try {
-      const res = await onGenerateSequence(leadId)
-      if (res.success) {
-        setResult({ success: true, message: "Mission sequence synchronized!" })
-      } else {
-        setResult({ success: false, message: res.error || "Failed to generate sequence" })
-      }
-    } catch (err: any) {
-      setResult({ success: false, message: err.message })
+      const response = await onGenerateSequence(leadId)
+      setResult({ success: response.success, message: response.success ? "Sequence generated." : response.error || "Failed to generate sequence." })
+    } catch (error: any) {
+      setResult({ success: false, message: error.message })
     } finally {
       setIsDrafting(false)
     }
   }
 
-  const handleStartEdit = (msg: any) => {
-    setEditingId(msg.id)
-    setDraftSubject(msg.subject || "")
-    setDraftBody(msg.body || "")
+  const handleStartEdit = (message: any) => {
+    setEditingId(message.id)
+    setDraftSubject(message.subject || "")
+    setDraftBody(message.body || "")
     setResult(null)
   }
 
@@ -108,14 +97,11 @@ export function OutreachSection({
     setIsSavingDraft(true)
     setResult(null)
     try {
-      await updateOutreachMessage(messageId, {
-        subject: draftSubject,
-        body: draftBody,
-      })
+      await updateOutreachMessage(messageId, { subject: draftSubject, body: draftBody })
       setEditingId(null)
-      setResult({ success: true, message: "Draft updated and ready to send." })
-    } catch (err: any) {
-      setResult({ success: false, message: err.message || "Failed to update draft" })
+      setResult({ success: true, message: "Draft updated." })
+    } catch (error: any) {
+      setResult({ success: false, message: error.message || "Failed to update draft." })
     } finally {
       setIsSavingDraft(false)
     }
@@ -139,232 +125,169 @@ export function OutreachSection({
     })
 
   return (
-    <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
-          <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" /> Outreach Mission Sequence
-        </h2>
+    <section className="admin-card p-6 sm:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="admin-eyebrow">Outreach</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Draft, edit, and dispatch from one thread.</h2>
+        </div>
         {draftMessages.length > 0 && (
-          <button
-            onClick={handleGenerate}
-            disabled={isDrafting}
-            className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline flex items-center gap-1.5 transition-all disabled:opacity-50">
-            {isDrafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BrainCircuit className="w-3.5 h-3.5" />}
-            Regenerate Sequence
+          <button onClick={handleGenerate} disabled={isDrafting} className="admin-pill admin-pill-accent">
+            {isDrafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BrainCircuit className="h-3.5 w-3.5" />}
+            Regenerate
           </button>
         )}
       </div>
 
       {draftMessages.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-gray-100 dark:border-white/5 rounded-[2rem] bg-gray-50/30 dark:bg-white/5">
-          <BrainCircuit className="w-12 h-12 text-gray-200 dark:text-white/5 mx-auto mb-4" />
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">No sequence active</p>
-          {canDraft ? (
-            <button
-              onClick={handleGenerate}
-              disabled={isDrafting}
-              className="bg-black dark:bg-white text-white dark:text-black font-black px-8 py-3.5 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-gray-800 dark:hover:bg-gray-100 transition-all flex items-center gap-3 mx-auto shadow-xl shadow-gray-200 dark:shadow-none disabled:opacity-50">
-              {isDrafting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-              {isDrafting ? "Synchronizing..." : "Initiate 3-Step Sequence"}
+        <div className="mt-5 rounded-[24px] border border-dashed border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-6 text-center">
+          <p className="text-base font-semibold text-[color:var(--admin-ink)]">No sequence active.</p>
+          <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">Generate the first outreach sequence once the lead is ready.</p>
+          {canDraft && (
+            <button onClick={handleGenerate} disabled={isDrafting} className="mt-5 inline-flex items-center gap-2 rounded-full bg-[color:var(--admin-accent)] px-6 py-3 text-sm font-bold text-white">
+              {isDrafting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              Generate sequence
             </button>
-          ) : (
-            <p className="text-[10px] text-gray-400 italic font-bold">Complete AI analysis first to enable sequencing.</p>
           )}
         </div>
       ) : (
-          <div className="space-y-8">
-            {conversationMessages.length > 0 && (
-              <div className="rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/5 p-5 space-y-4">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Reply Timeline</p>
-                <div className="space-y-4">
-                  {conversationMessages.slice(0, 6).map((message) => (
-                    <div key={message.id} className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                          {message.direction === "inbound" ? "Received Reply" : "Sent Message"}
-                        </p>
-                        <p className="text-[10px] text-gray-400">
-                          {new Date(message.receivedAt || message.sentAt || Date.now()).toLocaleString()}
-                        </p>
-                      </div>
-                      <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
-                        {message.subject || "(No Subject)"}
+        <div className="mt-5 space-y-5">
+          {conversationMessages.length > 0 && (
+            <div className="rounded-[24px] bg-[color:var(--admin-card-strong)] p-5">
+              <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Reply timeline</p>
+              <div className="mt-4 space-y-3">
+                {conversationMessages.slice(0, 6).map((message) => (
+                  <div key={message.id} className="rounded-[18px] bg-white p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">
+                        {message.direction === "inbound" ? "Received Reply" : "Sent Message"}
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        {message.direction === "inbound"
-                          ? `From: ${message.fromEmail || "Unknown sender"}`
-                          : `To: ${message.toEmail || recipientEmail || "Unknown recipient"}`}
-                      </p>
-                      <div className="mt-3 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                        {message.body}
-                      </div>
+                      <p className="text-xs text-[color:var(--admin-muted)]">{new Date(message.receivedAt || message.sentAt || Date.now()).toLocaleString()}</p>
                     </div>
-                  ))}
-                </div>
+                    <p className="mt-2 text-sm font-semibold text-[color:var(--admin-ink)]">{message.subject || "(No Subject)"}</p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[color:var(--admin-soft-text)]">{message.body}</p>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            <div className="rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/5 p-5 space-y-3">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dispatch Target</p>
+          <div className="rounded-[24px] bg-[color:var(--admin-card-strong)] p-5">
+            <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Dispatch target</p>
             <input
               type="email"
               value={recipientEmail}
               onChange={(event) => setRecipientEmail(event.target.value)}
-              placeholder="Insert email address for testing"
-              className="w-full rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-3 text-sm font-medium text-gray-900 dark:text-white outline-none transition-all focus:border-black dark:focus:border-white placeholder:text-gray-400"
+              placeholder="Enter recipient email"
+              className="mt-4 w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
             />
-            <p className="text-xs text-gray-400">
-              {contactEmail
-                ? `Detected lead email: ${contactEmail}. You can override it here for testing.`
-                : "No contact email was found on this lead. Enter a recipient email to test Resend."}
+            <p className="mt-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+              {contactEmail ? `Detected contact email: ${contactEmail}. You can override it here for testing.` : "No contact email is stored on this lead yet."}
             </p>
             {dispatchRecommendation && (
-              <p className="text-xs text-gray-500">
-                Current dispatch path: <span className="font-semibold uppercase">{dispatchRecommendation.replace(/_/g, " ")}</span>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-[color:var(--admin-muted)]">
+                Dispatch path: {dispatchRecommendation.replace(/_/g, " ")}
               </p>
             )}
           </div>
 
           {requiresContactReview && (
-            <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 space-y-3">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700">
-                <AlertCircle className="w-4 h-4" />
+            <div className="rounded-[24px] border border-[color:var(--admin-warning)]/20 bg-[color:var(--admin-warning-soft)] p-5">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-warning)]">
+                <AlertCircle className="h-4 w-4" />
                 Manual contact review required
               </div>
-              <p className="text-sm text-amber-900">
-                {dispatchReason || "This lead does not yet have a send-ready contact path."}
-              </p>
-              <label className="flex items-start gap-3 text-sm text-amber-900">
+              <p className="mt-3 text-sm leading-6 text-[color:var(--admin-ink)]">{dispatchReason || "This lead does not yet have a send-ready contact path."}</p>
+              <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-[color:var(--admin-ink)]">
                 <input
                   type="checkbox"
                   checked={allowOverrideSend}
                   onChange={(event) => setAllowOverrideSend(event.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-amber-300 text-black focus:ring-black"
+                  className="mt-1 h-4 w-4 rounded"
                 />
-                <span>Enable test-send override for this lead. Use only for internal QA or verification.</span>
+                <span>Enable test-send override for QA or verification.</span>
               </label>
             </div>
           )}
 
           {result && (
-            <div className={`p-5 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest animate-fadein ${
-              result.success ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30" : "bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/30"
-            }`}>
-              {result.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              {result.message}
+            <div className={`rounded-[20px] border p-4 text-sm font-semibold ${result.success ? "border-[color:var(--admin-success)]/20 bg-[color:var(--admin-success-soft)] text-[color:var(--admin-success)]" : "border-[color:var(--admin-danger)]/20 bg-[color:var(--admin-danger-soft)] text-[color:var(--admin-danger)]"}`}>
+              <div className="flex items-center gap-3">
+                {result.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                {result.message}
+              </div>
             </div>
           )}
 
-          <div className="space-y-6 relative before:absolute before:left-[1.25rem] before:top-4 before:bottom-4 before:w-0.5 before:bg-gray-50 dark:before:bg-white/5">
-            {draftMessages.map((msg, idx) => (
-              <div key={msg.id} className={`relative pl-12 group ${msg.sentAt ? "opacity-60" : ""}`}>
-                {/* Step Circle */}
-                <div className={`absolute left-0 top-1 w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs z-10 transition-all border ${
-                  msg.sentAt 
-                    ? "bg-emerald-500 text-white border-emerald-600" 
-                    : "bg-black dark:bg-white text-white dark:text-black border-black dark:border-white shadow-lg"
-                }`}>
-                  {msg.sentAt ? <CheckCircle2 className="w-5 h-5" /> : idx + 1}
-                </div>
-
-                <div className="bg-white dark:bg-gray-950/40 rounded-[2rem] border border-gray-100 dark:border-white/5 overflow-hidden group-hover:border-black dark:group-hover:border-white transition-colors">
-                  <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      {msg.messageType === "reply_draft"
-                        ? "Suggested Reply Draft"
-                        : idx === 0
-                          ? "Step 1: Mission Launch"
-                          : idx === 1
-                            ? "Step 2: Escalation"
-                            : "Step 3: Signal Intercept"}
-                      {msg.delayDays > 0 && ` (+${msg.delayDays}d)`}
+          <div className="space-y-4">
+            {draftMessages.map((message, index) => (
+              <div key={message.id} className="rounded-[24px] border border-[color:var(--admin-border)] bg-white">
+                <div className="flex items-center justify-between gap-3 border-b border-[color:var(--admin-border)] px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-black ${message.sentAt ? "bg-[color:var(--admin-success-soft)] text-[color:var(--admin-success)]" : "bg-[color:var(--admin-accent)] text-white"}`}>
+                      {message.sentAt ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
                     </span>
-                    <div className="flex items-center gap-3">
-                      {!msg.sentAt && (
-                        <button
-                          onClick={() => handleStartEdit(msg)}
-                          disabled={editingId !== null && editingId !== msg.id}
-                          className="p-2 text-gray-300 hover:text-black dark:hover:text-white hover:bg-white dark:hover:bg-white/10 rounded-xl transition-all border border-transparent hover:border-gray-100 dark:hover:border-white/10 disabled:opacity-30"
-                          title="Edit draft"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      )}
-                      {msg.sentAt && (
-                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">
-                          Dispatched {new Date(msg.sentAt).toLocaleDateString()}
-                        </span>
-                      )}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">
+                        {message.messageType === "reply_draft" ? "Suggested Reply Draft" : `Step ${index + 1}`}
+                        {message.delayDays > 0 ? ` • +${message.delayDays}d` : ""}
+                      </p>
+                      {message.sentAt && <p className="mt-1 text-xs text-[color:var(--admin-success)]">Dispatched {new Date(message.sentAt).toLocaleDateString()}</p>}
                     </div>
                   </div>
-                  {editingId === msg.id ? (
-                    <div className="p-6 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subject</label>
-                        <input
-                          value={draftSubject}
-                          onChange={(event) => setDraftSubject(event.target.value)}
-                          className="w-full rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-3 text-sm font-black text-gray-900 dark:text-white outline-none transition-all focus:border-black dark:focus:border-white"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Body</label>
-                        <textarea
-                          value={draftBody}
-                          onChange={(event) => setDraftBody(event.target.value)}
-                          rows={10}
-                          className="w-full rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 px-5 py-4 text-sm font-medium text-gray-700 dark:text-gray-300 outline-none transition-all focus:border-black dark:focus:border-white leading-relaxed"
-                        />
-                      </div>
-                      <div className="flex justify-end gap-3">
-                        <button
-                          onClick={handleCancelEdit}
-                          disabled={isSavingDraft}
-                          className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black dark:hover:text-white transition-colors disabled:opacity-40"
-                        >
-                          <span className="inline-flex items-center gap-2">
-                            <X className="w-4 h-4" />
-                            Cancel
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => handleSaveDraft(msg.id)}
-                          disabled={isSavingDraft}
-                          className="rounded-2xl bg-black dark:bg-white px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white dark:text-black transition-all hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-40 inline-flex items-center gap-2"
-                        >
-                          {isSavingDraft ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                          Save Draft
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-6 space-y-4">
-                      <p className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-tight leading-tight">
-                        {msg.subject}
-                      </p>
-                      <div className="text-[11px] text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed font-medium italic border-l-2 border-gray-100 dark:border-white/10 pl-4 py-1">
-                        {msg.body}
-                      </div>
-                    </div>
-                  )}
-
-                  {!msg.sentAt && (
-                    <div className="p-4 sm:px-6 sm:py-4 bg-gray-50/50 dark:bg-white/5 flex justify-end items-center">
-                      <button
-                        onClick={() => handleSend(msg)}
-                        disabled={!!isSendingId || !canSend || !recipientEmail.trim() || editingId === msg.id || (requiresContactReview && !allowOverrideSend)}
-                        className="w-full sm:w-auto bg-black dark:bg-white text-white dark:text-black px-4 sm:px-6 py-3 sm:py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-lg active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2 overflow-hidden">
-                        {isSendingId === msg.id ? <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> : <SendHorizontal className="w-3.5 h-3.5 shrink-0" />}
-                        <span className="truncate">Dispatch to {recipientEmail.trim() || "recipient"}</span>
-                      </button>
-                    </div>
+                  {!message.sentAt && (
+                    <button onClick={() => handleStartEdit(message)} disabled={editingId !== null && editingId !== message.id} className="admin-pill admin-pill-neutral">
+                      <Edit3 className="h-3.5 w-3.5" />
+                      Edit
+                    </button>
                   )}
                 </div>
+
+                {editingId === message.id ? (
+                  <div className="space-y-4 p-5">
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">Subject</label>
+                      <input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} className="mt-2 w-full rounded-[18px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] px-4 py-3 text-sm font-semibold text-[color:var(--admin-ink)] outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">Body</label>
+                      <textarea value={draftBody} onChange={(event) => setDraftBody(event.target.value)} rows={10} className="mt-2 w-full rounded-[18px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] px-4 py-4 text-sm leading-6 text-[color:var(--admin-soft-text)] outline-none" />
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-3">
+                      <button onClick={handleCancelEdit} disabled={isSavingDraft} className="admin-pill admin-pill-neutral">
+                        <X className="h-3.5 w-3.5" />
+                        Cancel
+                      </button>
+                      <button onClick={() => handleSaveDraft(message.id)} disabled={isSavingDraft} className="admin-pill admin-pill-accent">
+                        {isSavingDraft ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                        Save Draft
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5">
+                    <p className="text-sm font-semibold text-[color:var(--admin-ink)]">{message.subject}</p>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[color:var(--admin-soft-text)]">{message.body}</p>
+                  </div>
+                )}
+
+                {!message.sentAt && (
+                  <div className="border-t border-[color:var(--admin-border)] px-5 py-4">
+                    <button
+                      onClick={() => handleSend(message)}
+                      disabled={!!isSendingId || !canSend || !recipientEmail.trim() || editingId === message.id || (requiresContactReview && !allowOverrideSend)}
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+                    >
+                      {isSendingId === message.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
+                      Send to {recipientEmail.trim() || "recipient"}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }

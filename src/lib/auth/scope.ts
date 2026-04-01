@@ -1,5 +1,6 @@
-import { auth } from "@/auth"
+import { getCachedAuth } from "@/auth"
 import { db } from "@/lib/db"
+import { cache } from "react"
 
 export type DashboardScope = {
   isSuperAdmin: boolean
@@ -19,8 +20,8 @@ export type DashboardScope = {
  * Returns the data access scope for the current logged-in user.
  * This is the central source of truth for territory isolation.
  */
-export async function getAccessScope(): Promise<DashboardScope> {
-  const session = await auth()
+export const getAccessScope = cache(async (): Promise<DashboardScope> => {
+  const session = await getCachedAuth()
   
   if (!session?.user?.id) {
     throw new Error("Unauthorized")
@@ -78,7 +79,7 @@ export async function getAccessScope(): Promise<DashboardScope> {
     companiesFilter: companiesScopedFilter,
     researchFilter: { userId }, // researchers see their own research sessions
   }
-}
+})
 
 export async function getScopedLeadWhere(id: string) {
   const scope = await getAccessScope()

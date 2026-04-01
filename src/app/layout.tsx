@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
-import { auth } from "@/auth";
+import { getCachedAuth } from "@/auth";
 import { Inter, Outfit } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -39,15 +39,27 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 
 import { SiteWrapper } from "@/components/layout/SiteWrapper";
 import { AuthProvider } from "@/components/layout/AuthProvider";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth()
+  const session = await getCachedAuth()
 
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${inter.variable} ${outfit.variable} font-sans`}>
+    <html
+      lang="en"
+      data-theme="dark"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      className={`${inter.variable} ${outfit.variable} font-sans`}
+    >
       <head />
       <body style={{ minHeight: "100vh" }}>
         <AuthProvider session={session}>

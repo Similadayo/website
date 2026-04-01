@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { db } from "@/lib/db"
 import bcrypt from "bcryptjs"
+import { cache } from "react"
 import { authConfig } from "./auth.config"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -114,22 +115,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const userId = token.id as string
 
-        const [assignment, userRecord] = await Promise.all([
-          db.assignment.findFirst({
-            where: { userId, status: "active" }
-          }),
-          db.user.findUnique({
-            where: { id: userId },
-            select: { lastLoginAt: true },
-          }),
-        ])
-
-        if (!userRecord?.lastLoginAt) {
-          await db.user.update({
-            where: { id: userId },
-            data: { lastLoginAt: new Date() },
-          })
-        }
+        const assignment = await db.assignment.findFirst({
+          where: { userId, status: "active" }
+        })
         
         if (assignment) {
           ;(session.user as any).assignment = {
@@ -142,3 +130,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }
   }
 })
+
+export const getCachedAuth = cache(() => auth())
