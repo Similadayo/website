@@ -3,6 +3,7 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { isValidTransition } from "@/lib/stages"
 import { logStageChange, logActivity } from "@/lib/activity-log"
 import { runAIFitAnalysis } from "@/lib/ai/analyzer"
@@ -442,6 +443,73 @@ export async function markContactForManualReview(
   revalidatePath("/admin/leads")
   revalidatePath("/admin/outreach")
   return { success: true }
+}
+
+export async function transferLeadToAdminReview(
+  leadId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const role = (session.user as any).role as string
+  if (role === "super_admin") {
+    return { success: false, error: "Super admin already controls this lead." }
+  }
+
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
+    include: { company: { include: { contacts: true } } },
+  })
+
+  if (!lead) return { success: false, error: "Lead not found" }
+
+  const strategy = getLeadContactStrategy(lead.company.contacts as any[])
+  const bestContact = strategy.bestContact
+
+  if (!bestContact?.linkedinUrl) {
+    return { success: false, error: "No LinkedIn-primary contact found for transfer." }
+  }
+
+  const adminUser = await db.user.findFirst({
+    where: { role: "super_admin", active: true },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, email: true },
+  })
+
+  if (!adminUser) {
+    return { success: false, error: "No active super admin found." }
+  }
+
+  await db.lead.update({
+    where: { id: leadId },
+    data: {
+      ownerId: adminUser.id,
+      stage: lead.stage === "analyzed" && isValidTransition("analyzed", "pending_review")
+        ? "pending_review"
+        : lead.stage,
+    },
+  })
+
+  await logActivity({
+    entity: "lead",
+    entityId: leadId,
+    actorId: session.user.id,
+    action: "TRANSFERRED_TO_ADMIN_REVIEW",
+    metadata: {
+      fromUserId: session.user.id,
+      toUserId: adminUser.id,
+      contactId: bestContact.id ?? null,
+      linkedinUrl: bestContact.linkedinUrl,
+      summary: `Lead transferred to admin review for LinkedIn-led follow-up by ${adminUser.name || adminUser.email || "super admin"}.`,
+    },
+  })
+
+  revalidatePath(`/admin/leads/${leadId}`)
+  revalidatePath("/admin/leads")
+  revalidatePath("/admin/outreach")
+  revalidatePath("/admin")
+
+  redirect("/admin/leads")
 }
 
 // ─── CRM Synchronization ───────────────────────────────────────────────────

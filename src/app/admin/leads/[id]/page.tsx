@@ -12,6 +12,7 @@ import {
   setPrimaryContact,
   approveGenericInboxContact,
   markContactForManualReview,
+  transferLeadToAdminReview,
 } from "./actions"
 import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
@@ -86,6 +87,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
   const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
   const isMine = lead.ownerId === scope.userId || lead.company.createdById === scope.userId
+  const shouldTransferToAdmin =
+    !scope.isSuperAdmin &&
+    !!contactStrategy.bestContact?.linkedinUrl &&
+    contactStrategy.recommendation === "linkedin_or_manual_review"
 
   return (
     <div className="space-y-6 animate-fadein pb-12">
@@ -271,7 +276,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                           </div>
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
                             {operator.email && <span>Email: {operator.email}</span>}
-                            {operator.linkedin_url && <span>LinkedIn: {operator.linkedin_url}</span>}
+                            {operator.linkedin_url && (
+                              <a
+                                href={operator.linkedin_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                LinkedIn
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
                           </div>
                           <p className="mt-2 text-xs text-gray-400">{operator.evidence}</p>
                         </div>
@@ -292,7 +307,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                           </p>
                           <p>{contactStrategy.bestContact.roleTitle || "No role title captured"}</p>
                           {contactStrategy.bestContact.email && <p>Email: {contactStrategy.bestContact.email}</p>}
-                          {contactStrategy.bestContact.linkedinUrl && <p>LinkedIn: {contactStrategy.bestContact.linkedinUrl}</p>}
+                          {contactStrategy.bestContact.linkedinUrl && (
+                            <a
+                              href={contactStrategy.bestContact.linkedinUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              LinkedIn Profile
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-gray-500">No credible contact identified yet.</p>
@@ -331,6 +356,28 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     </span>
                   </div>
                   <p className="mt-3 text-sm text-gray-600">{contactStrategy.reason}</p>
+                  {shouldTransferToAdmin && (
+                    <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+                      <p className="text-sm font-semibold text-blue-900">Admin handoff required</p>
+                      <p className="mt-1 text-sm text-blue-800">
+                        The strongest route here is LinkedIn, so this lead should move to admin review instead of staying with researcher outreach.
+                      </p>
+                      <form
+                        action={async () => {
+                          "use server"
+                          await transferLeadToAdminReview(lead.id)
+                        }}
+                        className="mt-3"
+                      >
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-black px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-gray-800"
+                        >
+                          Transfer To Admin Pipeline
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </div>
 
                 {/* Outreach Angle */}
@@ -391,7 +438,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between border-b border-gray-50 pb-2 last:border-0">
                   <span className="text-gray-500">{label}</span>
-                  <span className="font-medium text-gray-900 truncate ml-4 text-right">{value || "—"}</span>
+                  {label === "LinkedIn" && value ? (
+                    <a
+                      href={value}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-4 inline-flex items-center gap-1 truncate text-right font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      Company LinkedIn
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  ) : (
+                    <span className="font-medium text-gray-900 truncate ml-4 text-right">{value || "—"}</span>
+                  )}
                 </div>
               ))}
             </div>
