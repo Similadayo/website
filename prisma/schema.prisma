@@ -178,7 +178,9 @@ model OutreachThread {
   channel          String   @default("email")
   status           String   @default("drafted")
   lastSentAt       DateTime?
+  lastInboundAt    DateTime?
   nextFollowUpAt   DateTime?
+  unreadCount      Int      @default(0)
 
   lead    Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id])
@@ -188,12 +190,21 @@ model OutreachThread {
 model OutreachMessage {
   id                 String   @id @default(cuid())
   threadId           String
+  direction          String   @default("outbound")
+  messageType        String   @default("sequence")
   subject            String?
   body               String
+  fromEmail          String?
+  toEmail            String?
+  replyToEmail       String?
   generatedByAi      Boolean  @default(false)
   reviewedByUser     Boolean  @default(false)
   sentAt             DateTime?
+  receivedAt         DateTime?
   providerMessageId  String?
+  providerThreadId   String?
+  inReplyTo          String?
+  rawHeaders         String?
   stepNumber         Int      @default(1)
   delayDays          Int      @default(0)
   createdAt          DateTime @default(now())

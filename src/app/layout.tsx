@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { auth } from "@/auth";
+import { Inter, Outfit } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://labs.brancr.com"),
@@ -43,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await auth()
 
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning className="font-sans">
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${inter.variable} ${outfit.variable} font-sans`}>
       <head />
       <body style={{ minHeight: "100vh" }}>
         <AuthProvider session={session}>

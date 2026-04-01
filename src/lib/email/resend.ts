@@ -1,14 +1,4 @@
-/**
- * Email sending via Resend API.
- * Free tier: 100 emails/day at resend.com
- * Falls back to "manual send" mode if no RESEND_API_KEY is set.
- */
-
-interface SendEmailResult {
-  success: boolean
-  messageId?: string
-  error?: string
-}
+import { Resend } from "resend"
 
 function escapeHtml(value: string) {
   return value
@@ -34,44 +24,80 @@ function formatEmailHtml(body: string) {
     .join("")
 }
 
-export async function sendEmail(
-  to:       string,
-  subject:  string,
-  body:     string,
-  fromOverride?: string,
-  apiKey?: string
-): Promise<{ success: boolean; id?: string; error?: string }> {
-  const key    = apiKey || process.env.RESEND_API_KEY
-  const from   = fromOverride || process.env.OUTREACH_FROM_EMAIL || "outreach@brancr.com"
+function getResendClient(apiKey?: string) {
+  const key = apiKey || process.env.RESEND_API_KEY
+  if (!key) return null
+  return new Resend(key)
+}
 
-  if (!key) {
+export function getDefaultReplyInbox() {
+  return process.env.OUTREACH_REPLY_INBOX || "contact@brancr.com"
+}
+
+export function buildReplyToAddress(threadId: string) {
+  const inbox = getDefaultReplyInbox()
+  const [localPart, domain] = inbox.split("@")
+  if (!localPart || !domain) {
+    throw new Error("OUTREACH_REPLY_INBOX must be a valid email address.")
+  }
+
+  return `${localPart}+${threadId}@${domain}`
+}
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  body: string,
+  options?: {
+    fromOverride?: string
+    apiKey?: string
+    threadId?: string
+  }
+): Promise<{ success: boolean; id?: string; error?: string; replyTo?: string }> {
+  const client = getResendClient(options?.apiKey)
+  const from = options?.fromOverride || process.env.OUTREACH_FROM_EMAIL || "outreach@brancr.com"
+
+  if (!client) {
     return { success: false, error: "RESEND_API_KEY not set — email logged but not sent" }
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to,
-        subject,
-        text: body,
-        html: formatEmailHtml(body),
-      }),
+    const replyTo = options?.threadId ? buildReplyToAddress(options.threadId) : getDefaultReplyInbox()
+
+    const { data, error } = await client.emails.send({
+      from,
+      to: [to],
+      subject,
+      text: body,
+      html: formatEmailHtml(body),
+      replyTo,
+      headers: options?.threadId
+        ? {
+            "X-Brancr-Thread-Id": options.threadId,
+          }
+        : undefined,
     })
 
-    if (!res.ok) {
-      const err = await res.text()
-      return { success: false, error: `Resend error ${res.status}: ${err}` }
+    if (error) {
+      return { success: false, error: error.message }
     }
 
-    const data = await res.json() as { id: string }
-    return { success: true, id: data.id }
+    return { success: true, id: data?.id, replyTo }
   } catch (err: any) {
     return { success: false, error: err.message }
   }
+}
+
+export async function getReceivedEmailContent(emailId: string) {
+  const client = getResendClient()
+  if (!client) {
+    throw new Error("RESEND_API_KEY not set.")
+  }
+
+  const { data, error } = await client.emails.receiving.get(emailId)
+  if (error || !data) {
+    throw new Error(error?.message || "Failed to load inbound email content.")
+  }
+
+  return data
 }

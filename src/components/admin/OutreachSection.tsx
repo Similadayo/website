@@ -8,9 +8,14 @@ interface OutreachSectionProps {
   leadId: string
   messages?: Array<{
     id: string
+    direction?: string
+    messageType?: string
     subject: string | null
     body: string
     sentAt: Date | null
+    receivedAt?: Date | null
+    fromEmail?: string | null
+    toEmail?: string | null
     stepNumber: number
     delayDays: number
   }>
@@ -39,7 +44,11 @@ export function OutreachSection({
   const [isSendingId, setIsSendingId] = useState<string | null>(null)
   const [isDrafting, setIsDrafting] = useState(false)
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [recipientEmail, setRecipientEmail] = useState(contactEmail || "")
+  const defaultRecipient =
+    contactEmail ||
+    messages.find((message) => message.messageType === "reply_draft" && message.toEmail)?.toEmail ||
+    ""
+  const [recipientEmail, setRecipientEmail] = useState(defaultRecipient)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftSubject, setDraftSubject] = useState("")
   const [draftBody, setDraftBody] = useState("")
@@ -112,7 +121,22 @@ export function OutreachSection({
     }
   }
 
-  const sortedMessages = [...messages].sort((a, b) => (a.stepNumber || 0) - (b.stepNumber || 0))
+  const draftMessages = [...messages]
+    .filter((message) => message.direction !== "inbound" && !message.sentAt)
+    .sort((a, b) => {
+      if ((a.messageType || "sequence") !== (b.messageType || "sequence")) {
+        return (a.messageType || "sequence") === "reply_draft" ? -1 : 1
+      }
+      return (a.stepNumber || 0) - (b.stepNumber || 0)
+    })
+
+  const conversationMessages = [...messages]
+    .filter((message) => message.direction === "inbound" || !!message.sentAt)
+    .sort((a, b) => {
+      const left = a.receivedAt || a.sentAt
+      const right = b.receivedAt || b.sentAt
+      return new Date(right || 0).getTime() - new Date(left || 0).getTime()
+    })
 
   return (
     <div className="bg-white dark:bg-gray-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5">
@@ -120,7 +144,7 @@ export function OutreachSection({
         <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
           <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" /> Outreach Mission Sequence
         </h2>
-        {sortedMessages.length > 0 && (
+        {draftMessages.length > 0 && (
           <button
             onClick={handleGenerate}
             disabled={isDrafting}
@@ -131,7 +155,7 @@ export function OutreachSection({
         )}
       </div>
 
-      {sortedMessages.length === 0 ? (
+      {draftMessages.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-gray-100 dark:border-white/5 rounded-[2rem] bg-gray-50/30 dark:bg-white/5">
           <BrainCircuit className="w-12 h-12 text-gray-200 dark:text-white/5 mx-auto mb-4" />
           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">No sequence active</p>
@@ -148,8 +172,39 @@ export function OutreachSection({
           )}
         </div>
       ) : (
-        <div className="space-y-8">
-          <div className="rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/5 p-5 space-y-3">
+          <div className="space-y-8">
+            {conversationMessages.length > 0 && (
+              <div className="rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/5 p-5 space-y-4">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Reply Timeline</p>
+                <div className="space-y-4">
+                  {conversationMessages.slice(0, 6).map((message) => (
+                    <div key={message.id} className="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          {message.direction === "inbound" ? "Received Reply" : "Sent Message"}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {new Date(message.receivedAt || message.sentAt || Date.now()).toLocaleString()}
+                        </p>
+                      </div>
+                      <p className="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                        {message.subject || "(No Subject)"}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        {message.direction === "inbound"
+                          ? `From: ${message.fromEmail || "Unknown sender"}`
+                          : `To: ${message.toEmail || recipientEmail || "Unknown recipient"}`}
+                      </p>
+                      <div className="mt-3 whitespace-pre-wrap text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        {message.body}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-[2rem] border border-gray-100 dark:border-white/5 bg-gray-50/40 dark:bg-white/5 p-5 space-y-3">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Dispatch Target</p>
             <input
               type="email"
@@ -201,7 +256,7 @@ export function OutreachSection({
           )}
 
           <div className="space-y-6 relative before:absolute before:left-[1.25rem] before:top-4 before:bottom-4 before:w-0.5 before:bg-gray-50 dark:before:bg-white/5">
-            {sortedMessages.map((msg, idx) => (
+            {draftMessages.map((msg, idx) => (
               <div key={msg.id} className={`relative pl-12 group ${msg.sentAt ? "opacity-60" : ""}`}>
                 {/* Step Circle */}
                 <div className={`absolute left-0 top-1 w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs z-10 transition-all border ${
@@ -215,7 +270,13 @@ export function OutreachSection({
                 <div className="bg-white dark:bg-gray-950/40 rounded-[2rem] border border-gray-100 dark:border-white/5 overflow-hidden group-hover:border-black dark:group-hover:border-white transition-colors">
                   <div className="px-6 py-4 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      {idx === 0 ? "Step 1: Mission Launch" : idx === 1 ? "Step 2: Escalation" : "Step 3: Signal Intercept"}
+                      {msg.messageType === "reply_draft"
+                        ? "Suggested Reply Draft"
+                        : idx === 0
+                          ? "Step 1: Mission Launch"
+                          : idx === 1
+                            ? "Step 2: Escalation"
+                            : "Step 3: Signal Intercept"}
                       {msg.delayDays > 0 && ` (+${msg.delayDays}d)`}
                     </span>
                     <div className="flex items-center gap-3">

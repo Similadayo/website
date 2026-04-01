@@ -12,7 +12,7 @@ export default async function OutreachPage() {
     where: {
       AND: [
         scope.leadsFilter,
-        { stage: { in: ["approved", "outreach_ready", "contacted"] } },
+        { stage: { in: ["approved", "outreach_ready", "contacted", "replied"] } },
       ],
     },
     orderBy: { createdAt: "desc" },
@@ -30,7 +30,7 @@ export default async function OutreachPage() {
       },
       analyses: { orderBy: { createdAt: "desc" }, take: 1 },
       threads: {
-        include: { messages: { take: 1 } },
+        include: { messages: { orderBy: { createdAt: "desc" }, take: 3 } },
         orderBy: { id: "desc" },
         take: 1,
       },
@@ -38,10 +38,11 @@ export default async function OutreachPage() {
   })
 
   const noDraftLeads   = outreachLeads.filter((l: any) => l.threads.length === 0 && l.stage === "approved")
-  const draftReady     = outreachLeads.filter((l: any) => l.threads.length > 0 && l.stage !== "contacted")
+  const draftReady     = outreachLeads.filter((l: any) => l.threads.length > 0 && !["contacted", "replied"].includes(l.stage))
   const sendReadyDrafts = draftReady.filter((lead: any) => !requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
   const reviewRequiredDrafts = draftReady.filter((lead: any) => requiresManualContactReview(getLeadContactStrategy(lead.company.contacts || []).recommendation))
   const contacted      = outreachLeads.filter((l: any) => l.stage === "contacted")
+  const replied        = outreachLeads.filter((l: any) => l.stage === "replied")
 
   return (
     <div className="space-y-12 animate-fadein pb-12">
@@ -122,6 +123,47 @@ export default async function OutreachPage() {
                 message={lead.threads[0]?.messages[0]} 
               />
             ))}
+          </div>
+        </section>
+      )}
+
+      {replied.length > 0 && (
+        <section>
+          <h2 className="text-[11px] font-black text-blue-700 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+             <div className="w-2 h-2 rounded-full bg-blue-500 shadow-sm" />
+             Replies Received ({replied.length})
+          </h2>
+          <div className="space-y-6">
+            {replied.map((lead: any) => {
+              const latestInbound = lead.threads[0]?.messages.find((message: any) => message.direction === "inbound")
+
+              return (
+                <div key={lead.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-8 space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div>
+                      <h3 className="font-black text-2xl text-gray-900 tracking-tight">{lead.company.name}</h3>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-2">
+                        {latestInbound?.fromEmail || "Reply received"}
+                      </p>
+                      <ContactStrategyLine lead={lead} />
+                    </div>
+                    <Link
+                      href={`/admin/leads/${lead.id}`}
+                      className="rounded-2xl bg-black px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-gray-800 transition-colors"
+                    >
+                      Open Thread
+                    </Link>
+                  </div>
+                  {latestInbound && (
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Latest Reply</p>
+                      <p className="mt-2 text-sm font-semibold text-gray-900">{latestInbound.subject || "(No Subject)"}</p>
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{latestInbound.body}</p>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </section>
       )}

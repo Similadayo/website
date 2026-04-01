@@ -141,13 +141,20 @@ export async function generateOutreachSequence(leadId: string): Promise<{ succes
 
     // Clear existing drafted/unreviewed messages to start fresh
     await db.outreachMessage.deleteMany({
-      where: { threadId: thread.id, sentAt: null }
+      where: {
+        threadId: thread.id,
+        direction: "outbound",
+        messageType: "sequence",
+        sentAt: null,
+      }
     })
 
     for (const step of steps) {
       await db.outreachMessage.create({
         data: {
           threadId:       thread.id,
+          direction:      "outbound",
+          messageType:    "sequence",
           subject:        step.subject,
           body:           step.body,
           stepNumber:     step.stepNumber || 1,
@@ -198,12 +205,12 @@ export async function markOutreachSent(leadId: string, messageId: string): Promi
 
   await db.outreachMessage.update({
     where: { id: messageId },
-    data:  { sentAt: new Date(), reviewedByUser: true },
+    data:  { sentAt: new Date(), reviewedByUser: true, direction: "outbound" },
   })
 
   await db.outreachThread.updateMany({
     where: { leadId },
-    data:  { status: "sent", lastSentAt: new Date() },
+    data:  { status: "sent", lastSentAt: new Date(), unreadCount: 0 },
   })
 
   const lead = await db.lead.findFirst({ where: await getScopedLeadWhere(leadId) })

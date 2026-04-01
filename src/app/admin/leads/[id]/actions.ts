@@ -204,12 +204,31 @@ export async function sendLeadEmail(
     select: { senderEmail: true, resendApiKey: true }
   })
 
+  let thread = await db.outreachThread.findFirst({
+    where: { leadId },
+    orderBy: { id: "desc" },
+  })
+
+  if (!thread) {
+    thread = await db.outreachThread.create({
+      data: {
+        leadId,
+        contactId: contactStrategy.primarySendContact?.id ?? contactStrategy.bestContact?.id ?? null,
+        channel: "email",
+        status: "drafted",
+      },
+    })
+  }
+
   const res = await sendEmail(
     to, 
     subject, 
     body, 
-    currentUser?.senderEmail || undefined, 
-    currentUser?.resendApiKey || undefined
+    {
+      fromOverride: currentUser?.senderEmail || undefined,
+      apiKey: currentUser?.resendApiKey || undefined,
+      threadId: thread.id,
+    }
   )
   if (!res.success) {
     return { success: false, error: res.error || "Failed to send email" }
@@ -235,25 +254,18 @@ export async function sendLeadEmail(
   if (messageId) {
     await db.outreachMessage.update({
       where: { id: messageId },
-      data: { sentAt: new Date(), reviewedByUser: true },
+      data: {
+        sentAt: new Date(),
+        reviewedByUser: true,
+        providerMessageId: res.id ?? undefined,
+        toEmail: to,
+        fromEmail: currentUser?.senderEmail || process.env.OUTREACH_FROM_EMAIL || undefined,
+        replyToEmail: res.replyTo ?? undefined,
+        direction: "outbound",
+      },
     })
   } else {
     // Spontaneous email: create thread and message
-    let thread = await db.outreachThread.findFirst({
-      where: { leadId, status: { in: ["drafted", "ready"] } },
-    })
-
-    if (!thread) {
-      thread = await db.outreachThread.create({
-        data: { leadId, channel: "email", status: "sent", lastSentAt: new Date() },
-      })
-    } else {
-      await db.outreachThread.update({
-        where: { id: thread.id },
-        data: { status: "sent", lastSentAt: new Date() },
-      })
-    }
-
     await db.outreachMessage.create({
       data: {
         threadId: thread.id,
@@ -261,9 +273,25 @@ export async function sendLeadEmail(
         body,
         sentAt: new Date(),
         reviewedByUser: true,
+        direction: "outbound",
+        messageType: "reply_draft",
+        providerMessageId: res.id ?? undefined,
+        toEmail: to,
+        fromEmail: currentUser?.senderEmail || process.env.OUTREACH_FROM_EMAIL || undefined,
+        replyToEmail: res.replyTo ?? undefined,
       },
     })
   }
+
+  await db.outreachThread.update({
+    where: { id: thread.id },
+    data: {
+      status: "sent",
+      lastSentAt: new Date(),
+      unreadCount: 0,
+      contactId: thread.contactId ?? contactStrategy.primarySendContact?.id ?? contactStrategy.bestContact?.id ?? null,
+    },
+  })
 
   await logActivity({
     entity: "lead",

@@ -4,54 +4,52 @@ import dotenv from "dotenv"
 dotenv.config()
 
 async function syncDatabase() {
-  console.log("📡 Initiating Tactical Database Synchronization...")
-  
+  const rawUrl = process.env.DATABASE_URL
+  if (!rawUrl) {
+    throw new Error("DATABASE_URL is not configured.")
+  }
+
   const client = createClient({
-    url: process.env.DATABASE_URL!,
+    url: rawUrl.replace(".aws-us-west-2", ""),
     authToken: process.env.AUTH_TOKEN,
   })
 
-  try {
-    console.log("⚒️ Altering 'OutreachMessage' table...")
-    
-    // Add stepNumber if not exists
+  const statements = [
+    "ALTER TABLE OutreachMessage ADD COLUMN stepNumber INTEGER NOT NULL DEFAULT 1",
+    "ALTER TABLE OutreachMessage ADD COLUMN delayDays INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE User ADD COLUMN senderEmail TEXT",
+    "ALTER TABLE User ADD COLUMN webhookUrl TEXT",
+    "ALTER TABLE User ADD COLUMN resendApiKey TEXT",
+    "ALTER TABLE OutreachThread ADD COLUMN lastInboundAt DATETIME",
+    "ALTER TABLE OutreachThread ADD COLUMN unreadCount INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE OutreachMessage ADD COLUMN direction TEXT NOT NULL DEFAULT 'outbound'",
+    "ALTER TABLE OutreachMessage ADD COLUMN messageType TEXT NOT NULL DEFAULT 'sequence'",
+    "ALTER TABLE OutreachMessage ADD COLUMN fromEmail TEXT",
+    "ALTER TABLE OutreachMessage ADD COLUMN toEmail TEXT",
+    "ALTER TABLE OutreachMessage ADD COLUMN replyToEmail TEXT",
+    "ALTER TABLE OutreachMessage ADD COLUMN receivedAt DATETIME",
+    "ALTER TABLE OutreachMessage ADD COLUMN providerThreadId TEXT",
+    "ALTER TABLE OutreachMessage ADD COLUMN inReplyTo TEXT",
+    "ALTER TABLE OutreachMessage ADD COLUMN rawHeaders TEXT",
+  ]
+
+  for (const statement of statements) {
     try {
-      await client.execute("ALTER TABLE OutreachMessage ADD COLUMN stepNumber INTEGER NOT NULL DEFAULT 1")
-      console.log("✅ Added stepNumber column.")
-    } catch (e: any) {
-      if (e.message.includes("duplicate column name")) {
-        console.log("ℹ️ stepNumber column already exists.")
-      } else {
-        throw e
+      await client.execute(statement)
+      console.log(`Applied: ${statement}`)
+    } catch (error: any) {
+      if (String(error?.message || "").includes("duplicate column name")) {
+        console.log(`Skipped existing column for: ${statement}`)
+        continue
       }
-    }
 
-    // Add delayDays if not exists
-    try {
-      await client.execute("ALTER TABLE OutreachMessage ADD COLUMN delayDays INTEGER NOT NULL DEFAULT 0")
-      console.log("✅ Added delayDays column.")
-    } catch (e: any) {
-      if (e.message.includes("duplicate column name")) {
-        console.log("ℹ️ delayDays column already exists.")
-      } else {
-        throw e
-      }
+      throw error
     }
-
-    // Add User integration fields
-    try {
-      await client.execute("ALTER TABLE User ADD COLUMN senderEmail TEXT")
-      await client.execute("ALTER TABLE User ADD COLUMN webhookUrl TEXT")
-      await client.execute("ALTER TABLE User ADD COLUMN resendApiKey TEXT")
-      console.log("✅ Added User integration fields.")
-    } catch (e: any) {
-      console.log("ℹ️ User fields likely already exist.")
-    }
-
-    console.log("🎯 Synchronization Complete. Mission systems stabilized.")
-  } catch (err) {
-    console.error("❌ Mission Failure during sync:", err)
   }
+
+  console.log("Database sync complete.")
 }
 
-syncDatabase()
+syncDatabase().catch((error) => {
+  console.error("Database sync failed:", error)
+})

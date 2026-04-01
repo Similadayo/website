@@ -83,7 +83,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const canReject  = !["rejected", "closed_won", "closed_lost"].includes(lead.stage)
   const canAnalyze = ["new", "researching", "analyzed"].includes(lead.stage)
   const canDraft   = ["analyzed", "approved", "outreach_ready"].includes(lead.stage)
-  const canSend    = messages.some((m: any) => !m.sentAt) && ["outreach_ready", "approved", "analyzed"].includes(lead.stage)
+  const canSend    = messages.some((m: any) => m.direction !== "inbound" && !m.sentAt) && ["outreach_ready", "approved", "analyzed", "replied"].includes(lead.stage)
   const ownerName = lead.owner?.name || lead.owner?.email || "Unassigned"
   const creatorName = lead.company.createdBy?.name || lead.company.createdBy?.email || "Unknown"
   const isMine = lead.ownerId === scope.userId || lead.company.createdById === scope.userId

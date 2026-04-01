@@ -14,9 +14,8 @@ export async function updateUserSettings(data: {
   const session = await auth()
   if (!session?.user?.id) return { success: false, error: "Unauthorized" }
 
-  // Simple validation: if senderEmail is provided, it must be @brancr.com
-  if (data.senderEmail && !data.senderEmail.toLowerCase().endsWith("@brancr.com")) {
-    return { success: false, error: "Sender email must be a @brancr.com address" }
+  if (data.senderEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.senderEmail)) {
+    return { success: false, error: "Sender email must be a valid email address" }
   }
 
   try {
