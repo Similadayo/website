@@ -135,11 +135,12 @@ export default function Home() {
       </section>
 
       {/* ── Process Preview ── */}
-      <section className={styles.processSection}>
+      <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           <div className={styles.sectionHeader}>
             <span className="label-tag">Our method</span>
             <h2 className={styles.sectionH}>Four steps from problem to prototype.</h2>
+            <p className={styles.sectionSub}>Not another endless consulting engagement. We operate in short, focused sprints to validate AI in your workflow fast.</p>
           </div>
           <div className={styles.stepsRow}>
             {[
@@ -167,6 +168,7 @@ export default function Home() {
           <div className={styles.sectionHeader}>
             <span className="label-tag">Why this works</span>
             <h2 className={styles.sectionH}>A philosophy built around caution, not hype.</h2>
+            <p className={styles.sectionSub}>We believe in starting small, testing manually, and only scaling what actually saves time.</p>
           </div>
           <div className={styles.whyGrid}>
             {[

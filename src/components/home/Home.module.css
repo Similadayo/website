@@ -113,7 +113,7 @@
   overflow: hidden;
 }
 .problemNum {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-outfit), 'Outfit', sans-serif;
   font-size: 4rem;
   font-weight: 800;
   line-height: 1;
@@ -208,9 +208,6 @@
 .solutionLink:hover { color: var(--fg); gap: 0.55rem; }
 
 /* ─── Process steps ─── */
-.processSection {
-  padding: 9rem 0 7rem;
-}
 .stepsRow {
   display: flex;
   flex-direction: column;
@@ -333,7 +330,8 @@
   grid-template-columns: 1fr;
   gap: 1rem;
 }
-@media (min-width: 640px)  { .riskGrid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 640px)  { .riskGrid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .riskGrid { grid-template-columns: repeat(3, 1fr); } }
 
 .riskCard {
   padding: 1.75rem;
