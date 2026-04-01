@@ -5,6 +5,7 @@ import {
   getContactTier,
   getOutreachRecommendation,
   isGenericInboxEmail,
+  isInvalidContactEmail,
   isLeadershipRole,
   type ContactCandidate,
 } from "./priority"
@@ -254,6 +255,12 @@ async function upsertExecutiveContact(
     null
 
   const evidence = buildEvidenceAndStatus(identity, matchingEmail, inferredEmail)
+  if (isInvalidContactEmail(evidence.email)) {
+    evidence.email = null
+    evidence.emailStatus = "unverified"
+    evidence.emailEvidenceLevel = null
+    evidence.verified = false
+  }
   const confidenceScore = computeConfidence(identity, evidence.emailEvidenceLevel ?? null, patternConfidence)
   const isGenericInbox = isGenericInboxEmail(evidence.email)
 
@@ -364,6 +371,8 @@ function emptyCrawlResult(): CompanyCrawlResult {
 
 export async function persistCrawlContacts(companyId: string, crawlResult: CompanyCrawlResult) {
   for (const hit of crawlResult.emails.slice(0, 8)) {
+    if (isInvalidContactEmail(hit.email)) continue
+
     const exists = await db.contact.findFirst({
       where: { companyId, email: hit.email },
     })
@@ -421,17 +430,17 @@ export async function persistCrawlContacts(companyId: string, crawlResult: Compa
     const candidate: ContactCandidate = {
       name: person.name,
       roleTitle: person.roleTitle,
-      email: person.email,
+      email: isInvalidContactEmail(person.email) ? null : person.email,
       linkedinUrl: person.linkedinUrl,
       sourceUrl: person.sourceUrl,
       sourceEvidence: person.evidence,
-      verified: !!person.email,
+      verified: !!person.email && !isInvalidContactEmail(person.email),
       isGenericInbox: isGenericInboxEmail(person.email),
       isPrimaryDecisionMaker: true,
-      confidenceScore: person.email ? 0.84 : 0.7,
+      confidenceScore: person.email && !isInvalidContactEmail(person.email) ? 0.84 : 0.7,
       contactType: "website_exec",
-      emailStatus: person.email ? "public" : "unverified",
-      emailEvidenceLevel: person.email ? "public_same_domain" : undefined,
+      emailStatus: person.email && !isInvalidContactEmail(person.email) ? "public" : "unverified",
+      emailEvidenceLevel: person.email && !isInvalidContactEmail(person.email) ? "public_same_domain" : undefined,
     }
 
     await db.contact.create({

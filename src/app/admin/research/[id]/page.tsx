@@ -1,18 +1,19 @@
-import { db } from "@/lib/db"
 import { auth } from "@/auth"
-import { notFound, redirect } from "next/navigation"
-import Link from "next/link"
-import {
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Loader2,
-  ArrowLeft,
-  Copy,
-} from "lucide-react"
 import { AutoRefresh } from "@/components/admin/AutoRefresh"
 import { deleteResearchSession } from "../actions"
+import { formatAdminTimestamp, getRelativeDayLabel } from "@/lib/datetime"
+import { db } from "@/lib/db"
 import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Copy,
+  Loader2,
+  XCircle,
+} from "lucide-react"
+import Link from "next/link"
+import { notFound, redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -34,13 +35,12 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
   if (!session) return notFound()
   if (!isSuperAdmin && session.userId !== userSession.user.id) return notFound()
 
-  const isRunning = session.status === "running"
-  const progress =
-    session.totalFound > 0
-      ? Math.round(((session.totalAnalyzed + session.totalSkipped) / session.totalFound) * 100)
-      : 0
+  const isRunning = session.status === "running" || session.status === "pending"
+  const processedCount = session.totalAnalyzed + session.totalSkipped
+  const progress = session.totalFound > 0 ? Math.round((processedCount / session.totalFound) * 100) : 0
+
   const leadIds = session.results.map((result: any) => result.leadId).filter(Boolean)
-  const reachedOutLeads = leadIds.length > 0
+  const reachedOutLeads = leadIds.length
     ? await db.lead.findMany({
         where: { id: { in: leadIds } },
         include: {
@@ -73,9 +73,14 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
             {session.niche} in {session.region}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {new Date(session.createdAt).toLocaleString()}
-            {session.user?.name ? ` Â· ${session.user.name}` : ""}
+            Started {getRelativeDayLabel(session.createdAt)} at {formatAdminTimestamp(session.createdAt)}
+            {session.user?.name ? ` • ${session.user.name}` : ""}
           </p>
+          {session.completedAt && (
+            <p className="text-xs text-gray-400 mt-1">
+              Completed {formatAdminTimestamp(session.completedAt)}
+            </p>
+          )}
         </div>
         {isSuperAdmin && (
           <form action={deleteResearchSession.bind(null, session.id)}>
@@ -114,7 +119,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
               {isRunning ? (
                 <>
                   <span className="text-2xl font-bold text-indigo-600">{progress}%</span>
-                  <span className="text-xs text-gray-400 mt-0.5">searching</span>
+                  <span className="text-xs text-gray-400 mt-0.5">running</span>
                 </>
               ) : session.status === "completed" ? (
                 <>
@@ -135,8 +140,8 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
 
           <div className="flex-1 w-full space-y-3">
             <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
-              <span>{isRunning ? "Runningâ€¦" : session.status === "completed" ? "Completed" : "Failed"}</span>
-              <span className="text-gray-400 text-xs">{session.totalAnalyzed + session.totalSkipped} / {session.totalFound} processed</span>
+              <span>{isRunning ? "Running..." : session.status === "completed" ? "Completed" : "Failed"}</span>
+              <span className="text-gray-400 text-xs">{processedCount} / {session.totalFound} processed</span>
             </div>
 
             {session.status === "failed" && session.error && (
@@ -174,7 +179,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
                   <ResultIcon status={result.status} />
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 truncate">{result.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{result.domain ?? "â€”"}</p>
+                    <p className="text-xs text-gray-400 truncate">{result.domain ?? "—"}</p>
                     {result.note && (
                       <p className="text-xs text-amber-600 mt-0.5">{result.note}</p>
                     )}
@@ -191,7 +196,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
                       href={`/admin/leads/${result.leadId}`}
                       className="text-xs text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1.5 bg-indigo-50 rounded hover:bg-indigo-100 transition-colors"
                     >
-                      View Lead â†’
+                      View Lead →
                     </Link>
                   )}
                   {result.status === "duplicate" && (
@@ -217,13 +222,13 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
             href="/admin/leads"
             className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
           >
-            View All Leads â†’
+            View All Leads →
           </Link>
           <Link
             href="/admin/outreach"
             className="bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
           >
-            Go to Outreach â†’
+            Go to Outreach →
           </Link>
         </div>
       )}

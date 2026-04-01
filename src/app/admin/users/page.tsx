@@ -1,7 +1,8 @@
 import { db } from "@/lib/db"
 import { auth } from "@/auth"
-import { Users, UserPlus, Shield, UserCheck, UserX, Trash2, MapPin, Target, BarChart3, Mail, MoreHorizontal } from "lucide-react"
+import { Users, UserPlus, Shield, UserCheck, UserX, Trash2, Target, BarChart3, Mail } from "lucide-react"
 import { createUser, toggleUserActive, upsertAssignment, deleteUser } from "./actions"
+import { formatAdminTimestamp, getRelativeDayLabel } from "@/lib/datetime"
 
 const ROLES = [
   { value: "researcher", label: "Researcher", desc: "Foundational research and lead discovery." },
@@ -53,7 +54,8 @@ export default async function UsersPage() {
                <div className="col-span-2">Role</div>
                <div className="col-span-3">Assignment</div>
                <div className="col-span-1 text-center">Missions</div>
-               <div className="col-span-2 text-right">Actions</div>
+               <div className="col-span-1">Last Login</div>
+               <div className="col-span-1 text-right">Actions</div>
             </div>
 
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -136,7 +138,16 @@ export default async function UsersPage() {
                       </div>
 
                       {/* Actions Column */}
-                      <div className="col-span-1 lg:col-span-2 flex items-center justify-end gap-2">
+                      <div className="col-span-1 lg:col-span-1">
+                         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                           {user.lastLoginAt ? getRelativeDayLabel(user.lastLoginAt) : "Never"}
+                         </p>
+                         <p className="text-[10px] text-slate-400 mt-1">
+                           {user.lastLoginAt ? formatAdminTimestamp(user.lastLoginAt) : "No successful login yet"}
+                         </p>
+                      </div>
+
+                      <div className="col-span-1 lg:col-span-1 flex items-center justify-end gap-2">
                         {!isMe && (
                           <>
                             <form action={async () => {

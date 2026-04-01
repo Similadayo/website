@@ -4,6 +4,12 @@ const LEADERSHIP_ROLE_PATTERN =
 const GENERIC_INBOX_PATTERN =
   /^(info|hello|contact|sales|team|support|admin|office|careers|jobs|hi|enquiries|enquiry|inquiries|inquiry)\b/i
 
+const INVALID_EMAIL_DOMAIN_PATTERN =
+  /(?:^|\.)sentry(?:-next)?\.wixpress\.com$|(?:^|\.)wixpress\.com$|(?:^|\.)sentry\.io$/i
+
+const MACHINE_LOCAL_PART_PATTERN =
+  /^(?=.*\d)[a-f0-9]{16,}$|^[a-f0-9]{8,}\.[a-f0-9]{8,}$/i
+
 export type ContactCandidate = {
   id?: string | null
   name?: string | null
@@ -41,8 +47,17 @@ export function isGenericInboxEmail(email?: string | null) {
   return GENERIC_INBOX_PATTERN.test(localPart ?? "")
 }
 
+export function isInvalidContactEmail(email?: string | null) {
+  if (!email) return false
+
+  const [localPart = "", domain = ""] = email.toLowerCase().split("@")
+  if (!localPart || !domain) return true
+
+  return INVALID_EMAIL_DOMAIN_PATTERN.test(domain) || MACHINE_LOCAL_PART_PATTERN.test(localPart)
+}
+
 export function getContactTier(contact: ContactCandidate) {
-  const hasEmail = !!contact.email
+  const hasEmail = !!contact.email && !isInvalidContactEmail(contact.email)
   const leadership = !!contact.isPrimaryDecisionMaker || isLeadershipRole(contact.roleTitle)
   const genericInbox = !!contact.isGenericInbox || isGenericInboxEmail(contact.email)
   const hasProfileOrRoute = !!contact.linkedinUrl || !!contact.sourceUrl
@@ -86,7 +101,7 @@ function numericTier(tier: string) {
 function contactScore(contact: ContactCandidate) {
   const tier = getContactTier(contact)
   const leadership = !!contact.isPrimaryDecisionMaker || isLeadershipRole(contact.roleTitle)
-  const hasEmail = !!contact.email
+  const hasEmail = !!contact.email && !isInvalidContactEmail(contact.email)
   const genericInbox = !!contact.isGenericInbox || isGenericInboxEmail(contact.email)
   const verified = !!contact.verified
   const inferredExecutiveEmail = isInferredExecutiveEmail(contact)
@@ -108,7 +123,9 @@ function contactScore(contact: ContactCandidate) {
 }
 
 export function rankContacts<T extends ContactCandidate>(contacts: T[]) {
-  return [...contacts].sort((a, b) => contactScore(b) - contactScore(a))
+  return [...contacts]
+    .filter((contact) => contact.contactType !== "invalid_vendor_email")
+    .sort((a, b) => contactScore(b) - contactScore(a))
 }
 
 export function pickBestOutreachContact<T extends ContactCandidate>(contacts: T[]) {
@@ -119,14 +136,14 @@ export function getLeadContactStrategy<T extends ContactCandidate>(contacts: T[]
   const ranked = rankContacts(contacts)
   const bestContact = ranked[0] || null
   const fallbackContact =
-    ranked.find((contact) => !!contact.email && (contact.isGenericInbox || isGenericInboxEmail(contact.email))) ||
-    ranked.find((contact) => !!contact.email && contact !== bestContact) ||
+    ranked.find((contact) => !!contact.email && !isInvalidContactEmail(contact.email) && (contact.isGenericInbox || isGenericInboxEmail(contact.email))) ||
+    ranked.find((contact) => !!contact.email && !isInvalidContactEmail(contact.email) && contact !== bestContact) ||
     null
 
   const primarySendContact =
-    ranked.find((contact) => getContactTier(contact) === "tier_1" && !!contact.email) ||
+    ranked.find((contact) => getContactTier(contact) === "tier_1" && !!contact.email && !isInvalidContactEmail(contact.email)) ||
     fallbackContact ||
-    ranked.find((contact) => !!contact.email) ||
+    ranked.find((contact) => !!contact.email && !isInvalidContactEmail(contact.email)) ||
     null
 
   const recommendation =

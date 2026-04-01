@@ -3,6 +3,8 @@
  * Extracts public emails, phones, social links, crawl targets, and named people.
  */
 
+import { isInvalidContactEmail } from "./priority"
+
 const SKIP_EMAIL_PREFIXES = [
   "noreply@",
   "no-reply@",
@@ -164,6 +166,7 @@ export function extractPageIntel(html: string, sourceUrl: string): ExtractedPage
     const email = rawEmail.toLowerCase()
     if (SKIP_EMAIL_PREFIXES.some((skip) => email.startsWith(skip))) continue
     if (isAssetLikeEmail(email)) continue
+    if (isInvalidContactEmail(email)) continue
 
     const nearbyText = (() => {
       const htmlIndex = html.toLowerCase().indexOf(email)
@@ -194,6 +197,7 @@ export function extractPageIntel(html: string, sourceUrl: string): ExtractedPage
     const email = mailtoMatch[1].toLowerCase()
     if (SKIP_EMAIL_PREFIXES.some((skip) => email.startsWith(skip))) continue
     if (isAssetLikeEmail(email)) continue
+    if (isInvalidContactEmail(email)) continue
 
     const nearbyText = extractNearbyText(html, mailtoMatch.index)
     const roleTitle = detectRole(nearbyText)

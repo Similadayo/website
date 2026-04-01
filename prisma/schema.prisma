@@ -58,6 +58,7 @@ model User {
   role          String    @default("researcher") // super_admin, researcher, outreach_operator, team_lead
   active        Boolean   @default(true)
   createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
 
   accounts         Account[]
   sessions         Session[]

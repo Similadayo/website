@@ -8,6 +8,10 @@ export function AutoRefresh({ intervalMs = 4000 }: { intervalMs?: number }) {
 
   useEffect(() => {
     const interval = setInterval(() => {
+      void fetch("/api/admin/research/resume", {
+        method: "POST",
+        cache: "no-store",
+      }).catch(() => undefined)
       router.refresh()
     }, intervalMs)
     return () => clearInterval(interval)

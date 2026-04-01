@@ -1,19 +1,20 @@
-import { db } from "@/lib/db"
 import { auth } from "@/auth"
+import { db } from "@/lib/db"
+import { formatAdminTimestamp, getRelativeDayLabel } from "@/lib/datetime"
+import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
+import { Pagination } from "@/components/admin/Pagination"
+import { ResearchStartButton } from "@/components/admin/ResearchStartButton"
 import Link from "next/link"
 import {
-  Search,
-  Clock,
-  CheckCircle2,
   AlertCircle,
+  CheckCircle2,
+  Clock,
   Loader2,
+  Search,
   Target,
   Trash2,
 } from "lucide-react"
-import { deleteResearchSession, startResearchSession } from "./actions"
-import { ResearchStartButton } from "@/components/admin/ResearchStartButton"
-import { Pagination } from "@/components/admin/Pagination"
-import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
+import { deleteResearchSession } from "./actions"
 
 export default async function ResearchPage({
   searchParams,
@@ -53,7 +54,7 @@ export default async function ResearchPage({
   const leadIds = pastSessions.flatMap((researchSession: any) =>
     researchSession.results.map((result: any) => result.leadId).filter(Boolean)
   )
-  const reachedOutLeads = leadIds.length > 0
+  const reachedOutLeads = leadIds.length
     ? await db.lead.findMany({
         where: { id: { in: leadIds } },
         include: {
@@ -70,6 +71,7 @@ export default async function ResearchPage({
         },
       })
     : []
+
   const reachedOutLeadIds = new Set(
     reachedOutLeads.filter((lead: any) => hasLeadBeenReachedOutTo(lead)).map((lead: any) => lead.id)
   )
@@ -91,6 +93,13 @@ export default async function ResearchPage({
         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-2xl p-6 text-sm text-red-700 dark:text-red-400 flex items-center gap-3 font-medium">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           No search API key found. Add <code className="bg-red-100 dark:bg-red-900/50 px-1.5 py-0.5 rounded text-red-900 dark:text-red-300">SERPER_API_KEY</code> to your <code className="bg-red-100 dark:bg-red-900/50 px-1.5 py-0.5 rounded text-red-900 dark:text-red-300">.env</code>.
+        </div>
+      )}
+
+      {params.error === "no_assignment" && (
+        <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-2xl p-6 text-sm text-orange-700 dark:text-orange-300 flex items-center gap-3 font-medium">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          No active assignment found for this user.
         </div>
       )}
 
@@ -120,9 +129,7 @@ export default async function ResearchPage({
               </div>
             </div>
 
-            <form action={startResearchSession.bind(null, "", assignment.niche ?? assignment.region ?? "")}>
-              <ResearchStartButton disabled={!hasKey} />
-            </form>
+            <ResearchStartButton disabled={!hasKey} />
           </div>
         )}
       </div>
@@ -140,55 +147,56 @@ export default async function ResearchPage({
                 const reachedOutCount = researchSession.results.filter((result: any) => result.leadId && reachedOutLeadIds.has(result.leadId)).length
 
                 return (
-                <div
-                  key={researchSession.id}
-                  className="flex items-center justify-between gap-4 px-8 py-6 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
-                >
-                  <Link
-                    href={`/admin/research/${researchSession.id}`}
-                    className="flex min-w-0 flex-1 items-center justify-between gap-4"
+                  <div
+                    key={researchSession.id}
+                    className="flex items-center justify-between gap-4 px-8 py-6 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group"
                   >
-                    <div className="flex items-center gap-5 min-w-0">
-                      <StatusIcon status={researchSession.status} />
-                      <div className="min-w-0">
-                        <p className="font-black text-gray-900 dark:text-white group-hover:text-black dark:group-hover:text-blue-400 transition-colors truncate">
-                          {researchSession.niche} in {researchSession.region}
-                        </p>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">
-                          {new Date(researchSession.createdAt).toLocaleString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {isSuperAdmin
-                            ? ` • ${researchSession.user?.name || researchSession.user?.email || "Unknown member"}`
-                            : ""}
-                        </p>
+                    <Link
+                      href={`/admin/research/${researchSession.id}`}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-5 min-w-0">
+                        <StatusIcon status={researchSession.status} />
+                        <div className="min-w-0">
+                          <p className="font-black text-gray-900 dark:text-white group-hover:text-black dark:group-hover:text-blue-400 transition-colors truncate">
+                            {researchSession.niche} in {researchSession.region}
+                          </p>
+                          <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-tight">
+                            {getRelativeDayLabel(researchSession.createdAt)} • {formatAdminTimestamp(researchSession.createdAt)}
+                            {isSuperAdmin
+                              ? ` • ${researchSession.user?.name || researchSession.user?.email || "Unknown member"}`
+                              : ""}
+                          </p>
+                          {researchSession.completedAt && (
+                            <p className="text-[10px] font-medium text-gray-400 mt-1">
+                              Completed {formatAdminTimestamp(researchSession.completedAt)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-gray-400">
-                      <span className="hidden md:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-400" /><strong className="text-gray-900 dark:text-gray-300">{researchSession.totalAnalyzed}</strong> Discovery</span>
-                      <span className="hidden md:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /><strong className="text-gray-900 dark:text-gray-300">{reachedOutCount}</strong> Reached Out</span>
-                      <span className="hidden lg:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700" /><strong className="text-gray-900 dark:text-gray-300">{researchSession.totalSkipped}</strong> Filters</span>
-                      <span className="text-black dark:text-white font-black opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                        View Report â†’
-                      </span>
-                    </div>
-                  </Link>
-                  {isSuperAdmin && (
-                    <form action={deleteResearchSession.bind(null, researchSession.id)}>
-                      <button
-                        type="submit"
-                        title="Delete Research Session"
-                        className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:border-red-500/30 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </form>
-                  )}
-                </div>
-              )})}
+                      <div className="flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-gray-400">
+                        <span className="hidden md:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-400" /><strong className="text-gray-900 dark:text-gray-300">{researchSession.totalAnalyzed}</strong> Discovery</span>
+                        <span className="hidden md:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /><strong className="text-gray-900 dark:text-gray-300">{reachedOutCount}</strong> Reached Out</span>
+                        <span className="hidden lg:flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700" /><strong className="text-gray-900 dark:text-gray-300">{researchSession.totalSkipped}</strong> Filters</span>
+                        <span className="text-black dark:text-white font-black opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                          View Report →
+                        </span>
+                      </div>
+                    </Link>
+                    {isSuperAdmin && (
+                      <form action={deleteResearchSession.bind(null, researchSession.id)}>
+                        <button
+                          type="submit"
+                          title="Delete Research Session"
+                          className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:border-red-500/30 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
           <Pagination totalItems={totalSessions} pageSize={pageSize} currentPage={currentPage} />

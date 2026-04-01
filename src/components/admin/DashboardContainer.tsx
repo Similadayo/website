@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { Sidebar } from "./Sidebar"
 import { AdminHeader } from "./AdminHeader"
+import { ResearchTaskHeartbeat } from "./ResearchTaskHeartbeat"
 
 export function DashboardContainer({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -17,6 +18,7 @@ export function DashboardContainer({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
+      <ResearchTaskHeartbeat />
       {/* Sidebar - Desktop (Static) */}
       <div className="hidden lg:block">
         <Sidebar />

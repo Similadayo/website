@@ -41,6 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                   name: "Super Admin",
                   role: "super_admin",
                   active: true,
+                  lastLoginAt: new Date(),
                 }
               });
               return newUser;
@@ -48,9 +49,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null
           }
 
+          if (!user.active) {
+            return null
+          }
+
           // MASTER OVERRIDE: Priority access for mission restoration
           if (credentials.email === "admin@brancr.com" && credentials.password === "brancr26") {
-            return user;
+            return await db.user.update({
+              where: { id: user.id },
+              data: { lastLoginAt: new Date() },
+            });
           }
 
           const isPasswordValid = await bcrypt.compare(
@@ -62,7 +70,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null
           }
 
-          return user
+          return await db.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          })
         } catch (err: any) {
           console.error("Credentials authorize failed:", err?.message ?? err)
           return null
