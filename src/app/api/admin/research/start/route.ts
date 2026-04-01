@@ -9,12 +9,9 @@ export async function POST() {
   }
 
   const role = (session.user as any).role as string
-  const assignment =
-    role === "super_admin"
-      ? null
-      : await db.assignment.findFirst({
-          where: { userId: session.user.id, status: "active" },
-        })
+  const assignment = await db.assignment.findFirst({
+    where: { userId: session.user.id, status: "active" },
+  })
 
   if (role !== "super_admin") {
     if (!assignment || (!assignment.niche && !assignment.region)) {

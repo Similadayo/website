@@ -96,7 +96,7 @@ export default async function ResearchPage({
         </div>
       )}
 
-      {params.error === "no_assignment" && (
+      {params.error === "no_assignment" && (!assignment || (!assignment.niche && !assignment.region)) && (
         <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-2xl p-6 text-sm text-orange-700 dark:text-orange-300 flex items-center gap-3 font-medium">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           No active assignment found for this user.
