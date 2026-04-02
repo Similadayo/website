@@ -23,7 +23,9 @@ export default function Navbar() {
     <header className={styles.header}>
       <div className={`container ${styles.inner}`}>
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoMark}>B</span>
+          <span className={styles.logoMark} aria-hidden="true">
+            <img src="/brancr-logo.svg" alt="" className={styles.logoImage} />
+          </span>
           <span>
             Brancr <span className={styles.logoSub}>Labs</span>
           </span>
