@@ -17,13 +17,24 @@ export interface CompanyCrawlResult {
 
 const FIXED_ROUTES = [
   "/contact",
+  "/contact-us",
+  "/get-in-touch",
   "/about",
+  "/about-us",
   "/team",
+  "/team/",
+  "/meet-the-team",
   "/leadership",
+  "/leadership-team",
+  "/executive-team",
   "/management",
   "/company",
+  "/company/team",
   "/our-team",
   "/our-people",
+  "/people",
+  "/staff",
+  "/founder",
 ]
 
 function toAbsoluteUrl(pathOrUrl: string, baseUrl: string) {
@@ -62,7 +73,7 @@ function dedupeByKey<T>(items: T[], keyFn: (item: T) => string) {
   })
 }
 
-export async function crawlCompanyWebsite(baseUrl: string, pageCap = 6): Promise<CompanyCrawlResult> {
+export async function crawlCompanyWebsite(baseUrl: string, pageCap = 10): Promise<CompanyCrawlResult> {
   const homepage = toAbsoluteUrl(baseUrl, baseUrl)
   if (!homepage) {
     return { pages: [], emails: [], people: [], contactPages: [], linkedinUrls: [] }

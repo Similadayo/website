@@ -16,6 +16,11 @@ export interface PlacesResult {
   category:    string | null
 }
 
+type SearchSerperWebOptions = {
+  allowDomainFragments?: string[]
+  preserveTitle?: boolean
+}
+
 const BLOCKED_DOMAIN_FRAGMENTS = [
   "linkedin.com",
   "facebook.com",
@@ -126,6 +131,10 @@ export async function searchSerperMaps(query: string, num = 20): Promise<PlacesR
 
 // Keep web search as fallback for broader/non-local queries
 export async function searchSerperWeb(query: string, num = 10): Promise<PlacesResult[]> {
+  return searchSerperWebWithOptions(query, num, {})
+}
+
+export async function searchSerperWebWithOptions(query: string, num = 10, options: SearchSerperWebOptions = {}): Promise<PlacesResult[]> {
   const key = process.env.SERPER_API_KEY
   if (!key) throw new Error("SERPER_API_KEY is not set in .env")
 
@@ -152,12 +161,13 @@ export async function searchSerperWeb(query: string, num = 10): Promise<PlacesRe
     try {
       const url    = new URL(item.link)
       const domain = url.hostname.replace(/^www\./, "").toLowerCase()
-      if (isBlockedDomain(domain)) continue
+      const allowDomain = (options.allowDomainFragments ?? []).some((fragment) => domain.includes(fragment))
+      if (isBlockedDomain(domain) && !allowDomain) continue
       if (looksLikeArticlePath(url)) continue
-      if (looksLikeRoundupTitle(item.title)) continue
+      if (looksLikeRoundupTitle(item.title) && !allowDomain) continue
 
       results.push({
-        name:        item.title.split("|")[0].split("-")[0].trim(),
+        name:        options.preserveTitle ? item.title.trim() : item.title.split("|")[0].split("-")[0].trim(),
         url:         item.link,
         domain,
         description: item.snippet ?? "",

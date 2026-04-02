@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react"
 import {
+  approveExecutiveEmailContact,
   approveGenericInboxContact,
   markContactForManualReview,
   runLeadAIAnalysis,
@@ -397,8 +398,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                             <span className="admin-pill admin-pill-neutral">{contactItem.outreachRecommendation.replace(/_/g, " ")}</span>
                           )}
                           {contactItem.email && (
-                            <span className="admin-pill admin-pill-neutral">{contactItem.emailStatus || "unknown email status"}</span>
+                            <span className={`admin-pill ${getEmailStatusPillClass(contactItem)}`}>{formatEmailStatus(contactItem)}</span>
                           )}
+                          {contactItem.emailEvidenceLevel && (
+                            <span className="admin-pill admin-pill-neutral">{formatEmailEvidence(contactItem.emailEvidenceLevel)}</span>
+                          )}
+                          {contactItem.isGenericInbox && <span className="admin-pill admin-pill-warning">Generic inbox</span>}
+                          <span className="admin-pill admin-pill-neutral">{formatConfidenceLabel(contactItem.confidenceScore)}</span>
                         </div>
                       </div>
 
@@ -428,13 +434,16 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                     )}
 
                     {contactItem.email && (
-                      <p className="mt-3 text-sm leading-6 text-[color:var(--admin-soft-text)]">
-                        {isInferredExecutiveEmail(contactItem)
-                          ? "Email was inferred from the company pattern and should be reviewed before sending."
-                          : contactItem.emailEvidenceLevel === "public_same_domain"
-                            ? "Email is public and matched to this executive from nearby website evidence."
-                            : "Email is public and visible on a company source."}
-                      </p>
+                      <div className="mt-3 rounded-[18px] border border-[color:var(--admin-border)] bg-white/70 p-4">
+                        <p className="text-sm font-semibold text-[color:var(--admin-ink)]">{contactItem.email}</p>
+                        <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+                          {isInferredExecutiveEmail(contactItem)
+                            ? "Email was inferred from the company pattern and should be reviewed before sending."
+                            : contactItem.emailEvidenceLevel === "public_same_domain"
+                              ? "Email is public and matched to this executive from nearby website evidence."
+                              : "Email is public and visible on a company source."}
+                        </p>
+                      </div>
                     )}
 
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -458,6 +467,19 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                         >
                           <button type="submit" className="admin-pill admin-pill-neutral">
                             Approve Inbox
+                          </button>
+                        </form>
+                      )}
+
+                      {contactItem.emailStatus === "inferred" && (
+                        <form
+                          action={async () => {
+                            "use server"
+                            await approveExecutiveEmailContact(lead.id, contactItem.id)
+                          }}
+                        >
+                          <button type="submit" className="admin-pill admin-pill-accent">
+                            Approve Executive Email
                           </button>
                         </form>
                       )}
@@ -643,6 +665,33 @@ function ContactSummaryCard({
       )}
     </div>
   )
+}
+
+function formatEmailStatus(contact: any) {
+  if (contact.isGenericInbox) return "Generic inbox"
+  if (contact.emailStatus === "public") return "Public email"
+  if (contact.emailStatus === "inferred") return "Inferred email"
+  if (contact.emailStatus === "unverified") return "Unverified email"
+  return "Unknown email status"
+}
+
+function getEmailStatusPillClass(contact: any) {
+  if (contact.isGenericInbox) return "admin-pill-warning"
+  if (contact.emailStatus === "public") return "admin-pill-success"
+  if (contact.emailStatus === "inferred") return "admin-pill-warning"
+  return "admin-pill-neutral"
+}
+
+function formatEmailEvidence(value: string) {
+  if (value === "public_exact") return "Public exact match"
+  if (value === "public_same_domain") return "Public nearby match"
+  if (value === "pattern_inferred") return "Pattern inferred"
+  return value.replace(/_/g, " ")
+}
+
+function formatConfidenceLabel(value?: number | null) {
+  if (value == null) return "Confidence unknown"
+  return `${Math.round(value * 100)}% confidence`
 }
 
 function DetailRow({

@@ -427,6 +427,56 @@ export async function approveGenericInboxContact(
   return { success: true }
 }
 
+export async function approveExecutiveEmailContact(
+  leadId: string,
+  contactId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+  const lead = await db.lead.findFirst({
+    where: await getScopedLeadWhere(leadId),
+    include: { company: { include: { contacts: true } } },
+  })
+
+  if (!lead) return { success: false, error: "Lead not found" }
+
+  const target = lead.company.contacts.find((contact) => contact.id === contactId)
+  if (!target) return { success: false, error: "Contact not found" }
+  if (!target.email || target.emailStatus !== "inferred") {
+    return { success: false, error: "Only inferred executive emails can be approved here." }
+  }
+
+  await db.contact.update({
+    where: { id: contactId },
+    data: {
+      verified: true,
+      isGenericInbox: false,
+      isPrimaryDecisionMaker: true,
+      contactTier: getContactTier({ ...target, verified: true, isPrimaryDecisionMaker: true, isGenericInbox: false }),
+      outreachRecommendation: getOutreachRecommendation({ ...target, verified: true, isPrimaryDecisionMaker: true, isGenericInbox: false }),
+    },
+  })
+
+  await logActivity({
+    entity: "lead",
+    entityId: leadId,
+    actorId: session.user.id,
+    action: "INFERRED_EXECUTIVE_EMAIL_APPROVED",
+    metadata: {
+      contactId,
+      contactName: target.name || target.email || "Executive contact",
+      roleTitle: target.roleTitle || null,
+      summary: `Inferred executive email approved: ${target.email}`,
+    },
+  })
+
+  revalidatePath(`/admin/leads/${leadId}`)
+  revalidatePath("/admin/leads")
+  revalidatePath("/admin/outreach")
+  return { success: true }
+}
+
 export async function markContactForManualReview(
   leadId: string,
   contactId: string

@@ -36,6 +36,10 @@ type NameParts = {
   initial: string
 }
 
+function sanitizeNameToken(value: string) {
+  return value.replace(/[^a-z]/g, "")
+}
+
 function normalizeDomain(domain?: string | null) {
   return domain?.replace(/^www\./, "").toLowerCase() ?? null
 }
@@ -63,10 +67,14 @@ function normalizeName(name?: string | null): NameParts | null {
 
   if (parts.length < 1) return null
 
+  const first = sanitizeNameToken(parts[0] ?? "")
+  const last = parts.length > 1 ? sanitizeNameToken(parts[parts.length - 1] ?? "") : null
+  if (!first) return null
+
   return {
-    first: parts[0],
-    last: parts.length > 1 ? parts[parts.length - 1] : null,
-    initial: parts[0][0] ?? "",
+    first,
+    last: last || null,
+    initial: first[0] ?? "",
   }
 }
 
@@ -83,26 +91,58 @@ function buildLocalPart(parts: NameParts, pattern: EmailPattern) {
 function detectPatternForName(email: string, name?: string | null): EmailPattern | null {
   const parts = normalizeName(name)
   if (!parts) return null
-  const localPart = email.split("@")[0]?.toLowerCase() ?? ""
+  const localPart = sanitizeNameToken(email.split("@")[0]?.toLowerCase().replace(/[.@_-]/g, "") ?? "")
 
   for (const pattern of ["first", "first.last", "firstlast", "f.last", "flast"] as EmailPattern[]) {
     const candidate = buildLocalPart(parts, pattern)
-    if (candidate && candidate === localPart) return pattern
+    if (candidate && sanitizeNameToken(candidate) === localPart) return pattern
   }
 
   return null
 }
 
+function namesLikelyMatch(left?: string | null, right?: string | null) {
+  const leftParts = normalizeName(left)
+  const rightParts = normalizeName(right)
+  if (!leftParts || !rightParts) return false
+  if (leftParts.first === rightParts.first && leftParts.last && rightParts.last && leftParts.last === rightParts.last) return true
+  if (leftParts.last && rightParts.last && leftParts.last === rightParts.last && leftParts.initial === rightParts.initial) return true
+  return false
+}
+
+function textLikelyMentionsName(text: string, name?: string | null) {
+  const parts = normalizeName(name)
+  if (!parts) return false
+  const normalizedText = text.toLowerCase()
+  if (normalizedText.includes(parts.first) && (!parts.last || normalizedText.includes(parts.last))) return true
+  if (parts.last && normalizedText.includes(`${parts.initial}.`) && normalizedText.includes(parts.last)) return true
+  return false
+}
+
 function findLinkedExtractedPerson(email: ExtractedEmail, people: ExtractedPerson[]) {
   if (email.name) {
-    return people.find((person) => person.name.toLowerCase() === email.name?.toLowerCase()) ?? null
+    return people.find((person) => namesLikelyMatch(person.name, email.name)) ?? null
   }
 
   return (
     people.find((person) =>
-      email.nearbyText.toLowerCase().includes(person.name.toLowerCase()) ||
+      textLikelyMentionsName(email.nearbyText, person.name) ||
       (person.roleTitle && email.nearbyText.toLowerCase().includes(person.roleTitle.toLowerCase()))
     ) ?? null
+  )
+}
+
+function findMatchingPublicEmail(identity: ReconIdentity, emails: ExtractedEmail[]) {
+  return (
+    emails.find((hit) => identity.email && hit.email === identity.email) ??
+    emails.find((hit) => {
+      const matchesName =
+        namesLikelyMatch(hit.name, identity.name) ||
+        textLikelyMentionsName(hit.nearbyText, identity.name)
+      const matchesRole = identity.roleTitle ? hit.nearbyText.toLowerCase().includes(identity.roleTitle.toLowerCase()) : false
+      return matchesName || matchesRole
+    }) ??
+    null
   )
 }
 
@@ -244,15 +284,7 @@ async function upsertExecutiveContact(
       ? `${inferredLocalPart}@${domain}`
       : null
 
-  const matchingEmail =
-    emails.find((hit) => identity.email && hit.email === identity.email) ??
-    emails.find((hit) => {
-      if (!identity.name) return false
-      const matchesName = hit.name?.toLowerCase() === identity.name.toLowerCase() || hit.nearbyText.toLowerCase().includes(identity.name.toLowerCase())
-      const matchesRole = identity.roleTitle ? hit.nearbyText.toLowerCase().includes(identity.roleTitle.toLowerCase()) : false
-      return matchesName || matchesRole
-    }) ??
-    null
+  const matchingEmail = findMatchingPublicEmail(identity, emails)
 
   const evidence = buildEvidenceAndStatus(identity, matchingEmail, inferredEmail)
   if (isInvalidContactEmail(evidence.email)) {

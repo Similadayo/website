@@ -17,9 +17,14 @@ const SKIP_EMAIL_PREFIXES = [
 
 const ROUTE_KEYWORDS = [
   "contact",
+  "contact-us",
+  "get-in-touch",
   "team",
   "about",
+  "about-us",
   "leadership",
+  "leadership-team",
+  "executive-team",
   "management",
   "company",
   "our-team",
@@ -29,7 +34,7 @@ const ROUTE_KEYWORDS = [
 ]
 
 const LEADERSHIP_ROLE_PATTERN =
-  /\b(founder|co[- ]?founder|ceo|chief executive officer|chief executive|coo|chief operating officer|chief operating|managing director|director|owner|principal|president|head of operations|operations manager|operations lead|head of recruiting|talent lead|partner)\b/i
+  /\b(founder|co[- ]?founder|ceo|chief executive officer|chief executive|coo|chief operating officer|chief operating|managing director|managing partner|executive director|director|owner|principal|president|partner|vice president|vp of operations|head of operations|operations manager|operations lead|head of recruiting|talent lead|head of talent)\b/i
 
 export interface ExtractedContact {
   emails: string[]
@@ -149,6 +154,20 @@ function dedupeEmails(emails: ExtractedEmail[]) {
   })
 }
 
+function decodeObfuscatedEmail(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .replace(/\s*(?:\(|\[|\{)?\s*at\s*(?:\)|\]|\})?\s*/g, "@")
+    .replace(/\s*(?:\(|\[|\{)?\s*dot\s*(?:\)|\]|\})?\s*/g, ".")
+    .replace(/\s+/g, "")
+
+  if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(normalized)) return null
+  if (SKIP_EMAIL_PREFIXES.some((skip) => normalized.startsWith(skip))) return null
+  if (isAssetLikeEmail(normalized)) return null
+  if (isInvalidContactEmail(normalized)) return null
+  return normalized
+}
+
 export function extractPageIntel(html: string, sourceUrl: string): ExtractedPageIntel {
   const text = stripHtml(html)
   const emails: ExtractedEmail[] = []
@@ -184,6 +203,31 @@ export function extractPageIntel(html: string, sourceUrl: string): ExtractedPage
       email,
       sourceUrl,
       evidence: `Public email found on ${sourceUrl}`,
+      nearbyText,
+      name,
+      roleTitle,
+      isGenericInbox: false,
+    })
+  }
+
+  const obfuscatedRegex =
+    /\b[a-zA-Z0-9._%+-]+\s*(?:\(|\[|\{)?\s*at\s*(?:\)|\]|\})?\s*[a-zA-Z0-9.-]+\s*(?:\(|\[|\{)?\s*dot\s*(?:\)|\]|\})?\s*[a-zA-Z.]{2,}\b/g
+  const obfuscatedEmails = text.match(obfuscatedRegex) ?? []
+
+  for (const rawValue of obfuscatedEmails) {
+    const email = decodeObfuscatedEmail(rawValue)
+    if (!email) continue
+
+    const textIndex = text.toLowerCase().indexOf(rawValue.toLowerCase())
+    const nearbyText = textIndex >= 0 ? extractNearbyText(text, textIndex) : ""
+    const roleTitle = detectRole(nearbyText)
+    const nameMatch = nearbyText.match(/[A-Z][A-Za-z'`.-]+(?:\s+[A-Z][A-Za-z'`.-]+){1,3}/)
+    const name = nameMatch && isLikelyName(nameMatch[0]) ? cleanName(nameMatch[0]) : null
+
+    emails.push({
+      email,
+      sourceUrl,
+      evidence: `Obfuscated public email decoded from ${sourceUrl}`,
       nearbyText,
       name,
       roleTitle,
