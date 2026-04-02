@@ -16,6 +16,50 @@ export interface PlacesResult {
   category:    string | null
 }
 
+const BLOCKED_DOMAIN_FRAGMENTS = [
+  "linkedin.com",
+  "facebook.com",
+  "twitter.com",
+  "x.com",
+  "yelp.com",
+  "indeed.com",
+  "glassdoor.com",
+  "reed.co.uk",
+  "totaljobs.com",
+  "wikipedia.org",
+  "youtube.com",
+  "google.com",
+  "reddit.com",
+  "semrush.com",
+  "clutch.co",
+  "designrush.com",
+  "sortlist.com",
+  "upcity.com",
+  "agencyspotter.com",
+  "goodfirms.co",
+  "expertise.com",
+  "findmyprofession.com",
+  "themanifest.com",
+]
+
+const ARTICLE_PATH_PATTERN =
+  /\/(blog|blogs|article|articles|news|insights|resources|guides|directory|directories|list|lists|best-|top-|compare|comparison)(?:\/|$)/i
+
+const ROUNDUP_TITLE_PATTERN =
+  /\b(best|top|leading|directory|directories|list|lists|roundup|compare|comparison|agencies in|companies in|firms in)\b/i
+
+function isBlockedDomain(domain: string) {
+  return BLOCKED_DOMAIN_FRAGMENTS.some((fragment) => domain.includes(fragment))
+}
+
+function looksLikeArticlePath(url: URL) {
+  return ARTICLE_PATH_PATTERN.test(url.pathname)
+}
+
+function looksLikeRoundupTitle(title: string) {
+  return ROUNDUP_TITLE_PATTERN.test(title)
+}
+
 export async function searchSerperMaps(query: string, num = 20): Promise<PlacesResult[]> {
   const key = process.env.SERPER_API_KEY
   if (!key) throw new Error("SERPER_API_KEY is not set in .env")
@@ -58,13 +102,8 @@ export async function searchSerperMaps(query: string, num = 20): Promise<PlacesR
       const parsed = new URL(url)
       const domain = parsed.hostname.replace(/^www\./, "").toLowerCase()
 
-      // Filter out social platforms and directories
-      const blocklist = [
-        "linkedin.com", "facebook.com", "twitter.com", "x.com",
-        "yelp.com", "indeed.com", "glassdoor.com", "reed.co.uk",
-        "totaljobs.com", "wikipedia.org", "youtube.com", "google.com",
-      ]
-      if (blocklist.some(b => domain.includes(b))) continue
+      if (isBlockedDomain(domain)) continue
+      if (looksLikeArticlePath(parsed)) continue
 
       results.push({
         name:        place.title,
@@ -113,11 +152,9 @@ export async function searchSerperWeb(query: string, num = 10): Promise<PlacesRe
     try {
       const url    = new URL(item.link)
       const domain = url.hostname.replace(/^www\./, "").toLowerCase()
-      const blocklist = [
-        "linkedin.com", "facebook.com", "twitter.com", "x.com",
-        "yelp.com", "indeed.com", "glassdoor.com", "wikipedia.org", "youtube.com",
-      ]
-      if (blocklist.some(b => domain.includes(b))) continue
+      if (isBlockedDomain(domain)) continue
+      if (looksLikeArticlePath(url)) continue
+      if (looksLikeRoundupTitle(item.title)) continue
 
       results.push({
         name:        item.title.split("|")[0].split("-")[0].trim(),

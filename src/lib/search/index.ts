@@ -20,6 +20,10 @@ function normalizeName(value?: string | null) {
   return value?.trim().toLowerCase() ?? ""
 }
 
+function isLikelyArticleTitle(value: string) {
+  return /\b(best|top|leading|directory|directories|list|lists|roundup|compare|comparison|agencies in|companies in|firms in|services in)\b/i.test(value)
+}
+
 function shouldIncludeResult(
   result: PlacesResult,
   seenDomains: Set<string>,
@@ -27,6 +31,7 @@ function shouldIncludeResult(
 ) {
   const normalizedName = normalizeName(result.name)
   if (!normalizedName) return false
+  if (isLikelyArticleTitle(result.name)) return false
   if (seenNames.has(normalizedName)) return false
   if (result.domain && seenDomains.has(result.domain)) return false
   return true
@@ -57,10 +62,6 @@ export async function discoverCompanies(
       `${niche} in ${region}`,
       `${niche} agency ${region}`,
       `${niche} firms ${region}`,
-      `recruiting agency ${region}`,
-      `staffing firms ${region}`,
-      `recruitment companies ${region}`,
-      `digital marketing ${region}`,
       `${niche} services ${region}`,
       `${niche} consultants ${region}`,
       `${niche} companies ${region}`,
@@ -84,14 +85,28 @@ export async function discoverCompanies(
       if (all.length >= count) break
     }
 
-    // If Maps didn't return enough, supplement with web search
+    // If Maps didn't return enough, prefer GPT supplementation over web titles.
     if (all.length < count) {
+      if (process.env.OPENAI_API_KEY) {
+        try {
+          const gptResults = await discoverViaGPT(niche, region, Math.max((count - all.length) * 2, 12))
+          for (const r of gptResults) {
+            if (shouldIncludeResult(r, seenDomains, seenNames)) {
+              if (r.domain) seenDomains.add(r.domain)
+              seenNames.add(normalizeName(r.name))
+              all.push(r)
+            }
+          }
+        } catch { /* non-fatal */ }
+      }
+    }
+
+    // Keep web search only as a last resort when no model fallback is available.
+    if (all.length < count && !process.env.OPENAI_API_KEY) {
       const webQueries = [
-        `small ${niche} companies in ${region}`,
-        `best ${niche} companies in ${region}`,
-        `${niche} firms in ${region}`,
-        `${niche} agencies in ${region}`,
-        `${niche} businesses in ${region}`,
+        `${niche} firm ${region}`,
+        `${niche} agency ${region}`,
+        `${niche} company ${region}`,
       ]
 
       for (const q of webQueries) {

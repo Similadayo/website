@@ -1,8 +1,9 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { ASSIGNMENT_NICHE_OPTIONS, ASSIGNMENT_REGION_OPTIONS } from "@/lib/assignments"
 import { formatAdminTimestamp, getRelativeDayLabel } from "@/lib/datetime"
 import { createUser, deleteUser, toggleUserActive, upsertAssignment } from "./actions"
-import { Shield, Trash2, UserCheck, UserPlus, UserX, Users } from "lucide-react"
+import { BriefcaseBusiness, ChevronDown, MapPin, Shield, Trash2, UserCheck, UserPlus, UserX, Users } from "lucide-react"
 
 const ROLES = [
   { value: "researcher", label: "Researcher", desc: "Owns discovery, qualification, and first-pass outreach review." },
@@ -21,6 +22,11 @@ export default async function UsersPage() {
       _count: { select: { ownedLeads: true } },
     },
   })
+  const activeRegionAssignments = users.flatMap((user) =>
+    user.assignments
+      .filter((assignment) => assignment.status === "active" && assignment.region)
+      .map((assignment) => ({ userId: user.id, region: assignment.region as string }))
+  )
 
   return (
     <div className="space-y-6">
@@ -42,6 +48,15 @@ export default async function UsersPage() {
             const isMe = user.id === currentUser?.id
             const activeAssignment = user.assignments[0]
             const assignmentAction = upsertAssignment.bind(null, user.id)
+            const currentRegion = activeAssignment?.region ?? ""
+            const currentNiche = activeAssignment?.niche ?? ""
+            const takenRegionsByOthers = new Set(
+              activeRegionAssignments
+                .filter((assignment) => assignment.userId !== user.id)
+                .map((assignment) => assignment.region)
+            )
+            const hasCustomRegion = currentRegion && !ASSIGNMENT_REGION_OPTIONS.includes(currentRegion as (typeof ASSIGNMENT_REGION_OPTIONS)[number])
+            const hasCustomNiche = currentNiche && !ASSIGNMENT_NICHE_OPTIONS.includes(currentNiche as (typeof ASSIGNMENT_NICHE_OPTIONS)[number])
 
             return (
               <div key={user.id} className={`admin-card p-5 sm:p-6 ${!user.active ? "opacity-70" : ""}`}>
@@ -108,23 +123,63 @@ export default async function UsersPage() {
                   </div>
                 </div>
 
-                <form action={assignmentAction} className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                  <input
-                    name="region"
-                    defaultValue={activeAssignment?.region ?? ""}
-                    placeholder="Region"
-                    className="rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
-                  />
-                  <input
-                    name="niche"
-                    defaultValue={activeAssignment?.niche ?? ""}
-                    placeholder="Niche"
-                    className="rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
-                  />
-                  <button type="submit" className="rounded-[18px] bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white">
+                <form action={assignmentAction} className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_140px] lg:items-end">
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 px-1 text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Region
+                    </label>
+                    <div className="relative overflow-hidden rounded-[20px] border border-[color:var(--admin-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,242,233,0.95))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition focus-within:border-[color:var(--admin-accent)] focus-within:ring-2 focus-within:ring-[color:var(--admin-accent)]/10">
+                      <select
+                        name="region"
+                        defaultValue={currentRegion}
+                        className="h-16 w-full appearance-none bg-transparent pl-4 pr-12 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
+                      >
+                        <option value="">Select region</option>
+                        {ASSIGNMENT_REGION_OPTIONS.map((option) => {
+                          const disabled = option !== currentRegion && takenRegionsByOthers.has(option)
+                          return (
+                            <option key={option} value={option} disabled={disabled}>
+                              {disabled ? `${option} (Assigned)` : option}
+                            </option>
+                          )
+                        })}
+                        {hasCustomRegion && <option value={currentRegion}>{currentRegion}</option>}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--admin-muted)]" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 px-1 text-[11px] font-black uppercase tracking-[0.18em] text-[color:var(--admin-muted)]">
+                      <BriefcaseBusiness className="h-3.5 w-3.5" />
+                      Niche
+                    </label>
+                    <div className="relative overflow-hidden rounded-[20px] border border-[color:var(--admin-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,242,233,0.95))] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] transition focus-within:border-[color:var(--admin-accent)] focus-within:ring-2 focus-within:ring-[color:var(--admin-accent)]/10">
+                      <select
+                        name="niche"
+                        defaultValue={currentNiche}
+                        className="h-16 w-full appearance-none bg-transparent pl-4 pr-12 text-sm font-semibold text-[color:var(--admin-ink)] outline-none"
+                      >
+                        <option value="">Select niche</option>
+                        {ASSIGNMENT_NICHE_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                        {hasCustomNiche && <option value={currentNiche}>{currentNiche}</option>}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--admin-muted)]" />
+                    </div>
+                  </div>
+                  <button type="submit" className="h-16 rounded-[20px] bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white shadow-[0_18px_40px_rgba(36,87,245,0.18)] transition hover:translate-y-[-1px] hover:shadow-[0_22px_44px_rgba(36,87,245,0.22)]">
                     Save assignment
                   </button>
                 </form>
+                {takenRegionsByOthers.size > 0 && (
+                  <p className="mt-3 text-xs text-[color:var(--admin-soft-text)]">
+                    Regions already assigned to someone else are shown as unavailable.
+                  </p>
+                )}
               </div>
             )
           })}

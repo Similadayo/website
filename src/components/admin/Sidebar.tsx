@@ -36,7 +36,6 @@ export function Sidebar() {
   const { data: session } = useSession()
   const user = session?.user as any
 
-  const isResearcher = user?.role === "researcher"
   const assignment = user?.assignment
 
   return (
@@ -55,8 +54,6 @@ export function Sidebar() {
       {/* Navigation Nodes */}
       <nav className="flex-1 px-3 space-y-0.5 mt-2">
         {navigation.map((item) => {
-          if (item.href === "/admin/users" && isResearcher) return null
-
           let isActive = false
           if (item.href === "/admin" || item.href === "/admin/outreach") {
             isActive = pathname === item.href
@@ -86,7 +83,7 @@ export function Sidebar() {
 
       {/* Simplified Status Indicators */}
       <div className="p-4 space-y-3">
-        {isResearcher && assignment && (
+        {user?.role === "researcher" && assignment && (
           <div className="p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
              <div className="flex items-center gap-2 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
                 <Target className="w-3 h-3 text-slate-900 dark:text-white" /> Active Assignment
@@ -97,7 +94,7 @@ export function Sidebar() {
           </div>
         )}
 
-        {!isResearcher && user?.role === "super_admin" && (
+        {user?.role === "super_admin" && (
           <div className="p-4 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-xl border border-slate-200 dark:border-slate-800">
              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none mb-1">
                 <Shield className="w-3 h-3" /> Root Access
