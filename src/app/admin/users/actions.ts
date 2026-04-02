@@ -12,6 +12,9 @@ export async function upsertAssignment(
 ): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
+  const role = (session.user as any).role
+  const canManageAllUsers = role === "admin" || role === "super_admin"
+  if (!canManageAllUsers && session.user.id !== userId) redirect("/admin/users")
 
   const region = (formData.get("region") as string | null)?.trim() ?? ""
   const niche = (formData.get("niche") as string | null)?.trim() ?? ""
@@ -36,6 +39,8 @@ export async function upsertAssignment(
 export async function createUser(formData: FormData): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
+  const sessionRole = (session.user as any).role
+  if (sessionRole !== "admin" && sessionRole !== "super_admin") redirect("/admin/users")
 
   const name  = (formData.get("name")  as string)?.trim()
   const email = (formData.get("email") as string)?.trim().toLowerCase()
@@ -73,6 +78,8 @@ export async function deleteUser(userId: string): Promise<void> {
 export async function toggleUserActive(userId: string, active: boolean): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
+  const role = (session.user as any).role
+  if (role !== "admin" && role !== "super_admin") redirect("/admin/users")
 
   await db.user.update({
     where: { id: userId },
@@ -85,6 +92,7 @@ export async function toggleUserActive(userId: string, active: boolean): Promise
 export async function updateUserRole(userId: string, role: string): Promise<void> {
   const session = await auth()
   if (!session?.user?.id) redirect("/login")
+  if ((session.user as any).role !== "super_admin") redirect("/admin/users")
 
   await db.user.update({
     where: { id: userId },

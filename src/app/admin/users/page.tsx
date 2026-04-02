@@ -14,6 +14,8 @@ const ROLES = [
 export default async function UsersPage() {
   const session = await auth()
   const currentUser = session?.user
+  const currentRole = (currentUser as any)?.role
+  const canManageAllUsers = currentRole === "admin" || currentRole === "super_admin"
 
   const users = await db.user.findMany({
     orderBy: { createdAt: "desc" },
@@ -22,6 +24,10 @@ export default async function UsersPage() {
       _count: { select: { ownedLeads: true } },
     },
   })
+  const activeUserCount = await db.user.count({ where: { active: true } })
+  const visibleUsers = canManageAllUsers
+    ? users
+    : users.filter((user) => user.id === currentUser?.id)
   const activeRegionAssignments = users.flatMap((user) =>
     user.assignments
       .filter((assignment) => assignment.status === "active" && assignment.region)
@@ -38,13 +44,13 @@ export default async function UsersPage() {
         </p>
         <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[color:var(--admin-border)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--admin-soft-text)]">
           <Users className="h-4 w-4 text-[color:var(--admin-accent)]" />
-          {users.length} active records
+          {activeUserCount} active users
         </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
-          {users.map((user) => {
+          {visibleUsers.map((user) => {
             const isMe = user.id === currentUser?.id
             const activeAssignment = user.assignments[0]
             const assignmentAction = upsertAssignment.bind(null, user.id)
@@ -86,7 +92,7 @@ export default async function UsersPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {!isMe && (
+                    {canManageAllUsers && !isMe && (
                       <form
                         action={async () => {
                           "use server"
@@ -100,7 +106,7 @@ export default async function UsersPage() {
                       </form>
                     )}
 
-                    {!isMe && (currentUser as any)?.role === "super_admin" && (
+                    {currentRole === "super_admin" && !isMe && (
                       <form
                         action={async () => {
                           "use server"
@@ -186,48 +192,50 @@ export default async function UsersPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="admin-card p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-[color:var(--admin-accent)] text-white">
-                <UserPlus className="h-5 w-5" />
+          {canManageAllUsers && (
+            <div className="admin-card p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-[color:var(--admin-accent)] text-white">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Add a new operator</p>
+                  <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">Provision a teammate and place them into the active workflow.</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xl font-semibold tracking-tight text-[color:var(--admin-ink)]">Add a new operator</p>
-                <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">Provision a teammate and place them into the active workflow.</p>
-              </div>
+
+              <form action={createUser} className="mt-6 space-y-4">
+                <input
+                  name="name"
+                  type="text"
+                  required
+                  placeholder="Full name"
+                  className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
+                />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="name@brancr.com"
+                  className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
+                />
+
+                <div className="space-y-3">
+                  {ROLES.map((role) => (
+                    <label key={role.value} className="block rounded-[18px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-4">
+                      <input type="radio" name="role" value={role.value} defaultChecked={role.value === "researcher"} className="mr-3" />
+                      <span className="text-sm font-semibold text-[color:var(--admin-ink)]">{role.label}</span>
+                      <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">{role.desc}</p>
+                    </label>
+                  ))}
+                </div>
+
+                <button type="submit" className="w-full rounded-[18px] bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white">
+                  Create operator
+                </button>
+              </form>
             </div>
-
-            <form action={createUser} className="mt-6 space-y-4">
-              <input
-                name="name"
-                type="text"
-                required
-                placeholder="Full name"
-                className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
-              />
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="name@brancr.com"
-                className="w-full rounded-[18px] border border-[color:var(--admin-border)] bg-white px-4 py-3 text-sm text-[color:var(--admin-ink)] outline-none"
-              />
-
-              <div className="space-y-3">
-                {ROLES.map((role) => (
-                  <label key={role.value} className="block rounded-[18px] border border-[color:var(--admin-border)] bg-[color:var(--admin-card-strong)] p-4">
-                    <input type="radio" name="role" value={role.value} defaultChecked={role.value === "researcher"} className="mr-3" />
-                    <span className="text-sm font-semibold text-[color:var(--admin-ink)]">{role.label}</span>
-                    <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">{role.desc}</p>
-                  </label>
-                ))}
-              </div>
-
-              <button type="submit" className="w-full rounded-[18px] bg-[color:var(--admin-accent)] px-5 py-3 text-sm font-bold text-white">
-                Create operator
-              </button>
-            </form>
-          </div>
+          )}
 
           <div className="admin-card p-6">
             <p className="text-sm font-semibold text-[color:var(--admin-ink)]">Access note</p>
