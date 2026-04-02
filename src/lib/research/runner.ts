@@ -132,10 +132,17 @@ async function processResearchCompany(
     : null
 
   if (existing) {
+    const existingLead = await db.lead.findFirst({
+      where: { companyId: existing.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    })
+
     await db.researchResult.create({
       data: {
         sessionId: payload.sessionId,
         companyId: existing.id,
+        leadId: existingLead?.id ?? null,
         name: company.name,
         domain: domain ?? null,
         status: "duplicate",

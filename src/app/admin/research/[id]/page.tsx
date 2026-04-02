@@ -32,7 +32,28 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
   const processedCount = session.totalAnalyzed + session.totalSkipped
   const progress = session.totalFound > 0 ? Math.round((processedCount / session.totalFound) * 100) : 0
 
-  const leadIds = session.results.map((result: any) => result.leadId).filter(Boolean)
+  const unresolvedCompanyIds = session.results
+    .filter((result: any) => !result.leadId && result.companyId)
+    .map((result: any) => result.companyId)
+  const fallbackLeads = unresolvedCompanyIds.length
+    ? await db.lead.findMany({
+        where: { companyId: { in: unresolvedCompanyIds } },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, companyId: true },
+      })
+    : []
+  const fallbackLeadIdsByCompanyId = new Map<string, string>()
+
+  for (const lead of fallbackLeads) {
+    if (!fallbackLeadIdsByCompanyId.has(lead.companyId)) {
+      fallbackLeadIdsByCompanyId.set(lead.companyId, lead.id)
+    }
+  }
+  const resolvedResults = session.results.map((result: any) => ({
+    ...result,
+    resolvedLeadId: result.leadId ?? (result.companyId ? fallbackLeadIdsByCompanyId.get(result.companyId) : undefined),
+  }))
+  const leadIds = resolvedResults.map((result: any) => result.resolvedLeadId).filter(Boolean)
   const reachedOutLeads = leadIds.length
     ? await db.lead.findMany({
         where: { id: { in: leadIds } },
@@ -51,7 +72,7 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
       })
     : []
   const reachedOutLeadIds = new Set(reachedOutLeads.filter((lead: any) => hasLeadBeenReachedOutTo(lead)).map((lead: any) => lead.id))
-  const reachedOutCount = session.results.filter((result: any) => result.leadId && reachedOutLeadIds.has(result.leadId)).length
+  const reachedOutCount = resolvedResults.filter((result: any) => result.resolvedLeadId && reachedOutLeadIds.has(result.resolvedLeadId)).length
 
   return (
     <div className="space-y-6">
@@ -138,31 +159,42 @@ export default async function ResearchSessionPage({ params }: { params: Promise<
             <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">Discovered companies will appear here as the session progresses.</p>
           </div>
         ) : (
-          session.results.map((result: any) => (
-            <div key={result.id} className="admin-card p-5 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <ResultIcon status={result.status} />
-                  <div>
-                    <p className="text-lg font-semibold tracking-tight text-[color:var(--admin-ink)]">{result.name}</p>
-                    <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">{result.domain ?? "No domain captured"}</p>
-                    {result.note && <p className="mt-2 text-sm text-[color:var(--admin-warning)]">{result.note}</p>}
+          resolvedResults.map((result: any) => {
+            const leadId = result.resolvedLeadId
+            const isClickable = Boolean(leadId)
+
+            return (
+              <div key={result.id} className="admin-card p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-4">
+                    <ResultIcon status={result.status} />
+                    <div>
+                      {isClickable ? (
+                        <Link href={`/admin/leads/${leadId}`} className="text-lg font-semibold tracking-tight text-[color:var(--admin-ink)] transition hover:text-[color:var(--admin-accent)]">
+                          {result.name}
+                        </Link>
+                      ) : (
+                        <p className="text-lg font-semibold tracking-tight text-[color:var(--admin-ink)]">{result.name}</p>
+                      )}
+                      <p className="mt-1 text-sm text-[color:var(--admin-soft-text)]">{result.domain ?? "No domain captured"}</p>
+                      {result.note && <p className="mt-2 text-sm text-[color:var(--admin-warning)]">{result.note}</p>}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {leadId && reachedOutLeadIds.has(leadId) && <span className="admin-pill admin-pill-success">Reached Out</span>}
+                    {leadId && (
+                      <Link href={`/admin/leads/${leadId}`} className="admin-pill admin-pill-accent">
+                        View Lead
+                      </Link>
+                    )}
+                    {result.status === "duplicate" && <span className="admin-pill admin-pill-neutral">Duplicate</span>}
+                    {result.status === "failed" && <span className="admin-pill admin-pill-danger">Failed</span>}
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {result.leadId && reachedOutLeadIds.has(result.leadId) && <span className="admin-pill admin-pill-success">Reached Out</span>}
-                  {result.status === "created" && result.leadId && (
-                    <Link href={`/admin/leads/${result.leadId}`} className="admin-pill admin-pill-accent">
-                      View Lead
-                    </Link>
-                  )}
-                  {result.status === "duplicate" && <span className="admin-pill admin-pill-neutral">Duplicate</span>}
-                  {result.status === "failed" && <span className="admin-pill admin-pill-danger">Failed</span>}
-                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </section>
 
