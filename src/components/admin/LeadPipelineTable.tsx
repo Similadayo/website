@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, Clock, Trash2, X, XCircl
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { bulkDeleteLeadIntel, deleteFilteredLeadIntel, deleteLeadIntel } from "@/app/admin/leads/actions"
 import { formatOutreachRecommendation, getLeadContactStrategy } from "@/lib/contacts/priority"
+import { formatAdminDate } from "@/lib/datetime"
 import { STAGE_LABELS, LeadStage } from "@/lib/stages"
 
 type LeadRow = any
@@ -313,7 +314,7 @@ export function LeadPipelineTable({
                     </div>
 
                     <div className="mt-4 flex items-center justify-between gap-3 text-xs font-semibold text-gray-500">
-                      <span>Added {new Date(lead.createdAt).toLocaleDateString()}</span>
+                      <span>Added {formatAdminDate(lead.createdAt)}</span>
                       {isSuperAdmin && selectedMemberId !== currentUserId && (
                         <span className="truncate text-right">Owner: {ownerName}</span>
                       )}
@@ -485,7 +486,7 @@ export function LeadPipelineTable({
                         </div>
                       </td>
                       <td className="hidden px-6 py-6 text-right text-[10px] font-black uppercase tracking-widest text-gray-400 lg:table-cell xl:px-8">
-                        {new Date(lead.createdAt).toLocaleDateString()}
+                        {formatAdminDate(lead.createdAt)}
                       </td>
                       <td className="px-6 py-6 text-right xl:px-8">
                         <div className="flex flex-col items-end gap-3">

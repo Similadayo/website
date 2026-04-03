@@ -1,21 +1,34 @@
-const DAY_MS = 24 * 60 * 60 * 1000
-
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
+const TIME_ZONE = "Africa/Lagos"
+const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+})
 
 export function getRelativeDayLabel(value: Date | string | null | undefined) {
   if (!value) return "Unknown date"
 
   const date = value instanceof Date ? value : new Date(value)
-  const today = startOfDay(new Date())
-  const target = startOfDay(date)
-  const diffDays = Math.round((today.getTime() - target.getTime()) / DAY_MS)
+  const currentDateKey = dateKeyFormatter.format(new Date())
+  const targetDateKey = dateKeyFormatter.format(date)
 
-  if (diffDays === 0) return "Today"
-  if (diffDays === 1) return "Yesterday"
+  if (targetDateKey === currentDateKey) return "Today"
 
   return date.toLocaleDateString("en-US", {
+    timeZone: TIME_ZONE,
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+export function formatAdminDate(value: Date | string | null | undefined) {
+  if (!value) return "Unknown"
+
+  const date = value instanceof Date ? value : new Date(value)
+  return date.toLocaleDateString("en-US", {
+    timeZone: TIME_ZONE,
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -27,6 +40,7 @@ export function formatAdminTimestamp(value: Date | string | null | undefined) {
 
   const date = value instanceof Date ? value : new Date(value)
   return date.toLocaleString("en-US", {
+    timeZone: TIME_ZONE,
     month: "short",
     day: "numeric",
     year: "numeric",

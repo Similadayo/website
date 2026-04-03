@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Linkedin,
   Mail,
+  MessageSquareReply,
   Sparkles,
   Target,
   XCircle,
@@ -29,6 +30,7 @@ import { generateOutreachSequence } from "@/app/admin/outreach/actions"
 import { STAGE_LABELS } from "@/lib/stages"
 import { OutreachSection } from "@/components/admin/OutreachSection"
 import { getAccessScope, getScopedLeadWhere } from "@/lib/auth/scope"
+import { formatAdminDate, formatAdminTimestamp } from "@/lib/datetime"
 import {
   getContactTier,
   getLeadContactStrategy,
@@ -72,6 +74,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const analysis = lead.analyses[0]
   const thread = lead.threads[0]
   const messages = thread?.messages || []
+  const latestInbound = [...messages].reverse().find((message: any) => message.direction === "inbound") || null
   const contactStrategy = getLeadContactStrategy(lead.company.contacts as any[])
   const contact = contactStrategy.primarySendContact
   const analysisJson = analysis?.rawResponse
@@ -187,6 +190,37 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           <StatCard label="Contact Coverage" value={contactStrategy.coverageStatus} tone="neutral" />
         </div>
       </section>
+
+      {latestInbound && (
+        <section className="admin-card border border-[color:var(--admin-accent)]/15 bg-[color:var(--admin-accent-soft)] p-6 sm:p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="admin-pill admin-pill-accent">
+                  <MessageSquareReply className="h-3.5 w-3.5" />
+                  Reply received
+                </span>
+                {thread?.unreadCount ? <span className="admin-pill admin-pill-neutral">{thread.unreadCount} unread</span> : null}
+              </div>
+              <p className="mt-4 text-lg font-semibold tracking-tight text-[color:var(--admin-ink)]">
+                {latestInbound.fromEmail || "Inbound contact"} replied to this thread.
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[color:var(--admin-soft-text)]">
+                {latestInbound.subject || "(No subject)"}
+              </p>
+            </div>
+            <p className="shrink-0 text-xs font-semibold text-[color:var(--admin-muted)]">
+              {formatAdminTimestamp(latestInbound.receivedAt || latestInbound.createdAt)}
+            </p>
+          </div>
+
+          <div className="mt-5 rounded-[22px] bg-white/80 p-5">
+            <p className="whitespace-pre-wrap text-sm leading-7 text-[color:var(--admin-soft-text)]">
+              {latestInbound.body}
+            </p>
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
@@ -329,7 +363,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <DetailRow label="Niche" value={lead.company.niche} />
               <DetailRow label="Location" value={lead.company.location} />
               <DetailRow label="Domain" value={lead.company.domain} />
-              <DetailRow label="Added" value={lead.company.createdAt.toLocaleDateString()} />
+              <DetailRow label="Added" value={formatAdminDate(lead.company.createdAt)} />
               <DetailRow
                 label="LinkedIn"
                 value={
@@ -520,7 +554,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                         {log.actor?.name ? ` by ${log.actor.name}` : ""}
                       </p>
                       {log.newValue && <p className="mt-1 text-sm leading-6 text-[color:var(--admin-soft-text)]">{summarizeLogValue(log.newValue)}</p>}
-                      <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{new Date(log.createdAt).toLocaleString()}</p>
+                      <p className="mt-1 text-xs text-[color:var(--admin-muted)]">{formatAdminTimestamp(log.createdAt)}</p>
                     </div>
                   </div>
                 ))

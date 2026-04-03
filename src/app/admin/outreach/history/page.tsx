@@ -2,6 +2,7 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { getAccessScope } from "@/lib/auth/scope"
 import { Pagination } from "@/components/admin/Pagination"
+import { formatAdminTimestamp } from "@/lib/datetime"
 import { Activity, Inbox, Mail, Send } from "lucide-react"
 
 type HistoryView = "all" | "sent" | "received"
@@ -155,12 +156,7 @@ export default async function OutreachHistoryPage({
                     </div>
                   </div>
                   <span className="shrink-0 text-xs font-semibold text-[color:var(--admin-muted)]">
-                    {new Date(msg.receivedAt || msg.sentAt || msg.createdAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatAdminTimestamp(msg.receivedAt || msg.sentAt || msg.createdAt)}
                   </span>
                 </div>
 

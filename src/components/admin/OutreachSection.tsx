@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { AlertCircle, BrainCircuit, CheckCircle2, Edit3, Loader2, Mail, Save, SendHorizontal, X } from "lucide-react"
 import { updateOutreachMessage } from "@/app/admin/outreach/actions"
+import { formatAdminDate, formatAdminTimestamp } from "@/lib/datetime"
 
 interface OutreachSectionProps {
   leadId: string
@@ -185,7 +186,7 @@ export function OutreachSection({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[color:var(--admin-muted)]">{new Date(message.receivedAt || message.sentAt || Date.now()).toLocaleString()}</p>
+                      <p className="text-xs text-[color:var(--admin-muted)]">{formatAdminTimestamp(message.receivedAt || message.sentAt || new Date())}</p>
                     </div>
                     <p className="mt-2 text-sm font-semibold text-[color:var(--admin-ink)]">{message.subject || "(No Subject)"}</p>
                     <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[color:var(--admin-soft-text)]">{message.body}</p>
@@ -255,7 +256,7 @@ export function OutreachSection({
                         {message.messageType === "reply_draft" ? "Suggested Reply Draft" : `Step ${index + 1}`}
                         {message.delayDays > 0 ? ` • +${message.delayDays}d` : ""}
                       </p>
-                      {message.sentAt && <p className="mt-1 text-xs text-[color:var(--admin-success)]">Dispatched {new Date(message.sentAt).toLocaleDateString()}</p>}
+                      {message.sentAt && <p className="mt-1 text-xs text-[color:var(--admin-success)]">Dispatched {formatAdminDate(message.sentAt)}</p>}
                     </div>
                   </div>
                   {!message.sentAt && (

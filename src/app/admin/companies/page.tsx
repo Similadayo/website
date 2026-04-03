@@ -2,6 +2,7 @@ import Link from "next/link"
 import { db } from "@/lib/db"
 import { Pagination } from "@/components/admin/Pagination"
 import { getAccessScope } from "@/lib/auth/scope"
+import { formatAdminDate } from "@/lib/datetime"
 import { hasLeadBeenReachedOutTo } from "@/lib/outreach/status"
 import { ArrowUpDown, Building2, ExternalLink, Plus, Search } from "lucide-react"
 
@@ -147,7 +148,7 @@ export default async function CompaniesPage({
                 <span className="admin-pill admin-pill-neutral">{company._count.leads} leads</span>
                 {company.leads.some((lead: any) => hasLeadBeenReachedOutTo(lead)) && <span className="admin-pill admin-pill-success">Reached out</span>}
                 <span className="admin-pill admin-pill-neutral">
-                  Added {new Date(company.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  Added {formatAdminDate(company.createdAt)}
                 </span>
               </div>
             </div>
