@@ -29,6 +29,13 @@ function parseReplyThreadId(addresses: string[]) {
   return null
 }
 
+function parseReferenceIds(...values: Array<string | null | undefined>) {
+  return values
+    .flatMap((value) => (value || "").match(/<[^>]+>|[^\s]+/g) || [])
+    .map((token) => token.replace(/^<|>$/g, "").trim())
+    .filter(Boolean)
+}
+
 function normalizeHeaders(input: unknown) {
   if (!input) return {} as Record<string, string>
 
@@ -91,6 +98,9 @@ export async function POST(request: Request) {
   const senderAddresses = asAddressList((email as any).from)
   const threadIdFromAddress = parseReplyThreadId(recipientAddresses)
   const inReplyTo = headers["in-reply-to"] || null
+  const senderEmail = extractEmailAddress(senderAddresses[0])
+  const replyReferenceIds = parseReferenceIds(inReplyTo, headers.references)
+  let matchSource: "reply_alias" | "message_headers" | "sender_fallback" | null = threadIdFromAddress ? "reply_alias" : null
 
   let thread = threadIdFromAddress
     ? await db.outreachThread.findUnique({
@@ -99,14 +109,42 @@ export async function POST(request: Request) {
       })
     : null
 
-  if (!thread && inReplyTo) {
+  if (!thread && replyReferenceIds.length > 0) {
     const outboundMessage = await db.outreachMessage.findFirst({
-      where: { providerMessageId: inReplyTo },
+      where: {
+        providerMessageId: {
+          in: replyReferenceIds,
+        },
+      },
       include: {
         thread: { include: { lead: true } },
       },
+      orderBy: [{ sentAt: "desc" }, { createdAt: "desc" }],
     })
     thread = outboundMessage?.thread ?? null
+    if (thread) {
+      matchSource = "message_headers"
+    }
+  }
+
+  if (!thread && senderEmail) {
+    const outboundMessage = await db.outreachMessage.findFirst({
+      where: {
+        direction: "outbound",
+        toEmail: senderEmail,
+        thread: {
+          channel: "email",
+        },
+      },
+      include: {
+        thread: { include: { lead: true } },
+      },
+      orderBy: [{ sentAt: "desc" }, { createdAt: "desc" }],
+    })
+    thread = outboundMessage?.thread ?? null
+    if (thread) {
+      matchSource = "sender_fallback"
+    }
   }
 
   if (!thread) {
@@ -140,13 +178,16 @@ export async function POST(request: Request) {
       messageType: "reply",
       subject: (email as any).subject || null,
       body,
-      fromEmail: extractEmailAddress(senderAddresses[0]) || null,
+      fromEmail: senderEmail || null,
       toEmail: extractEmailAddress(recipientAddresses[0]) || null,
       receivedAt: new Date((email as any).created_at || Date.now()),
       providerMessageId: inboundProviderId,
       providerThreadId: inReplyTo,
       inReplyTo,
-      rawHeaders: JSON.stringify(headers),
+      rawHeaders: JSON.stringify({
+        ...headers,
+        "x-brancr-match-source": matchSource || "unknown",
+      }),
       reviewedByUser: false,
       generatedByAi: false,
       stepNumber: 0,
@@ -183,9 +224,10 @@ export async function POST(request: Request) {
     action: "INBOUND_EMAIL_RECEIVED",
     metadata: {
       subject: (email as any).subject || null,
-      from: extractEmailAddress(senderAddresses[0]),
+      from: senderEmail,
       to: extractEmailAddress(recipientAddresses[0]),
       providerMessageId: inboundProviderId,
+      matchSource,
     },
   })
 

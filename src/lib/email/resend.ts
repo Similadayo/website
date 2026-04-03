@@ -34,6 +34,10 @@ export function getDefaultReplyInbox() {
   return process.env.OUTREACH_REPLY_INBOX || "contact@brancr.com"
 }
 
+export function shouldUseThreadReplyAlias() {
+  return process.env.OUTREACH_USE_THREAD_REPLY_ALIAS === "true"
+}
+
 export function buildReplyToAddress(threadId: string) {
   const inbox = getDefaultReplyInbox()
   const [localPart, domain] = inbox.split("@")
@@ -62,7 +66,10 @@ export async function sendEmail(
   }
 
   try {
-    const replyTo = options?.threadId ? buildReplyToAddress(options.threadId) : getDefaultReplyInbox()
+    const replyTo =
+      options?.threadId && shouldUseThreadReplyAlias()
+        ? buildReplyToAddress(options.threadId)
+        : getDefaultReplyInbox()
 
     const { data, error } = await client.emails.send({
       from,

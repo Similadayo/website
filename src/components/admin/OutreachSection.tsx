@@ -16,6 +16,7 @@ interface OutreachSectionProps {
     receivedAt?: Date | null
     fromEmail?: string | null
     toEmail?: string | null
+    rawHeaders?: string | null
     stepNumber: number
     delayDays: number
   }>
@@ -124,6 +125,21 @@ export function OutreachSection({
       return new Date(right || 0).getTime() - new Date(left || 0).getTime()
     })
 
+  const getInboundMatchLabel = (rawHeaders?: string | null) => {
+    if (!rawHeaders) return null
+
+    try {
+      const parsed = JSON.parse(rawHeaders) as Record<string, string>
+      const matchSource = parsed["x-brancr-match-source"]
+
+      if (matchSource === "reply_alias") return "Matched by reply alias"
+      if (matchSource === "message_headers") return "Matched by reply headers"
+      if (matchSource === "sender_fallback") return "Matched by sender fallback"
+    } catch {}
+
+    return null
+  }
+
   return (
     <section className="admin-card p-6 sm:p-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -159,9 +175,16 @@ export function OutreachSection({
                 {conversationMessages.slice(0, 6).map((message) => (
                   <div key={message.id} className="rounded-[18px] bg-white p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">
-                        {message.direction === "inbound" ? "Received Reply" : "Sent Message"}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">
+                          {message.direction === "inbound" ? "Received Reply" : "Sent Message"}
+                        </p>
+                        {message.direction === "inbound" && getInboundMatchLabel(message.rawHeaders) && (
+                          <span className="rounded-full bg-[color:var(--admin-card-strong)] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-[color:var(--admin-muted)]">
+                            {getInboundMatchLabel(message.rawHeaders)}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-[color:var(--admin-muted)]">{new Date(message.receivedAt || message.sentAt || Date.now()).toLocaleString()}</p>
                     </div>
                     <p className="mt-2 text-sm font-semibold text-[color:var(--admin-ink)]">{message.subject || "(No Subject)"}</p>
