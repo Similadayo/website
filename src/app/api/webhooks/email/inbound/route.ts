@@ -10,6 +10,37 @@ function stripHtml(value: string) {
   return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
 }
 
+function normalizeTextBody(value: string) {
+  return value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim()
+}
+
+function extractReplyBody(value: string) {
+  const normalized = normalizeTextBody(value)
+
+  const markers = [
+    /\nOn .+ wrote:\s*$/im,
+    /\nOn .+ wrote:\s*/i,
+    /\nFrom:[\s\S]+\nSent:[\s\S]+\nTo:[\s\S]+\nSubject:[\s\S]+/i,
+    /\n-+\s*Original Message\s*-+/i,
+  ]
+
+  let cutoff = normalized.length
+  for (const marker of markers) {
+    const match = normalized.match(marker)
+    if (match?.index != null) {
+      cutoff = Math.min(cutoff, match.index)
+    }
+  }
+
+  const withoutQuotedThread = normalized
+    .slice(0, cutoff)
+    .split("\n")
+    .filter((line) => !line.trim().startsWith(">"))
+    .join("\n")
+
+  return withoutQuotedThread.replace(/\n{3,}/g, "\n\n").trim() || normalized
+}
+
 function extractEmailAddress(value?: string | null) {
   if (!value) return null
   const match = value.match(/<([^>]+)>/)
@@ -152,11 +183,33 @@ export async function POST(request: Request) {
   }
 
   const inboundProviderId = event.data.email_id as string
+  const inboundMessageId = headers["message-id"] || null
+  const rawBody =
+    ((email as any).text as string | undefined)?.trim() ||
+    stripHtml(((email as any).html as string | undefined) || "") ||
+    "(No message body captured)"
+  const body = extractReplyBody(rawBody)
+
   const existing = await db.outreachMessage.findFirst({
     where: {
       OR: [
         { providerMessageId: inboundProviderId },
-        ...(headers["message-id"] ? [{ providerMessageId: headers["message-id"] }] : []),
+        ...(inboundMessageId
+          ? [
+              {
+                threadId: thread.id,
+                direction: "inbound",
+                rawHeaders: { contains: inboundMessageId },
+              },
+            ]
+          : []),
+        {
+          threadId: thread.id,
+          direction: "inbound",
+          fromEmail: senderEmail || null,
+          subject: (email as any).subject || null,
+          body,
+        },
       ],
     },
     select: { id: true },
@@ -165,11 +218,6 @@ export async function POST(request: Request) {
   if (existing) {
     return Response.json({ ok: true, duplicate: true })
   }
-
-  const body =
-    ((email as any).text as string | undefined)?.trim() ||
-    stripHtml(((email as any).html as string | undefined) || "") ||
-    "(No message body captured)"
 
   await db.outreachMessage.create({
     data: {
@@ -186,6 +234,7 @@ export async function POST(request: Request) {
       inReplyTo,
       rawHeaders: JSON.stringify({
         ...headers,
+        "x-brancr-message-id": inboundMessageId || "",
         "x-brancr-match-source": matchSource || "unknown",
       }),
       reviewedByUser: false,

@@ -22,6 +22,21 @@ function getDirectionWhere(view: HistoryView) {
   }
 }
 
+function getInboundMatchLabel(rawHeaders?: string | null) {
+  if (!rawHeaders) return null
+
+  try {
+    const parsed = JSON.parse(rawHeaders) as Record<string, string>
+    const matchSource = parsed["x-brancr-match-source"]
+
+    if (matchSource === "reply_alias") return "Reply alias"
+    if (matchSource === "message_headers") return "Reply headers"
+    if (matchSource === "sender_fallback") return "Sender fallback"
+  } catch {}
+
+  return null
+}
+
 export default async function OutreachHistoryPage({
   searchParams,
 }: {
@@ -128,9 +143,14 @@ export default async function OutreachHistoryPage({
                         <span className={`admin-pill shrink-0 ${inbound ? "admin-pill-accent" : "admin-pill-success"}`}>
                           {inbound ? "Received" : "Sent"}
                         </span>
+                        {inbound && getInboundMatchLabel(msg.rawHeaders) && (
+                          <span className="admin-pill admin-pill-neutral">{getInboundMatchLabel(msg.rawHeaders)}</span>
+                        )}
                       </div>
                       <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.22em] text-[color:var(--admin-muted)]">
-                        {contact?.name || msg.fromEmail || msg.toEmail || "Thread contact"}
+                        {inbound
+                          ? `${msg.fromEmail || contact?.name || "Unknown sender"} -> ${msg.toEmail || "Brancr inbox"}`
+                          : `${msg.fromEmail || "Brancr sender"} -> ${msg.toEmail || contact?.name || "Recipient"}`}
                       </p>
                     </div>
                   </div>
