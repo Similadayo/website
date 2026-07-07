@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Brancr Labs — Website
 
-## Getting Started
+The public marketing site for Brancr Labs, an Operational Intelligence Firm. Rebuilt from scratch
+to carry the positioning defined in the Brancr Market Identity Brand Book (v1.1) — Operational
+Debt, the Blueprint™ → Sprint™ method, and the Reference Engagement™ (Nova Design) as proof.
 
-First, run the development server:
+**Stack:** Next.js (App Router, TypeScript), hand-written CSS — no Tailwind, no database. This is
+a content site, not an application; the identity is the same navy/gold/serif "dossier" system
+used across Brancr's capability deck and other sales assets.
+
+## Run it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Pages (v1)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Home · Methodology · Workflow Blueprint™ · Workflow Sprint™ · Reference Engagement™ (Nova Design)
+· Research · About · Contact
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Per the Brand Book Ch. 12: build order is Home + Methodology first, product pages next, Reference
+Engagement once there's proof to show, Research/About/Contact last. Manifesto is deliberately
+deferred past v1 (staged-launch discipline).
 
-## Learn More
+## Note on `public/demos/`
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Static-exported prototype demos from prior work — left in place, not linked from the new site's
+navigation. Revisit if a future Products/Demos page is wanted.
