@@ -18,6 +18,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://labs.brancr.com"),
+  alternates: { canonical: "/" },
   title: {
     default: "Brancr Labs · Operational Intelligence Firm",
     template: "%s · Brancr Labs",
