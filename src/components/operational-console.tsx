@@ -14,12 +14,12 @@ type Tone = "warn" | "ok" | "muted";
 type Row = { name: string; score: number; status: string; tone: Tone; pulse?: boolean };
 
 // Honest portfolio: onboarding is the proven/redesigned one, placed mid-list.
+// Four is enough — the point is the idea (a system of workflows), not completeness.
 const ROWS: Row[] = [
   { name: "Sales Handoff", score: 49, status: "Backlog", tone: "muted" },
   { name: "Proposal → Contract", score: 63, status: "Diagnosing", tone: "warn", pulse: true },
   { name: "Client Onboarding", score: 86, status: "Redesigned", tone: "ok" },
-  { name: "Client Reporting", score: 71, status: "Monitored", tone: "ok" },
-  { name: "Customer Success", score: 68, status: "Monitored", tone: "ok" },
+  { name: "Project Delivery", score: 71, status: "Monitored", tone: "ok" },
 ];
 
 const AGG_FROM = 58;
