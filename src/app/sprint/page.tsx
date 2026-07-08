@@ -1,22 +1,45 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "@/components/icons";
+import { Pipeline } from "@/components/pipeline";
+import { Reveal } from "@/components/reveal";
 
 export const metadata: Metadata = {
   title: "Workflow Sprint™",
-  description: "The fixed-scope, fixed-price implementation that follows a Workflow Blueprint™ — with a written Definition of Done.",
+  description: "The fixed-scope, fixed-price implementation that follows a Workflow Blueprint™, with a written Definition of Done.",
 };
 
 export default function Sprint() {
   return (
     <>
-      <header className="page-hero container">
-        <p className="eyebrow">Product 02</p>
-        <h1>Workflow Sprint™</h1>
-        <p className="lede">
-          The fix — only when a Blueprint says it&apos;s worth it. Fixed scope, fixed timeline,
-          fixed price, a written Definition of Done.
-        </p>
+      <header className="hero">
+        <div className="container hero-grid">
+          <div className="hero-copy">
+            <p className="eyebrow">Product 02 · Implement</p>
+            <h1>Workflow Sprint™</h1>
+            <p className="lede">
+              The fix, but only when a Blueprint says it&apos;s worth it. Fixed scope, fixed
+              timeline, fixed price, a written Definition of Done.
+            </p>
+            <div className="hero-cta">
+              <Link href="/blueprint" className="btn btn-primary">Start with the Blueprint <ArrowRight /></Link>
+              <Link href="/contact" className="btn btn-ghost">Talk to us</Link>
+            </div>
+          </div>
+          <div className="hero-visual">
+            <Pipeline
+              title="Sprint · fixed shape"
+              badge="Definition of Done"
+              nodes={[
+                { label: "Readiness Gate", meta: "must pass" },
+                { label: "Build", meta: "fixed scope" },
+                { label: "Automate", meta: "with fallback" },
+                { label: "Verify", meta: "observable" },
+                { label: "Hand over", meta: "yours" },
+              ]}
+            />
+          </div>
+        </div>
       </header>
 
       <section className="block">
@@ -25,7 +48,7 @@ export default function Sprint() {
           <p className="prose">
             Once a workflow&apos;s root cause is diagnosed, the temptation is to scope a broad
             transformation program. We resist it. A Sprint fixes the single highest-leverage part
-            of the workflow the Blueprint identified — nothing more, nothing vaguer, and never
+            of the workflow the Blueprint identified: nothing more, nothing vaguer, and never
             sold without that Blueprint preceding it.
           </p>
         </div>
@@ -36,7 +59,7 @@ export default function Sprint() {
           <div className="section-head"><p className="eyebrow">Purpose &amp; buyer</p><h2>A named engagement with a fixed shape.</h2></div>
           <div className="product-meta">
             <div className="product-meta-row"><span className="k">Buyer</span><span className="v">A client whose Blueprint recommended proceeding, who has passed the Readiness Gate for implementation.</span></div>
-            <div className="product-meta-row"><span className="k">Outcome</span><span className="v">The diagnosed workflow rebuilt, automated where warranted, tested, documented — your team trained to run it independently.</span></div>
+            <div className="product-meta-row"><span className="k">Outcome</span><span className="v">The diagnosed workflow rebuilt, automated where warranted, tested, and documented, with your team trained to run it independently.</span></div>
             <div className="product-meta-row"><span className="k">When to use it</span><span className="v">Whenever a Blueprint&apos;s recommendation is accepted. Never sold standalone.</span></div>
           </div>
         </div>
@@ -59,7 +82,7 @@ export default function Sprint() {
         <div className="container">
           <div className="section-head"><p className="eyebrow">Deliverables</p><h2>What you receive.</h2></div>
           <div className="grid-2">
-            <div className="card"><h3>The rebuilt workflow</h3><p>Live and operating in your existing stack — no forced tool migration.</p></div>
+            <div className="card"><h3>The rebuilt workflow</h3><p>Live and operating in your existing stack, with no forced tool migration.</p></div>
             <div className="card"><h3>Configured automations</h3><p>Each one documented, tested, and shipped with a manual fallback.</p></div>
             <div className="card"><h3>A playbook</h3><p>Written so a new hire can run the workflow from the document alone.</p></div>
             <div className="card"><h3>Training + a support window</h3><p>Your team runs it themselves by the time the Sprint closes.</p></div>
@@ -69,7 +92,7 @@ export default function Sprint() {
 
       <section className="block">
         <div className="container">
-          <div className="section-head"><p className="eyebrow">Definition of Done</p><h2>Observable states, checked — never a feeling.</h2></div>
+          <div className="section-head"><p className="eyebrow">Definition of Done</p><h2>Observable states, checked. Never a feeling.</h2></div>
           <p className="prose">
             Every Sprint&apos;s Definition of Done is written and signed before the clock starts.
             It describes things that can be verified: the workflow executing end-to-end on a real
@@ -85,7 +108,7 @@ export default function Sprint() {
           <p className="prose">
             If the Definition of Done isn&apos;t met on the agreed terms, we continue at our own
             cost until it is, or refund by a defined schedule. The guarantee covers what we
-            control — it never covers business outcomes your own execution determines. A guarantee
+            control. It never covers business outcomes your own execution determines. A guarantee
             we&apos;d resist honoring is a lie with a signature, so we don&apos;t write those.
           </p>
         </div>
@@ -95,22 +118,25 @@ export default function Sprint() {
         <div className="container">
           <div className="section-head center"><p className="eyebrow">FAQ</p><h2>Common questions about the Sprint.</h2></div>
           <div className="faq-list">
-            <details className="faq-item"><summary>Can scope change mid-Sprint?</summary><p>The current Sprint&apos;s scope is frozen. New needs get logged for a future engagement — the one exception is anything required to reach the existing Definition of Done, which is our cost under the guarantee.</p></details>
-            <details className="faq-item"><summary>How long does a Sprint take?</summary><p>Set per engagement in the Blueprint&apos;s fix specification — typically ten to twenty working days, with the clock starting only once the Readiness Gate is cleared.</p></details>
-            <details className="faq-item"><summary>What happens after the support window closes?</summary><p>Your team runs the workflow independently. That&apos;s the point — we earn repeat work through results, not dependency.</p></details>
+            <details className="faq-item"><summary>Can scope change mid-Sprint?</summary><p>The current Sprint&apos;s scope is frozen. New needs get logged for a future engagement. The one exception is anything required to reach the existing Definition of Done, which is our cost under the guarantee.</p></details>
+            <details className="faq-item"><summary>How long does a Sprint take?</summary><p>Set per engagement in the Blueprint&apos;s fix specification: typically ten to twenty working days, with the clock starting only once the Readiness Gate is cleared.</p></details>
+            <details className="faq-item"><summary>What happens after the support window closes?</summary><p>Your team runs the workflow independently. That&apos;s the point. We earn repeat work through results, not dependency.</p></details>
           </div>
         </div>
       </section>
 
-      <section className="block tint">
+      <section className="block">
         <div className="container">
-          <div className="page-hero center cta-block">
-            <h2 className="h2-cta">Start with the diagnosis.</h2>
-            <div className="hero-cta">
-              <Link href="/blueprint" className="btn btn-primary">See the Workflow Blueprint™ <ArrowRight /></Link>
-              <Link href="/contact" className="btn btn-ghost">Talk to us</Link>
+          <Reveal>
+            <div className="cta-panel">
+              <h2>Start with the diagnosis.</h2>
+              <p>Every Sprint begins with a Blueprint. Never sold standalone, never scoped on a guess.</p>
+              <div className="hero-cta">
+                <Link href="/blueprint" className="btn btn-primary">See the Workflow Blueprint™ <ArrowRight /></Link>
+                <Link href="/contact" className="btn btn-ghost">Talk to us</Link>
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
     </>

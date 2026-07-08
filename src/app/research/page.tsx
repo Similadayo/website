@@ -5,7 +5,7 @@ import { ArrowRight } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Research",
-  description: "Brancr's published research — evidence and reasoning, not general-purpose content marketing.",
+  description: "Brancr's published research: evidence and reasoning, not general-purpose content marketing.",
 };
 
 export default function Research() {
@@ -16,15 +16,16 @@ export default function Research() {
         <h1>What we've learned diagnosing operational workflows.</h1>
         <p className="lede">
           Not a blog. This is where findings that could plausibly inform a real diagnosis get
-          published — evidence and reasoning, not content marketing.
+          published: evidence and reasoning, not content marketing.
         </p>
       </header>
 
       <section className="block">
         <div className="container">
           <div className="grid-2">
-            {ESSAYS.map((e) => (
+            {ESSAYS.map((e, i) => (
               <Link key={e.slug} href={`/research/${e.slug}`} className="card">
+                <span className="card-num">{String(i + 1).padStart(2, "0")} · Essay</span>
                 <h3>{e.title}</h3>
                 <p>{e.dek}</p>
                 <span className="btn btn-ghost mt-md">

@@ -28,7 +28,7 @@ export default function Contact() {
       setDone(true);
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Something went wrong — try again.");
+      setError(data.error ?? "Something went wrong. Try again.");
     }
     setBusy(false);
   }
@@ -38,7 +38,7 @@ export default function Contact() {
       <>
         <header className="page-hero container center">
           <p className="eyebrow">Contact</p>
-          <h1>Thanks — we&apos;ll be in touch.</h1>
+          <h1>Thanks. We&apos;ll be in touch.</h1>
           <p className="lede">
             We read every submission ourselves. If there&apos;s a real fit, you&apos;ll hear back
             with specific next steps, not a generic reply.
@@ -55,7 +55,7 @@ export default function Contact() {
         <h1>Tell us about the workflow, not the project.</h1>
         <p className="lede">
           The more specific you are here, the faster we can tell you honestly whether this is a
-          fit — before either of us spends time on a call that shouldn&apos;t happen.
+          fit, before either of us spends time on a call that shouldn&apos;t happen.
         </p>
       </header>
 

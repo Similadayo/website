@@ -9,9 +9,9 @@ export function SiteFooter() {
             <Link href="/" className="brand-mark" aria-label="Brancr Labs home">
               <span className="brand-logo" role="img" aria-label="Brancr" />
             </Link>
-            <p className="footer-meta" style={{ maxWidth: 320 }}>
-              Operational Intelligence Firm. We diagnose and redesign recurring business
-              workflows before technology is applied.
+            <p className="footer-meta footer-brandline">
+              Operational Intelligence firm. We diagnose and rebuild the recurring workflows a
+              business runs on, before a line of software is written.
             </p>
           </div>
           <div className="footer-links">
