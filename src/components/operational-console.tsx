@@ -10,16 +10,18 @@ import { useEffect, useRef, useState } from "react";
 // the one already redesigned, sitting among its peers — never the star).
 // Real product surface, adapts to light/dark, static under reduced-motion.
 
-type Tone = "warn" | "ok" | "muted";
+type Tone = "warn" | "ok" | "muted" | "info";
 type Row = { name: string; score: number; status: string; tone: Tone; pulse?: boolean };
 
-// Honest portfolio: onboarding is the proven/redesigned one, placed mid-list.
-// Four is enough — the point is the idea (a system of workflows), not completeness.
+// Honest portfolio at different stages of the method. Onboarding is the proven
+// one (Stable). Four is enough: the point is the idea (a system of workflows
+// moving through diagnosis), not completeness. Statuses are Brancr's own
+// language, not generic project-tracker labels.
 const ROWS: Row[] = [
-  { name: "Sales Handoff", score: 49, status: "Backlog", tone: "muted" },
-  { name: "Proposal → Contract", score: 63, status: "Diagnosing", tone: "warn", pulse: true },
-  { name: "Client Onboarding", score: 86, status: "Redesigned", tone: "ok" },
-  { name: "Project Delivery", score: 71, status: "Monitored", tone: "ok" },
+  { name: "Sales Handoff", score: 49, status: "Diagnosing", tone: "warn", pulse: true },
+  { name: "Proposal → Contract", score: 63, status: "Blueprint Ready", tone: "info" },
+  { name: "Client Onboarding", score: 86, status: "Stable", tone: "ok" },
+  { name: "Project Delivery", score: 71, status: "Monitoring", tone: "ok" },
 ];
 
 const AGG_FROM = 58;
@@ -47,22 +49,19 @@ export function OperationalConsole() {
   const [t, setT] = useState(0);
   const raf = useRef<number | undefined>(undefined);
 
+  // One-shot climb on mount, then hold at the resolved state — so the panel
+  // always comes to rest fully consistent (81 / +23 / full trend / rows), never
+  // caught looping back to an empty, contradictory frame.
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setT(1); return; }
-    const RISE = 3800, HOLD = 1800, FALL = 800, GAP = 900;
-    const CYCLE = RISE + HOLD + FALL + GAP;
+    const DUR = 1800;
     let start: number | null = null;
     const ease = (x: number) => 1 - Math.pow(1 - x, 3);
     const tick = (now: number) => {
       if (start === null) start = now;
-      const p = (now - start) % CYCLE;
-      let v: number;
-      if (p < RISE) v = ease(p / RISE);
-      else if (p < RISE + HOLD) v = 1;
-      else if (p < RISE + HOLD + FALL) v = 1 - (p - RISE - HOLD) / FALL;
-      else v = 0;
-      setT(v);
-      raf.current = requestAnimationFrame(tick);
+      const p = Math.min((now - start) / DUR, 1);
+      setT(ease(p));
+      if (p < 1) raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
     return () => { if (raf.current) cancelAnimationFrame(raf.current); };
@@ -82,14 +81,12 @@ export function OperationalConsole() {
 
       <div className="oc-body">
         <div className="oc-metric">
-          <div>
-            <p className="oc-metric-label">Operational Health · whole business</p>
-            <p className="oc-metric-num">
-              {agg}<span className="oc-metric-unit">/100</span>
-              <span className="oc-delta">▲ {recovered} recovered</span>
-            </p>
-          </div>
-          <span className="oc-chip">8 workflows</span>
+          <p className="oc-metric-label">Operational Health · whole business</p>
+          <p className="oc-metric-num">
+            {agg}<span className="oc-metric-unit">/100</span>
+            <span className="oc-delta">↑ +{recovered} after redesign</span>
+          </p>
+          <p className="oc-substat">8 workflows analyzed · 1 redesigned · {recovered} points recovered</p>
         </div>
 
         <div className="oc-spark">

@@ -38,15 +38,15 @@ export default function Home() {
               <span className="hero-h1-b">It got more expensive to run.</span>
             </h1>
             <p className="lede">
-              We diagnose recurring workflows, prove where Operational Debt is hiding, and rebuild
-              the one leaking the most, before software is built.
+              We identify the recurring workflow costing your business the most, prove it with
+              evidence, and redesign it before software is built.
             </p>
             <div className="hero-cta">
               <Link href="/methodology" className="btn btn-primary">
-                See how it works <ArrowRight />
+                Explore the methodology <ArrowRight />
               </Link>
               <Link href="/reference-engagement" className="btn btn-ghost">
-                See the proof
+                See a Reference Engagement
               </Link>
             </div>
           </div>
